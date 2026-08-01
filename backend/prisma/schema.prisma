@@ -1,0 +1,505 @@
+// DSL Air-Cargo — Schéma Prisma (Phase 1 : Fondations & Authentification)
+// Voir GEMINI.md à la racine du projet pour les règles métier non négociables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+enum Location {
+  CHINE
+  GUINEE
+}
+
+enum Currency {
+  GNF
+  USD
+  EUR
+  CNY
+}
+
+enum PricingCategory {
+  STANDARD
+  RISQUE
+  PERSONNALISE
+}
+
+enum BillingMode {
+  POIDS_REEL
+  POIDS_TAXABLE
+}
+
+enum LotStatus {
+  EN_RECEPTION
+  FERME
+  ENVOLE
+  ARRIVE
+  EN_DEDOUANEMENT
+  EN_ENTREPOT
+  CLOTURE
+}
+
+enum ColisStatus {
+  ENREGISTRE
+  ASSIGNE_LOT
+  ENVOLE
+  ARRIVE
+  EN_DEDOUANEMENT
+  DISPONIBLE_ENTREPOT
+  LIVRE
+}
+
+enum SequenceType {
+  LTA
+  FACTURE
+  DEVIS
+}
+
+enum FactureStatus {
+  IMPAYE
+  PARTIEL
+  PAYE
+}
+
+enum CashTransactionType {
+  ENTREE
+  DEPENSE
+}
+
+// Modes d'encaissement (règle métier — Orange Money, Espèces, Virement)
+enum PaymentMethod {
+  ESPECES
+  ORANGE_MONEY
+  VIREMENT
+}
+
+enum CashClosureStatus {
+  OUVERTE
+  CLOTUREE
+}
+
+enum WhatsAppMessageType {
+  CONFIRMATION_RECEPTION
+  ARRIVEE_LOT
+  RELANCE_IMPAYE
+}
+
+enum WhatsAppMessageStatus {
+  ENVOYE
+  ECHEC
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Auth & Utilisateurs
+// ─────────────────────────────────────────────────────────────────────────
+
+// Rôles : Admin, Agent Chine, Agent Guinée, Caissier, Client (lecture seule, phase ultérieure)
+model Role {
+  id              String   @id @default(uuid())
+  roleName        String   @unique @map("role_name")
+  // Permissions stockées en JSON : { "clients:read": true, "invoices:write": true, ... }
+  permissionsJson Json     @map("permissions_json")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  fullName     String    @map("full_name")
+  // Format international : +224 (Guinée), +86 (Chine)
+  phoneNumber  String    @unique @map("phone_number")
+  email        String?   @unique
+  passwordHash String    @map("password_hash")
+  roleId       String    @map("role_id")
+  role         Role      @relation(fields: [roleId], references: [id])
+  location     Location?
+  isActive     Boolean   @default(true) @map("is_active")
+
+  // OTP pour connexion rapide WhatsApp/SMS
+  otpCode      String?   @map("otp_code")
+  otpExpiresAt DateTime? @map("otp_expires_at")
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("users")
+}
+
+// Tokens de rafraîchissement JWT (rotation + révocation)
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Clients
+// ─────────────────────────────────────────────────────────────────────────
+
+model Client {
+  id                 String  @id @default(uuid())
+  // Ex : DSL-102, généré séquentiellement côté serveur
+  clientCode         String  @unique @map("client_code")
+  fullName           String  @map("full_name")
+  phoneGn            String? @map("phone_gn")
+  phoneCn            String? @map("phone_cn")
+  phoneWhatsapp      String? @map("phone_whatsapp")
+  address            String?
+  // Champs calculés/cache — recalculés depuis Factures/Paiements, jamais la source de vérité
+  totalSpent         Decimal @default(0) @map("total_spent") @db.Decimal(18, 2)
+  outstandingBalance Decimal @default(0) @map("outstanding_balance") @db.Decimal(18, 2)
+
+  colis            Colis[]
+  factures         Facture[]
+  whatsAppMessages WhatsAppMessageLog[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("clients")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Numérotation séquentielle (règle 3.3 GEMINI.md)
+// Un compteur par (type, année) ; incrémenté dans une transaction pour éviter
+// les doublons en cas d'accès concurrent. Format généré : DSL-YYYY-XXXXX.
+// ─────────────────────────────────────────────────────────────────────────
+
+model SequenceCounter {
+  id           String       @id @default(uuid())
+  sequenceType SequenceType @map("sequence_type")
+  year         Int
+  lastValue    Int          @default(0) @map("last_value")
+
+  @@unique([sequenceType, year])
+  @@map("sequence_counters")
+}
+
+// Compteur global simple pour les codes client (format DSL-102, sans année, sans trou).
+model ClientCodeCounter {
+  id        String @id @default(uuid())
+  lastValue Int    @default(100) @map("last_value")
+
+  @@map("client_code_counter")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Lots / Groupage (Shipments) — règle GEMINI.md §4.4
+// Statut : En réception → Fermé → Envolé → Arrivé → En dédouanement → En entrepôt → Clôturé
+// ─────────────────────────────────────────────────────────────────────────
+
+model Lot {
+  id               String    @id @default(uuid())
+  // LTA / AWB, format DSL-YYYY-XXXXX
+  lotNumber        String    @unique @map("lot_number")
+  flightNumber     String?   @map("flight_number")
+  departureDate    DateTime? @map("departure_date")
+  estimatedArrival DateTime? @map("estimated_arrival")
+  customsCost      Decimal?  @map("customs_cost") @db.Decimal(18, 2)
+  freightCost      Decimal?  @map("freight_cost") @db.Decimal(18, 2)
+  status           LotStatus @default(EN_RECEPTION)
+
+  colis Colis[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("lots")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Colis — réception en Chine (règle 3.1 GEMINI.md — poids réel & volumétrique)
+// ─────────────────────────────────────────────────────────────────────────
+
+model Colis {
+  id         String @id @default(uuid())
+  // Tracking ID unique, réutilise la numérotation LTA : DSL-YYYY-XXXXX
+  trackingId String @unique @map("tracking_id")
+
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id])
+
+  lotId String? @map("lot_id")
+  lot   Lot?    @relation(fields: [lotId], references: [id])
+
+  factureId String?  @map("facture_id")
+  facture   Facture? @relation(fields: [factureId], references: [id])
+
+  description String
+
+  // Poids réel saisi par l'agent (kg) — c'est le poids FACTURÉ (règle 3.1)
+  poidsReelKg         Decimal  @map("poids_reel_kg") @db.Decimal(10, 2)
+  // Dimensions saisies (cm) pour calculer le poids volumétrique
+  longueurCm          Decimal? @map("longueur_cm") @db.Decimal(10, 2)
+  largeurCm           Decimal? @map("largeur_cm") @db.Decimal(10, 2)
+  hauteurCm           Decimal? @map("hauteur_cm") @db.Decimal(10, 2)
+  // Calculé et stocké : (L×l×h)/diviseur_volumetrique — non utilisé pour la facturation actuellement
+  poidsVolumetriqueKg Decimal  @map("poids_volumetrique_kg") @db.Decimal(10, 2)
+  // Calculé et stocké : MAX(poids_réel, poids_volumétrique) — non utilisé pour la facturation actuellement
+  poidsTaxableKg      Decimal  @map("poids_taxable_kg") @db.Decimal(10, 2)
+
+  categorieTarif PricingCategory @map("categorie_tarif")
+  // Tarif en vigueur au moment de la saisie — figé pour cette pièce (traçabilité)
+  pricingRuleId  String          @map("pricing_rule_id")
+  pricingRule    PricingRule     @relation(fields: [pricingRuleId], references: [id])
+  // Montant = poids_réel × prix_par_kg de la catégorie (règle 3.1 : facturation au poids réel)
+  montantEstime  Decimal         @map("montant_estime") @db.Decimal(18, 2)
+  currency       Currency        @default(GNF)
+
+  photos Json? // liste d'URLs/chemins de photos
+  status ColisStatus @default(ENREGISTRE)
+
+  createdByUserId String? @map("created_by_user_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("colis")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tarification (règle 3.5 GEMINI.md — jamais codée en dur, historisée)
+// ─────────────────────────────────────────────────────────────────────────
+
+model PricingRule {
+  id            String          @id @default(uuid())
+  categoryName  PricingCategory @map("category_name")
+  label         String
+  pricePerKg    Decimal         @map("price_per_kg") @db.Decimal(18, 2)
+  currency      Currency        @default(GNF)
+  // Date d'effet : on ne modifie jamais un tarif passé, on en crée un nouveau
+  effectiveFrom DateTime        @default(now()) @map("effective_from")
+  isActive      Boolean         @default(true) @map("is_active")
+
+  colis Colis[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("pricing_rules")
+}
+
+// Table de référence des produits à risque, enrichissable par l'admin
+model RiskProductType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("risk_product_types")
+}
+
+// Taux de change manuels, historisés (règle 3.2)
+model ExchangeRate {
+  id              String   @id @default(uuid())
+  fromCurrency    Currency @map("from_currency")
+  toCurrency      Currency @map("to_currency")
+  rate            Decimal  @db.Decimal(18, 6)
+  effectiveFrom   DateTime @map("effective_from")
+  createdByUserId String?  @map("created_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("exchange_rates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Entrepôts
+// ─────────────────────────────────────────────────────────────────────────
+
+model WarehouseLocation {
+  id                 String   @id @default(uuid())
+  name               String
+  addressZh          String?  @map("address_zh")
+  addressFr          String?  @map("address_fr")
+  contactNumbersJson Json     @map("contact_numbers_json")
+  location           Location
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_locations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Paramètres globaux (clé/valeur) — diviseur volumétrique, mode facturation, etc.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Setting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value Json
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Journal d'audit (règle transversale — qui, quoi, quand, motif)
+// ─────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Factures & Paiements (règle GEMINI.md §3.4, §3.6, §5)
+// Facture N—1 Client, liée aux colis facturés ; Paiement N—1 Facture.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Facture {
+  id            String @id @default(uuid())
+  // Format FAC-YYYY-XXXXX (règle 3.3), numérotation transactionnelle sans trou
+  factureNumber String @unique @map("facture_number")
+  clientId      String @map("client_id")
+  client        Client @relation(fields: [clientId], references: [id])
+
+  montantTotal Decimal       @map("montant_total") @db.Decimal(18, 2)
+  currency     Currency      @default(GNF)
+  status       FactureStatus @default(IMPAYE)
+
+  // Déblocage manuel de livraison malgré facture impayée (règle 3.4) — motif obligatoire, tracé à l'audit
+  livraisonDebloqueeManuel Boolean   @default(false) @map("livraison_debloquee_manuel")
+  livraisonDeblocageMotif  String?   @map("livraison_deblocage_motif")
+  livraisonDeblocageParId  String?   @map("livraison_deblocage_par_id")
+  livraisonDeblocageAt     DateTime? @map("livraison_deblocage_at")
+
+  colis     Colis[]
+  paiements Paiement[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("factures")
+}
+
+model Paiement {
+  id        String  @id @default(uuid())
+  factureId String  @map("facture_id")
+  facture   Facture @relation(fields: [factureId], references: [id])
+
+  montant     Decimal       @db.Decimal(18, 2)
+  currency    Currency
+  // Taux vers GNF utilisé au moment du paiement (règle 3.2 — jamais recalculé rétroactivement)
+  tauxVersGnf Decimal       @map("taux_vers_gnf") @db.Decimal(18, 6)
+  method      PaymentMethod
+
+  cashTransactionId String?          @unique @map("cash_transaction_id")
+  cashTransaction   CashTransaction? @relation(fields: [cashTransactionId], references: [id])
+
+  receivedByUserId String? @map("received_by_user_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("paiements")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Caisse Madina (règle GEMINI.md §4 module 7 — Caisse / Paiements)
+// Solde théorique = fond d'ouverture + entrées - dépenses.
+// ─────────────────────────────────────────────────────────────────────────
+
+model CashRegisterClosure {
+  id       String            @id @default(uuid())
+  // Une caisse par jour (journal de caisse par jour et par devise — on ouvre une clôture par devise active)
+  date     DateTime          @db.Date
+  currency Currency
+  status   CashClosureStatus @default(OUVERTE)
+
+  fondOuverture    Decimal  @map("fond_ouverture") @db.Decimal(18, 2)
+  soldeTheorique   Decimal? @map("solde_theorique") @db.Decimal(18, 2)
+  comptagePhysique Decimal? @map("comptage_physique") @db.Decimal(18, 2)
+  ecart            Decimal? @db.Decimal(18, 2)
+
+  openedByUserId String    @map("opened_by_user_id")
+  closedByUserId String?   @map("closed_by_user_id")
+  closedAt       DateTime? @map("closed_at")
+
+  transactions CashTransaction[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([date, currency])
+  @@map("cash_register_closures")
+}
+
+model CashTransaction {
+  id        String              @id @default(uuid())
+  closureId String              @map("closure_id")
+  closure   CashRegisterClosure @relation(fields: [closureId], references: [id])
+
+  type     CashTransactionType
+  // Catégorie libre pour les dépenses (douane, manutention, loyer, carburant…) ; null pour les entrées liées à un paiement
+  category String?
+  label    String
+  montant  Decimal             @db.Decimal(18, 2)
+  currency Currency
+  method   PaymentMethod?
+
+  paiement Paiement?
+
+  createdByUserId String @map("created_by_user_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("cash_transactions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Notifications WhatsApp (Green API / Twilio — adaptateur, voir backend/src/lib/whatsapp)
+// ─────────────────────────────────────────────────────────────────────────
+
+model WhatsAppMessageLog {
+  id           String                @id @default(uuid())
+  clientId     String?               @map("client_id")
+  client       Client?               @relation(fields: [clientId], references: [id])
+  phoneNumber  String                @map("phone_number")
+  messageType  WhatsAppMessageType   @map("message_type")
+  status       WhatsAppMessageStatus
+  payload      Json?
+  errorMessage String?               @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("whatsapp_message_logs")
+}

@@ -1,0 +1,69 @@
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: 'Plus Jakarta Sans Variable', 'Inter Variable', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  @apply bg-white text-night-900 transition-colors duration-300;
+  --toast-bg: #ffffff;
+  --toast-fg: #0f172a;
+  --toast-border: #e2e8f0;
+}
+
+.dark body {
+  @apply bg-night-900 text-slate-100;
+  --toast-bg: #141e33;
+  --toast-fg: #f1f5f9;
+  --toast-border: #24324b;
+}
+
+::selection {
+  @apply bg-sky-400/30;
+}
+
+/* Scrollbar discrète, cohérente avec le thème */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-night-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-night-500;
+}
+
+@media print {
+  @page {
+    size: 100mm 150mm;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .colis-label,
+  .colis-label * {
+    visibility: visible;
+  }
+
+  .colis-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100mm;
+    height: 150mm;
+    margin: 0;
+  }
+}

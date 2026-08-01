@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npx tsc -b)",
+      "PowerShell(npx tsc -b; Write-Output \"EXITCODE=$LASTEXITCODE\")"
+    ]
+  }
+}
