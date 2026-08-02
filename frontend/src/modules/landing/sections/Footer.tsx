@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
 import { MessageCircle, Sun, Moon } from 'lucide-react';
+import { AuroraBackground } from './AuroraBackground';
+import { CursorSpotlight } from './CursorSpotlight';
 
 interface FooterProps {
   isDark: boolean;
@@ -23,22 +24,10 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
         isDark ? 'bg-night-900 border-white/10' : 'bg-white border-slate-200'
       }`}
     >
-      {/* Grande Muraille en toile de fond, à peine perceptible — clin d'œil à la route Chine-Guinée */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: isDark ? 0.08 : 0.05, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.6, ease: 'easeOut' }}
-        className="pointer-events-none absolute inset-0 bg-cover bg-center grayscale"
-        style={{ backgroundImage: "url('/images/backgrounds/grande-muraille.jpg')" }}
-      />
-      <div
-        className={`pointer-events-none absolute inset-0 ${
-          isDark ? 'bg-night-900/90' : 'bg-white/90'
-        }`}
-      />
+      <AuroraBackground isDark={isDark} />
+      <CursorSpotlight isDark={isDark} />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10">
           <div>
             <div className="flex items-center gap-2.5 mb-3">

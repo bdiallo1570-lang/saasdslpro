@@ -41,12 +41,12 @@ export function Hero({ onSimulateClick }: HeroProps) {
           initial={{ opacity: 0, scale: 0.6, rotate: -8 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className="mx-auto mb-6 h-24 w-24 sm:h-28 sm:w-28"
+          className="mx-auto mb-5 h-36 w-36 sm:h-44 sm:w-44 rounded-full bg-white/95 p-3 shadow-glow-cargo"
         >
           <img
             src="/images/backgrounds/dsl-logo.png"
             alt="DSL Air Cargo"
-            className="h-full w-full rounded-2xl object-cover shadow-glow-cargo ring-1 ring-white/20"
+            className="h-full w-full object-contain mix-blend-multiply"
           />
         </motion.div>
 
@@ -54,19 +54,28 @@ export function Hero({ onSimulateClick }: HeroProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="uppercase tracking-[0.25em] text-xs font-semibold mb-5 text-sky-300"
+          className="uppercase tracking-[0.25em] text-xs font-semibold mb-3 text-sky-300"
         >
           Fret aérien Chine → Guinée
         </motion.p>
 
+        <motion.h2
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.18 }}
+          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-lg mb-4"
+        >
+          DSL Air Cargo
+        </motion.h2>
+
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-4xl sm:text-5xl md:text-6xl font-extrabold max-w-4xl mx-auto leading-[1.1] tracking-tight text-white drop-shadow-lg"
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="text-xl sm:text-2xl md:text-3xl font-medium max-w-2xl mx-auto leading-snug tracking-tight text-slate-100 drop-shadow-lg"
         >
           La logistique Chine-Guinée, enfin{' '}
-          <span className="bg-gradient-to-r from-sky-400 to-emerald-300 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-sky-400 to-emerald-300 bg-clip-text text-transparent font-semibold">
             simplifiée, rapide et transparente
           </span>
           .

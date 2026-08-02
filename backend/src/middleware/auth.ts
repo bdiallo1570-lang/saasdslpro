@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, AccessTokenPayload } from '@/lib/jwt';
 import { prisma } from '@/lib/prisma';
+import { asyncHandler } from '@/lib/asyncHandler';
 
 declare global {
   namespace Express {
@@ -40,7 +41,7 @@ export function requireRole(...allowedRoles: string[]) {
 // Vérifie une permission granulaire issue de Role.permissionsJson.
 // Utilisé notamment pour restreindre les vues financières / marges bénéficiaires à l'Admin.
 export function requirePermission(permissionKey: string) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ success: false, data: null, error: 'Authentification requise.' });
     }
@@ -54,5 +55,5 @@ export function requirePermission(permissionKey: string) {
         .json({ success: false, data: null, error: 'Accès refusé : permission manquante.' });
     }
     next();
-  };
+  });
 }

@@ -1,24 +1,29 @@
 import { Router } from 'express';
 import { requireAuth, requirePermission } from '@/middleware/auth';
+import { asyncHandler } from '@/lib/asyncHandler';
 import * as paiementsController from './paiements.controller';
 
 export const paiementsRouter = Router();
 
 paiementsRouter.use(requireAuth);
 
-paiementsRouter.post('/', requirePermission('caisse:write'), paiementsController.createPaiementHandler);
+paiementsRouter.post(
+  '/',
+  requirePermission('caisse:write'),
+  asyncHandler(paiementsController.createPaiementHandler),
+);
 paiementsRouter.get(
   '/facture/:factureId',
   requirePermission('factures:read'),
-  paiementsController.listPaiementsHandler,
+  asyncHandler(paiementsController.listPaiementsHandler),
 );
 paiementsRouter.get(
   '/:id/recu-pdf',
   requirePermission('factures:read'),
-  paiementsController.downloadReceiptHandler,
+  asyncHandler(paiementsController.downloadReceiptHandler),
 );
 paiementsRouter.post(
   '/relancer/:clientId',
   requirePermission('whatsapp:send'),
-  paiementsController.relancerClientHandler,
+  asyncHandler(paiementsController.relancerClientHandler),
 );

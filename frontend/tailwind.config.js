@@ -6,6 +6,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans Variable"', '"Inter Variable"', 'system-ui', 'sans-serif'],
+        // Police signature pour le nom de l'entreprise — élégante, professionnelle
+        serif: ['"Playfair Display Variable"', 'Georgia', 'serif'],
       },
       colors: {
         // Fond bleu nuit profond (mode sombre par défaut)
@@ -66,9 +68,27 @@ export default {
           '0%': { backgroundPosition: '-468px 0' },
           '100%': { backgroundPosition: '468px 0' },
         },
+        // Fond "aurora" — trois taches de couleur qui dérivent lentement en boucle
+        aurora1: {
+          '0%, 100%': { transform: 'translate(0%, 0%) scale(1)' },
+          '33%': { transform: 'translate(15%, -10%) scale(1.15)' },
+          '66%': { transform: 'translate(-10%, 10%) scale(0.95)' },
+        },
+        aurora2: {
+          '0%, 100%': { transform: 'translate(0%, 0%) scale(1)' },
+          '33%': { transform: 'translate(-15%, 12%) scale(0.9)' },
+          '66%': { transform: 'translate(10%, -15%) scale(1.2)' },
+        },
+        aurora3: {
+          '0%, 100%': { transform: 'translate(0%, 0%) scale(1)' },
+          '50%': { transform: 'translate(-8%, -12%) scale(1.1)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 1.4s ease-in-out infinite',
+        aurora1: 'aurora1 18s ease-in-out infinite',
+        aurora2: 'aurora2 22s ease-in-out infinite',
+        aurora3: 'aurora3 26s ease-in-out infinite',
       },
     },
   },

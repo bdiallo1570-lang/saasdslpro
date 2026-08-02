@@ -70,6 +70,7 @@ async function main() {
       addressZh: '广东省广州市越秀区环市中路207号恒生大厦C座705',
       addressFr:
         '705, Bloc C, Immeuble Hengsten, 207 Huanshi Middle Road, District de Yuexiu, Guangzhou, Province du Guangdong, Chine',
+      contactNumbersJson: { Man: '+8613246463616', Amadou: '+8617620097697', Luna: '' },
     },
     create: {
       id: 'seed-guangzhou',
@@ -77,7 +78,7 @@ async function main() {
       addressZh: '广东省广州市越秀区环市中路207号恒生大厦C座705',
       addressFr:
         '705, Bloc C, Immeuble Hengsten, 207 Huanshi Middle Road, District de Yuexiu, Guangzhou, Province du Guangdong, Chine',
-      contactNumbersJson: { Man: '', Amadou: '', Luna: '' },
+      contactNumbersJson: { Man: '+8613246463616', Amadou: '+8617620097697', Luna: '' },
       location: 'CHINE',
     },
   });

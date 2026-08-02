@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { Star, BadgeCheck } from 'lucide-react';
 import { StatCounter } from '@/ui';
+import { AuroraBackground } from './AuroraBackground';
+import { CursorSpotlight } from './CursorSpotlight';
 
 interface TestimonialsProps {
   isDark: boolean;
@@ -40,24 +42,10 @@ export function Testimonials({ isDark }: TestimonialsProps) {
         isDark ? 'bg-night-900' : 'bg-white'
       }`}
     >
-      {/* Skyline de Shanghai en toile de fond, très estompée — anime légèrement au scroll */}
-      <motion.div
-        initial={{ opacity: 0, scale: 1.08 }}
-        whileInView={{ opacity: isDark ? 0.14 : 0.08, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.8, ease: 'easeOut' }}
-        className="pointer-events-none absolute inset-0 bg-cover bg-center grayscale"
-        style={{ backgroundImage: "url('/images/backgrounds/shanghai-skyline.jpg')" }}
-      />
-      <div
-        className={`pointer-events-none absolute inset-0 ${
-          isDark
-            ? 'bg-gradient-to-b from-night-900 via-night-900/70 to-night-900'
-            : 'bg-gradient-to-b from-white via-white/80 to-white'
-        }`}
-      />
+      <AuroraBackground isDark={isDark} />
+      <CursorSpotlight isDark={isDark} />
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}

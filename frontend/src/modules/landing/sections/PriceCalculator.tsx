@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Package, ShieldAlert, MapPin } from 'lucide-react';
 import { simulatePrice, PriceSimulationResult } from '@/modules/colis/colis.api';
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
+import { AuroraBackground } from './AuroraBackground';
+import { CursorSpotlight } from './CursorSpotlight';
 
 interface PriceCalculatorProps {
   isDark: boolean;
@@ -14,12 +16,14 @@ const CATEGORIES = [
     label: 'Cargo Standard',
     price: '160 000 GNF/kg',
     icon: Package,
+    examples: 'Habits, chaussures, petits accessoires, jouets, vaisselle, articles ménagers…',
   },
   {
     value: 'RISQUE' as const,
     label: 'Cargo Sensible',
     price: '180 000 GNF/kg',
     icon: ShieldAlert,
+    examples: 'Batteries, liquides, produits électroniques, cosmétiques, produits inflammables…',
   },
 ];
 
@@ -56,24 +60,10 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
         isDark ? 'bg-night-800' : 'bg-slate-50'
       }`}
     >
-      {/* Avion cargo en arrière-plan, très estompé — renforce le thème fret aérien */}
-      <motion.div
-        initial={{ opacity: 0, scale: 1.1 }}
-        whileInView={{ opacity: isDark ? 0.12 : 0.06, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 2, ease: 'easeOut' }}
-        className="pointer-events-none absolute inset-0 bg-cover bg-top grayscale"
-        style={{ backgroundImage: "url('/images/backgrounds/avion-nez.jpg')" }}
-      />
-      <div
-        className={`pointer-events-none absolute inset-0 ${
-          isDark
-            ? 'bg-gradient-to-b from-night-800 via-night-800/60 to-night-800'
-            : 'bg-gradient-to-b from-slate-50 via-slate-50/70 to-slate-50'
-        }`}
-      />
+      <AuroraBackground isDark={isDark} />
+      <CursorSpotlight isDark={isDark} />
 
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -133,8 +123,11 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                       <p className={`mt-2 font-semibold text-sm ${isDark ? 'text-white' : 'text-night-900'}`}>
                         {cat.label}
                       </p>
-                      <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs mt-0.5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                         {cat.price}
+                      </p>
+                      <p className={`text-[11px] mt-1.5 leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {cat.examples}
                       </p>
                     </button>
                   );
