@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calculator, Package, Plane, CheckCircle2, Loader2 } from 'lucide-react';
 import { trackColisPublic, PublicTrackingResult } from '@/modules/colis/colis.api';
@@ -10,11 +10,41 @@ interface HeroProps {
   onSimulateClick: () => void;
 }
 
+// Phrases défilantes du Hero — chacune met en avant un point fort différent du service.
+const ROTATING_PHRASES = [
+  {
+    lead: 'La logistique Chine-Guinée, enfin',
+    highlight: 'simplifiée, rapide et transparente',
+  },
+  {
+    lead: 'Vos colis suivis en temps réel, de',
+    highlight: 'Guangzhou jusqu\'à Madina',
+  },
+  {
+    lead: 'Une tarification claire, sans surprise, dès',
+    highlight: '160 000 GNF par kilo',
+  },
+  {
+    lead: 'Suivi et notifications automatiques via',
+    highlight: 'WhatsApp, à chaque étape',
+  },
+];
+
+const PHRASE_INTERVAL_MS = 4200;
+
 export function Hero({ onSimulateClick }: HeroProps) {
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PublicTrackingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhraseIndex((i) => (i + 1) % ROTATING_PHRASES.length);
+    }, PHRASE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   async function handleTrack(e: FormEvent) {
     e.preventDefault();
@@ -37,55 +67,61 @@ export function Hero({ onSimulateClick }: HeroProps) {
       <HeroBackgroundSlideshow />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-24 sm:pt-24 sm:pb-32 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.6, rotate: -8 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-          className="mx-auto mb-5 h-36 w-36 sm:h-44 sm:w-44 rounded-full bg-white/95 p-3 shadow-glow-cargo"
-        >
-          <img
-            src="/images/backgrounds/dsl-logo.png"
-            alt="DSL Air Cargo"
-            className="h-full w-full object-contain mix-blend-multiply"
-          />
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="uppercase tracking-[0.25em] text-xs font-semibold mb-3 text-sky-300"
-        >
-          Fret aérien Chine → Guinée
-        </motion.p>
-
         <motion.h2
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.18 }}
-          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-lg mb-4"
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white drop-shadow-lg"
         >
           DSL Air Cargo
         </motion.h2>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className="text-xl sm:text-2xl md:text-3xl font-medium max-w-2xl mx-auto leading-snug tracking-tight text-slate-100 drop-shadow-lg"
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="uppercase tracking-[0.25em] text-xs sm:text-sm font-semibold mt-3 mb-8 text-sky-300"
         >
-          La logistique Chine-Guinée, enfin{' '}
-          <span className="bg-gradient-to-r from-sky-400 to-emerald-300 bg-clip-text text-transparent font-semibold">
-            simplifiée, rapide et transparente
-          </span>
-          .
-        </motion.h1>
+          Fret aérien Chine → Guinée
+        </motion.p>
+
+        {/* Phrase défilante — transition en fondu + glissement + léger flou pour un effet marquant */}
+        <div className="min-h-[4.5rem] sm:min-h-[3.5rem] flex items-center justify-center px-2">
+          <AnimatePresence mode="wait">
+            <motion.h1
+              key={phraseIndex}
+              initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -18, filter: 'blur(8px)' }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="text-xl sm:text-2xl md:text-3xl font-medium max-w-2xl mx-auto leading-snug tracking-tight text-slate-100 drop-shadow-lg"
+            >
+              {ROTATING_PHRASES[phraseIndex].lead}{' '}
+              <span className="bg-gradient-to-r from-sky-400 via-emerald-300 to-cargo-400 bg-clip-text text-transparent font-semibold">
+                {ROTATING_PHRASES[phraseIndex].highlight}
+              </span>
+              .
+            </motion.h1>
+          </AnimatePresence>
+        </div>
+
+        {/* Indicateurs de phrase */}
+        <div className="flex items-center justify-center gap-1.5 mt-4">
+          {ROTATING_PHRASES.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1 rounded-full transition-all duration-500 ${
+                i === phraseIndex ? 'w-6 bg-sky-400' : 'w-1.5 bg-white/25'
+              }`}
+            />
+          ))}
+        </div>
 
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-5 max-w-2xl mx-auto text-lg text-slate-200 drop-shadow"
+          className="mt-6 max-w-2xl mx-auto text-lg text-slate-200 drop-shadow"
         >
           Gérez vos expéditions de Guangzhou à Madina en temps réel. Suivi WhatsApp, tarification
           claire dès 160 000 GNF/kg et zéro frais cachés.

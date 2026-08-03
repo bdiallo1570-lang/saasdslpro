@@ -1,23 +1,19 @@
 import { Router } from 'express';
 import { requireAuth, requirePermission } from '@/middleware/auth';
+import { asyncHandler } from '@/lib/asyncHandler';
+import { getDashboardOverview } from './dashboard.service';
 
-// Démonstration Phase 1 : point d'entrée des dashboards par rôle.
-// Les données financières réelles (CA, marges) arriveront en Phase 4 ;
-// ici on ne fait que garantir le contrôle d'accès Admin-only.
+// Point d'entrée du Dashboard Financier Admin — vue d'ensemble transversale de l'activité
+// (colis en transit, lots actifs, CA encaissé, impayés, caisse du jour). Réservé à l'Admin
+// via la permission finance:read_margins (données financières sensibles).
 export const dashboardRouter = Router();
 
 dashboardRouter.get(
   '/financier',
   requireAuth,
   requirePermission('finance:read_margins'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: {
-        message: 'Dashboard financier — réservé au rôle Admin.',
-        // Placeholder : chiffres réels branchés en Phase 4 (module Dashboard).
-      },
-      error: null,
-    });
-  },
+  asyncHandler(async (_req, res) => {
+    const overview = await getDashboardOverview();
+    res.status(200).json({ success: true, data: overview, error: null });
+  }),
 );

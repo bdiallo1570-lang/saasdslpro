@@ -39,6 +39,11 @@ export async function getColisByTrackingId(trackingId: string): Promise<Colis> {
   return res.data.data!;
 }
 
+export async function listColis(params?: { lotId?: string; status?: string }): Promise<Colis[]> {
+  const res = await apiClient.get<ApiResponse<Colis[]>>('/colis', { params });
+  return res.data.data ?? [];
+}
+
 export interface PriceSimulationResult {
   poidsKg: number;
   categorieTarif: 'STANDARD' | 'RISQUE';

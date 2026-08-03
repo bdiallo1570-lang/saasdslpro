@@ -41,14 +41,14 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
       flag: '🇨🇳',
       country: 'Chine',
       fallbackName: 'Entrepôt Guangzhou',
-      photo: '/images/backgrounds/chargement-cargo-1.jpg',
+      photo: '/images/backgrounds/chargement-cargo-1.webp',
     },
     {
       warehouse: conakry,
       flag: '🇬🇳',
       country: 'Guinée',
       fallbackName: 'Entrepôt Conakry — Madina',
-      photo: '/images/backgrounds/chargement-cargo-2.jpg',
+      photo: '/images/backgrounds/chargement-cargo-2.webp',
     },
   ];
 
@@ -87,7 +87,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.45, delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className="relative overflow-hidden rounded-2xl border border-white/10 min-h-[420px] flex flex-col justify-end"
+              className="relative overflow-hidden rounded-2xl border border-white/10 min-h-[300px] sm:min-h-[420px] flex flex-col justify-end"
             >
               {/* Photo en fond plein cadre */}
               <motion.img
@@ -129,7 +129,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                         title="Copier l'adresse (中文)"
                       >
                         <Building2 size={15} className="mt-0.5 shrink-0 text-slate-300" />
-                        <p className="flex-1 text-sm text-slate-100 drop-shadow">
+                        <p className="flex-1 min-w-0 break-words text-sm text-slate-100 drop-shadow">
                           {card.warehouse.addressZh}
                         </p>
                         {copiedKey === `${card.country}-zh` ? (
@@ -150,7 +150,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                         title="Copier l'adresse"
                       >
                         <Building2 size={15} className="opacity-0 shrink-0" />
-                        <p className="flex-1 text-sm text-slate-200 drop-shadow">
+                        <p className="flex-1 min-w-0 break-words text-sm text-slate-200 drop-shadow">
                           {card.warehouse.addressFr}
                         </p>
                         {copiedKey === `${card.country}-fr` ? (

@@ -1,7 +1,6 @@
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useMemo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Package, ShieldAlert, MapPin } from 'lucide-react';
-import { simulatePrice, PriceSimulationResult } from '@/modules/colis/colis.api';
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
 import { AuroraBackground } from './AuroraBackground';
 import { CursorSpotlight } from './CursorSpotlight';
@@ -10,10 +9,14 @@ interface PriceCalculatorProps {
   isDark: boolean;
 }
 
+// Tarifs affichés publiquement sur la landing — calcul 100% local (aucun appel réseau),
+// pour un résultat instantané même sur une connexion mobile lente ou instable. Si les
+// tarifs changent, mettre à jour ces valeurs (déjà affichées en dur dans les cartes ci-dessous).
 const CATEGORIES = [
   {
     value: 'STANDARD' as const,
     label: 'Cargo Standard',
+    pricePerKg: 160000,
     price: '160 000 GNF/kg',
     icon: Package,
     examples: 'Habits, chaussures, petits accessoires, jouets, vaisselle, articles ménagers…',
@@ -21,6 +24,7 @@ const CATEGORIES = [
   {
     value: 'RISQUE' as const,
     label: 'Cargo Sensible',
+    pricePerKg: 180000,
     price: '180 000 GNF/kg',
     icon: ShieldAlert,
     examples: 'Batteries, liquides, produits électroniques, cosmétiques, produits inflammables…',
@@ -30,27 +34,13 @@ const CATEGORIES = [
 export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(({ isDark }, ref) => {
   const [categorie, setCategorie] = useState<'STANDARD' | 'RISQUE'>('STANDARD');
   const [poidsKg, setPoidsKg] = useState(5);
-  const [result, setResult] = useState<PriceSimulationResult | null>(null);
-  const [loading, setLoading] = useState(false);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (poidsKg <= 0) {
-      setResult(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      try {
-        setResult(await simulatePrice(categorie, poidsKg));
-      } catch {
-        setResult(null);
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [categorie, poidsKg]);
+  const selectedCategorie = CATEGORIES.find((c) => c.value === categorie)!;
+  const totalEstime = useMemo(
+    () => (poidsKg > 0 ? poidsKg * selectedCategorie.pricePerKg : 0),
+    [poidsKg, selectedCategorie],
+  );
 
   return (
     <section
@@ -183,16 +173,12 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                   Prix total estimé
                 </p>
                 <p className={`mt-2 text-4xl font-extrabold ${isDark ? 'text-white' : 'text-night-900'}`}>
-                  {loading
-                    ? '…'
-                    : result
-                      ? `${Math.round(result.totalEstime).toLocaleString('fr-FR')}`
-                      : '—'}
+                  {poidsKg > 0 ? Math.round(totalEstime).toLocaleString('fr-FR') : '—'}
                   <span className="text-lg font-semibold ml-1">GNF</span>
                 </p>
-                {result && (
+                {poidsKg > 0 && (
                   <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {poidsKg} kg × {Number(result.pricePerKg).toLocaleString('fr-FR')} GNF/kg
+                    {poidsKg} kg × {selectedCategorie.pricePerKg.toLocaleString('fr-FR')} GNF/kg
                   </p>
                 )}
               </div>

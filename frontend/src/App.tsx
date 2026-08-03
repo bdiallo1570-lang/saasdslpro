@@ -8,9 +8,11 @@ import HomePage from '@/modules/auth/pages/HomePage';
 import LoginPage from '@/modules/auth/pages/LoginPage';
 import ResetPasswordPage from '@/modules/auth/pages/ResetPasswordPage';
 import AccessDeniedPage from '@/modules/auth/pages/AccessDeniedPage';
-import { PlaceholderPage } from '@/modules/dashboard/pages/PlaceholderPage';
+import DashboardFinancierPage from '@/modules/dashboard/pages/DashboardFinancierPage';
 import ReceptionPage from '@/modules/colis/pages/ReceptionPage';
+import ReceptionConsultationPage from '@/modules/colis/pages/ReceptionConsultationPage';
 import CaisseHubPage from '@/modules/caisse/pages/CaisseHubPage';
+import CaisseConsultationPage from '@/modules/caisse/pages/CaisseConsultationPage';
 import LotsListPage from '@/modules/lots/pages/LotsListPage';
 import LotDetailPage from '@/modules/lots/pages/LotDetailPage';
 import PortailClientPage from '@/modules/simulator/pages/PortailClientPage';
@@ -29,16 +31,10 @@ export default function App() {
             <Route path="/acces-refuse" element={<AccessDeniedPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN]} />}>
-              <Route
-                path="/dashboard/financier"
-                element={
-                  <PlaceholderPage
-                    title="Dashboard Financier"
-                    description="CA par période, marges, impayés — réservé à l'Admin."
-                  />
-                }
-              />
+              <Route path="/dashboard/financier" element={<DashboardFinancierPage />} />
               <Route path="/creances" element={<CreancesDashboardPage />} />
+              <Route path="/caisse/consultation" element={<CaisseConsultationPage />} />
+              <Route path="/reception/consultation" element={<ReceptionConsultationPage />} />
             </Route>
 
             <Route

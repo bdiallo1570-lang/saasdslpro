@@ -16,7 +16,11 @@ export default function HomePage() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-night-900' : 'bg-white'}`}>
+    <div
+      className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${
+        isDark ? 'bg-night-900' : 'bg-white'
+      }`}
+    >
       <Navbar isDark={isDark} onToggleTheme={toggle} />
       <Hero onSimulateClick={scrollToCalculator} />
       <PriceCalculator isDark={isDark} ref={calculatorRef} />

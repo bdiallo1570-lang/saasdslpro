@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Diaporama de fond du Hero — fondu croisé automatique, toujours voilé par un dégradé
 // sombre pour garder le texte parfaitement lisible par-dessus (WCAG-friendly).
 const SLIDES = [
-  '/images/backgrounds/avion-nez.jpg',
-  '/images/backgrounds/grande-muraille.jpg',
-  '/images/backgrounds/shanghai-skyline.jpg',
+  '/images/backgrounds/avion-nez.webp',
+  '/images/backgrounds/grande-muraille.webp',
+  '/images/backgrounds/shanghai-skyline.webp',
 ];
 
 const INTERVAL_MS = 5500;

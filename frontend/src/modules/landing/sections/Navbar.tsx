@@ -37,9 +37,9 @@ export function Navbar({ isDark, onToggleTheme }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
-            src="/images/backgrounds/dsl-logo.png"
+            src="/images/backgrounds/dsl-logo-200.png"
             alt="DSL Air Cargo"
-            className="h-11 w-11 rounded-xl object-cover shadow-glow-cargo shrink-0"
+            className="h-11 w-11 rounded-full object-cover shadow-glow-cargo shrink-0"
           />
           <div className="flex items-center gap-2">
             <span className={`font-semibold ${isDark ? 'text-white' : 'text-night-900'}`}>

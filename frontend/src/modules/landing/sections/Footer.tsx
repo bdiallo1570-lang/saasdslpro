@@ -32,9 +32,9 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <img
-                src="/images/backgrounds/dsl-logo.png"
+                src="/images/backgrounds/dsl-logo-200.png"
                 alt="DSL Air Cargo"
-                className="h-9 w-9 rounded-lg object-cover"
+                className="h-9 w-9 rounded-full object-cover"
               />
               <span className={`font-semibold ${isDark ? 'text-white' : 'text-night-900'}`}>
                 DSL Air Cargo

@@ -34,6 +34,11 @@ export async function getOpenClosure(currency = 'GNF'): Promise<CashRegisterClos
   return res.data.data;
 }
 
+export async function listClosures(): Promise<CashRegisterClosure[]> {
+  const res = await apiClient.get<ApiResponse<CashRegisterClosure[]>>('/caisse');
+  return res.data.data ?? [];
+}
+
 export async function openClosure(
   currency: string,
   fondOuverture: number,
