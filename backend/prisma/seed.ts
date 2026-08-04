@@ -156,6 +156,165 @@ async function main() {
     });
   }
 
+  const agentChine = await prisma.user.findUnique({ where: { phoneNumber: '+8613800000002' } });
+  const agentGuinee = await prisma.user.findUnique({ where: { phoneNumber: '+224600000003' } });
+
+  console.log('Seed : clients de démonstration...');
+  const demoClients = [
+    { clientCode: 'DSL-201', fullName: 'Mamadou Diallo', phoneGn: '+224622111111', phoneWhatsapp: '+224622111111' },
+    { clientCode: 'DSL-202', fullName: 'Fatoumata Camara', phoneGn: '+224622222222', phoneWhatsapp: '+224622222222' },
+    { clientCode: 'DSL-203', fullName: 'Ibrahima Sow', phoneGn: '+224622333333', phoneWhatsapp: '+224622333333' },
+  ];
+  const clients = await Promise.all(
+    demoClients.map((c) =>
+      prisma.client.upsert({
+        where: { clientCode: c.clientCode },
+        update: {},
+        create: c,
+      }),
+    ),
+  );
+
+  console.log('Seed : module Agent Guinée (lot, colis, dépenses, paiements)...');
+  const standardRule = await prisma.pricingRule.findUniqueOrThrow({ where: { id: 'seed-standard' } });
+
+  const lot = await prisma.lot.upsert({
+    where: { lotNumber: 'DSL-2026-90001' },
+    update: {},
+    create: {
+      lotNumber: 'DSL-2026-90001',
+      flightNumber: 'CA987',
+      status: 'EN_ENTREPOT',
+    },
+  });
+
+  // 6 colis répartis sur 3 clients (2 chacun) — poids réel identique pour simplifier le seed.
+  const colisSpecs = [
+    { client: clients[0], desc: 'Vêtements et chaussures', poids: 20 },
+    { client: clients[0], desc: 'Électroménager léger', poids: 15 },
+    { client: clients[1], desc: 'Pièces détachées auto', poids: 30 },
+    { client: clients[1], desc: 'Cosmétiques', poids: 10 },
+    { client: clients[2], desc: 'Jouets et accessoires', poids: 12 },
+    { client: clients[2], desc: 'Matériel informatique', poids: 8 },
+  ];
+
+  const colisCrees = [];
+  for (let i = 0; i < colisSpecs.length; i++) {
+    const spec = colisSpecs[i];
+    const trackingId = `DSL-2026-9${String(i + 1).padStart(4, '0')}`;
+    const montantEstime = spec.poids * Number(standardRule.pricePerKg);
+
+    const colis = await prisma.colis.upsert({
+      where: { trackingId },
+      update: {},
+      create: {
+        trackingId,
+        clientId: spec.client.id,
+        lotId: lot.id,
+        description: spec.desc,
+        poidsReelKg: spec.poids,
+        poidsVolumetriqueKg: 0,
+        poidsTaxableKg: spec.poids,
+        categorieTarif: 'STANDARD',
+        pricingRuleId: standardRule.id,
+        montantEstime,
+        currency: 'GNF',
+        status: 'DISPONIBLE_ENTREPOT',
+        createdByUserId: agentChine?.id,
+      },
+    });
+    colisCrees.push(colis);
+  }
+
+  // Facturation mono-colis (comme le ferait ensureFactureForColis en conditions réelles).
+  const facturesCrees = [];
+  for (const colis of colisCrees) {
+    const existing = await prisma.colis.findUnique({ where: { id: colis.id } });
+    if (existing?.factureId) {
+      facturesCrees.push(await prisma.facture.findUniqueOrThrow({ where: { id: existing.factureId } }));
+      continue;
+    }
+    const factureNumber = `FAC-2026-9${String(facturesCrees.length + 1).padStart(4, '0')}`;
+    const facture = await prisma.facture.upsert({
+      where: { factureNumber },
+      update: {},
+      create: {
+        factureNumber,
+        clientId: colis.clientId,
+        montantTotal: colis.montantEstime,
+        currency: colis.currency,
+        status: 'IMPAYE',
+      },
+    });
+    await prisma.colis.update({ where: { id: colis.id }, data: { factureId: facture.id } });
+    facturesCrees.push(facture);
+  }
+
+  // 5 paiements dont 2 partiels — colis[0] soldé, colis[1] soldé, colis[2] partiel,
+  // colis[3] partiel, colis[4] impayé (aucun paiement), colis[5] impayé.
+  if (agentGuinee) {
+    const paiementsSpecs = [
+      { colisIndex: 0, montant: Number(facturesCrees[0].montantTotal) },
+      { colisIndex: 1, montant: Number(facturesCrees[1].montantTotal) },
+      { colisIndex: 2, montant: Number(facturesCrees[2].montantTotal) * 0.5 },
+      { colisIndex: 3, montant: Number(facturesCrees[3].montantTotal) * 0.3 },
+      { colisIndex: 3, montant: Number(facturesCrees[3].montantTotal) * 0.2 },
+    ];
+
+    for (const p of paiementsSpecs) {
+      const facture = facturesCrees[p.colisIndex];
+      const paiementsExistants = await prisma.paiement.findMany({ where: { factureId: facture.id } });
+      const dejaPayeGnf = paiementsExistants.reduce((s, pay) => s + Number(pay.montant) * Number(pay.tauxVersGnf), 0);
+      if (dejaPayeGnf >= Number(facture.montantTotal)) continue;
+
+      await prisma.paiement.create({
+        data: {
+          factureId: facture.id,
+          montant: p.montant,
+          currency: 'GNF',
+          tauxVersGnf: 1,
+          method: 'ESPECES',
+          receivedByUserId: agentGuinee.id,
+        },
+      });
+
+      const totalPayeGnf = dejaPayeGnf + p.montant;
+      const nouveauStatut =
+        totalPayeGnf >= Number(facture.montantTotal) ? 'PAYE' : totalPayeGnf > 0 ? 'PARTIEL' : 'IMPAYE';
+      await prisma.facture.update({ where: { id: facture.id }, data: { status: nouveauStatut } });
+      await prisma.client.update({
+        where: { id: facture.clientId },
+        data: { totalSpent: { increment: p.montant }, outstandingBalance: { decrement: p.montant } },
+      });
+    }
+
+    // 4 dépenses de lot : dédouanement, transport aéroport→Madina, manutention, stockage.
+    const depensesSpecs = [
+      { categorie: 'DEDOUANEMENT' as const, libelle: 'Frais de douane aéroport Conakry', montant: 800000 },
+      { categorie: 'TRANSPORT_AEROPORT_MADINA' as const, libelle: 'Transport camion aéroport → Madina', montant: 350000 },
+      { categorie: 'MANUTENTION' as const, libelle: "Déchargement et main d'œuvre", montant: 150000 },
+      { categorie: 'STOCKAGE' as const, libelle: 'Magasinage aéroport (3 jours)', montant: 200000 },
+    ];
+    for (const d of depensesSpecs) {
+      await prisma.depenseLot.upsert({
+        where: { id: `seed-depense-${d.categorie.toLowerCase()}` },
+        update: {},
+        create: {
+          id: `seed-depense-${d.categorie.toLowerCase()}`,
+          lotId: lot.id,
+          categorie: d.categorie,
+          libelle: d.libelle,
+          montant: d.montant,
+          currency: 'GNF',
+          tauxVersGnf: 1,
+          montantGnf: d.montant,
+          dateDepense: new Date(),
+          saisiParUserId: agentGuinee.id,
+        },
+      });
+    }
+  }
+
   console.log('Seed terminé avec succès.');
   console.log('Comptes de démonstration (mot de passe : ChangeMoi123!) :');
   demoUsers.forEach((u) => console.log(`  - ${u.roleName}: ${u.phoneNumber} / ${u.email}`));

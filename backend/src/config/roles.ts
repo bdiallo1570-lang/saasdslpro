@@ -31,11 +31,17 @@ export const DEFAULT_PERMISSIONS: Record<RoleName, Record<string, boolean>> = {
     'clients:write': true,
     'colis:read': true,
     'colis:write': true,
+    'colis:read_pricing': true,
+    'colis:read_discrepancy_alerts': true,
     'lots:read': true,
     'lots:write': true,
     'lots:update_status': true,
+    'lots:read_costs': true,
+    'lots:write_costs': true,
+    'lots:delete_costs': true,
     'factures:read': true,
     'factures:write': true,
+    'paiements:write': true,
     'caisse:read': true,
     'caisse:write': true,
     'entrepot:read': true,
@@ -47,6 +53,10 @@ export const DEFAULT_PERMISSIONS: Record<RoleName, Record<string, boolean>> = {
     'livraison:deblocage_force': true,
     'whatsapp:send': true,
   },
+  // Agent Chine : ne voit ni prix de vente, ni marges, ni données de facturation client
+  // (pas de colis:read_pricing, pas de factures:read) — restriction de sécurité corridor Chine→Guinée.
+  // audit:read accordée pour le fil d'actualité transversal (le controller audit filtre déjà les
+  // métadonnées exposées, aucun prix/marge n'y transite — cohérent avec la restriction ci-dessus).
   [ROLE_NAMES.AGENT_CHINE]: {
     'clients:read': true,
     'clients:write': true,
@@ -55,22 +65,35 @@ export const DEFAULT_PERMISSIONS: Record<RoleName, Record<string, boolean>> = {
     'lots:read': true,
     'lots:write': true,
     'lots:update_status': true,
+    'audit:read': true,
   },
+  // Agent Guinée : ne peut jamais modifier le poids saisi en Chine, seulement signaler un écart constaté.
+  // colis:read_pricing accordée (contrairement à l'Agent Chine) — l'Agent Guinée gère l'encaissement
+  // et doit voir montant dû/payé/reste par colis pour le module Dépenses/Paiements/Rentabilité.
   [ROLE_NAMES.AGENT_GUINEE]: {
     'clients:read': true,
     'colis:read': true,
+    'colis:read_pricing': true,
+    'colis:report_weight_discrepancy': true,
     'entrepot:read': true,
     'entrepot:write': true,
     'lots:read': true,
     'lots:update_status': true,
+    'lots:read_costs': true,
+    'lots:write_costs': true,
+    'finance:read_margins': true,
     'factures:read': true,
+    'paiements:write': true,
     'caisse:read': true,
     'caisse:write': true,
     'whatsapp:send': true,
+    'audit:read': true,
   },
   [ROLE_NAMES.CAISSIER]: {
     'clients:read': true,
     'factures:read': true,
+    'colis:read_pricing': true,
+    'paiements:write': true,
     'caisse:read': true,
     'caisse:write': true,
     'whatsapp:send': true,

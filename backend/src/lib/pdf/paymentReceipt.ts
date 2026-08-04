@@ -52,8 +52,12 @@ function formatMethod(method: string) {
       return 'Espèces';
     case 'ORANGE_MONEY':
       return 'Orange Money';
+    case 'MTN_MOMO':
+      return 'MTN Mobile Money';
     case 'VIREMENT':
-      return 'Virement';
+      return 'Virement bancaire';
+    case 'AUTRE':
+      return 'Autre';
     default:
       return method;
   }

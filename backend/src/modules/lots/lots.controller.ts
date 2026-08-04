@@ -6,6 +6,7 @@ import {
   assignColisToLotSchema,
   updateLotStatusSchema,
 } from './lots.schema';
+import { presentColis, canReadPricing } from '@/modules/colis/colis.presenter';
 
 function handleError(res: Response, error: unknown) {
   if (error instanceof lotsService.LotError) {
@@ -13,6 +14,18 @@ function handleError(res: Response, error: unknown) {
   }
   console.error(error);
   return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
+}
+
+// Le détail de lot embarque les colis (avec client) — l'Agent Chine a lots:read mais ne
+// doit pas voir les montants ; on remappe les colis imbriqués via le presenter colis, et
+// on retire le taux de change figé (donnée financière, Phase 3) pour les rôles sans pricing.
+function presentLot<T extends { colis: unknown[]; tauxVersGnfFige?: unknown }>(lot: T, roleName: string) {
+  const colis = lot.colis.map((c) => presentColis(c as Parameters<typeof presentColis>[0], roleName));
+  if (canReadPricing(roleName)) {
+    return { ...lot, colis };
+  }
+  const { tauxVersGnfFige, tauxDeviseOrigine, ...rest } = lot as Record<string, unknown>;
+  return { ...rest, colis };
 }
 
 export async function createLotHandler(req: Request, res: Response) {
@@ -34,7 +47,7 @@ export async function getLotHandler(req: Request, res: Response) {
   if (!lot) {
     return res.status(404).json({ success: false, data: null, error: 'Lot introuvable.' });
   }
-  return res.status(200).json({ success: true, data: lot, error: null });
+  return res.status(200).json({ success: true, data: presentLot(lot, req.user!.roleName), error: null });
 }
 
 export async function assignColisHandler(req: Request, res: Response) {
@@ -44,7 +57,10 @@ export async function assignColisHandler(req: Request, res: Response) {
   }
   try {
     const lot = await lotsService.assignColisToLot(req.params.id, parsed.data.colisIds);
-    return res.status(200).json({ success: true, data: lot, error: null });
+    if (!lot) {
+      return res.status(404).json({ success: false, data: null, error: 'Lot introuvable.' });
+    }
+    return res.status(200).json({ success: true, data: presentLot(lot, req.user!.roleName), error: null });
   } catch (error) {
     return handleError(res, error);
   }

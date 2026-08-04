@@ -20,3 +20,22 @@ export const priceSimulationSchema = z.object({
   categorieTarif: z.enum(['STANDARD', 'RISQUE']),
   poidsKg: z.coerce.number().positive('Le poids doit être supérieur à 0.'),
 });
+
+export const reportWeightDiscrepancySchema = z.object({
+  poidsGuineeKg: z.coerce.number().positive('Le poids constaté doit être supérieur à 0.'),
+});
+
+export const resolveDiscrepancySchema = z.object({
+  resolutionNote: z.string().trim().optional(),
+});
+
+export const updateColisStatusSchema = z.object({
+  status: z.enum([
+    'ENREGISTRE',
+    'ASSIGNE_LOT',
+    'ENVOLE',
+    'ARRIVE',
+    'EN_DEDOUANEMENT',
+    'DISPONIBLE_ENTREPOT',
+  ]),
+});

@@ -19,6 +19,9 @@ export interface Lot {
   customsCost: string | null;
   freightCost: string | null;
   status: LotStatus;
+  // Absents pour l'Agent Chine (donnée financière — voir backend lots.controller.ts presentLot).
+  tauxVersGnfFige?: string | null;
+  tauxDeviseOrigine?: string | null;
   _count?: { colis: number };
   colis?: Colis[];
 }

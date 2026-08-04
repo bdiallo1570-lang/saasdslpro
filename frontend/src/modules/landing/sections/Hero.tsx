@@ -18,7 +18,7 @@ const ROTATING_PHRASES = [
   },
   {
     lead: 'Vos colis suivis en temps réel, de',
-    highlight: 'Guangzhou jusqu\'à Madina',
+    highlight: 'Guangzhou jusqu\'à Conakry',
   },
   {
     lead: 'Une tarification claire, sans surprise, dès',
@@ -123,7 +123,7 @@ export function Hero({ onSimulateClick }: HeroProps) {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-6 max-w-2xl mx-auto text-lg text-slate-200 drop-shadow"
         >
-          Gérez vos expéditions de Guangzhou à Madina en temps réel. Suivi WhatsApp, tarification
+          Gérez vos expéditions de Guangzhou à Conakry en temps réel. Suivi WhatsApp, tarification
           claire dès 160 000 GNF/kg et zéro frais cachés.
         </motion.p>
 
@@ -142,7 +142,7 @@ export function Hero({ onSimulateClick }: HeroProps) {
                 value={trackingId}
                 onChange={(e) => setTrackingId(e.target.value)}
                 placeholder="Entrez votre Tracking ID (ex : DSL-2026-00042)"
-                className="w-full rounded-xl border border-white/20 bg-night-900/60 pl-9 pr-3 py-3 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400/50 transition-colors"
+                className="w-full rounded-xl border border-white/20 bg-night-900/60 pl-9 pr-3 py-3 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400/50 transition-all duration-200 focus:scale-[1.01]"
               />
             </div>
             <motion.button
@@ -172,9 +172,11 @@ export function Hero({ onSimulateClick }: HeroProps) {
         <AnimatePresence>
           {(result || error) && (
             <motion.div
+              layout
               initial={{ opacity: 0, height: 0, y: -8 }}
               animate={{ opacity: 1, height: 'auto', y: 0 }}
               exit={{ opacity: 0, height: 0, y: -8 }}
+              transition={{ layout: { duration: 0.35, ease: 'easeOut' } }}
               className="mt-4 max-w-2xl mx-auto overflow-hidden"
             >
               {error ? (
@@ -229,22 +231,39 @@ export function Hero({ onSimulateClick }: HeroProps) {
               <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
               <span className="ml-2 text-xs font-medium text-slate-400">Dashboard DSL Air Cargo</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.6 } } }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+            >
               {[
                 { label: 'Colis en transit', value: '128' },
                 { label: 'Lots actifs', value: '9' },
                 { label: 'Kg expédiés (mois)', value: '3 240' },
                 { label: 'Livraisons à temps', value: '99%' },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-xl border border-white/5 bg-night-800/60 p-4 text-left">
+                <motion.div
+                  key={stat.label}
+                  variants={{
+                    hidden: { opacity: 0, y: 14, scale: 0.96 },
+                    show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } },
+                  }}
+                  whileHover={{ y: -3, borderColor: 'rgba(255,255,255,0.15)' }}
+                  className="rounded-xl border border-white/5 bg-night-800/60 p-4 text-left transition-colors"
+                >
                   <p className="text-2xl font-bold text-white">{stat.value}</p>
                   <p className="text-xs mt-1 text-slate-400">{stat.label}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
-          {/* Ombre portée décorative */}
-          <div className="absolute -inset-4 -z-10 rounded-3xl blur-2xl bg-sky-500/10" />
+          {/* Ombre portée décorative — légère pulsation pour un rendu plus vivant */}
+          <motion.div
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute -inset-4 -z-10 rounded-3xl blur-2xl bg-sky-500/10"
+          />
         </motion.div>
       </div>
     </section>

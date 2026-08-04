@@ -11,12 +11,15 @@ import AccessDeniedPage from '@/modules/auth/pages/AccessDeniedPage';
 import DashboardFinancierPage from '@/modules/dashboard/pages/DashboardFinancierPage';
 import ReceptionPage from '@/modules/colis/pages/ReceptionPage';
 import ReceptionConsultationPage from '@/modules/colis/pages/ReceptionConsultationPage';
+import EcartsPoidsPage from '@/modules/colis/pages/EcartsPoidsPage';
+import ExchangeRatesPage from '@/modules/exchangeRates/pages/ExchangeRatesPage';
 import CaisseHubPage from '@/modules/caisse/pages/CaisseHubPage';
 import CaisseConsultationPage from '@/modules/caisse/pages/CaisseConsultationPage';
 import LotsListPage from '@/modules/lots/pages/LotsListPage';
 import LotDetailPage from '@/modules/lots/pages/LotDetailPage';
 import PortailClientPage from '@/modules/simulator/pages/PortailClientPage';
 import CreancesDashboardPage from '@/modules/creances/pages/CreancesDashboardPage';
+import AlertesPage from '@/modules/alertes/pages/AlertesPage';
 
 export default function App() {
   return (
@@ -32,9 +35,19 @@ export default function App() {
 
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN]} />}>
               <Route path="/dashboard/financier" element={<DashboardFinancierPage />} />
-              <Route path="/creances" element={<CreancesDashboardPage />} />
               <Route path="/caisse/consultation" element={<CaisseConsultationPage />} />
               <Route path="/reception/consultation" element={<ReceptionConsultationPage />} />
+              <Route path="/ecarts-poids" element={<EcartsPoidsPage />} />
+              <Route path="/parametres/taux-change" element={<ExchangeRatesPage />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE]} />
+              }
+            >
+              <Route path="/creances" element={<CreancesDashboardPage />} />
+              <Route path="/alertes" element={<AlertesPage />} />
             </Route>
 
             <Route
@@ -48,7 +61,7 @@ export default function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE]}
+                  allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE, ROLE_NAMES.AGENT_GUINEE]}
                 />
               }
             >

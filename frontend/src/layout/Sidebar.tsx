@@ -1,16 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { NAV_ITEMS } from './navConfig';
 import { NavIcon } from './NavIcon';
+import { listAlertes } from '@/modules/alertes/alertes.api';
+import { ROLE_NAMES } from '@/lib/roles';
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [alertesCritiquesCount, setAlertesCritiquesCount] = useState(0);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  // Compteur d'alertes critiques — chargé une fois au montage (pas de polling agressif),
+  // pour les rôles ayant accès à /alertes uniquement.
+  useEffect(() => {
+    if (user?.role === ROLE_NAMES.ADMIN || user?.role === ROLE_NAMES.AGENT_GUINEE) {
+      listAlertes({ niveau: 'CRITIQUE' })
+        .then((alertes) => setAlertesCritiquesCount(alertes.length))
+        .catch(() => setAlertesCritiquesCount(0));
+    }
+  }, [user?.role]);
 
   const items = NAV_ITEMS.filter((item) => user && item.roles.includes(user.role));
 
@@ -59,7 +72,14 @@ export function Sidebar() {
                     className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-sky-500"
                   />
                 )}
-                <NavIcon icon={item.icon} className="w-5 h-5 shrink-0" />
+                <span className="relative shrink-0">
+                  <NavIcon icon={item.icon} className="w-5 h-5" />
+                  {item.to === '/alertes' && alertesCritiquesCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                      {alertesCritiquesCount}
+                    </span>
+                  )}
+                </span>
                 <AnimatePresence>
                   {!collapsed && (
                     <motion.span

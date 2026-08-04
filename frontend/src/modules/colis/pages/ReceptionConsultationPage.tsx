@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import Fuse from 'fuse.js';
 import { listColis, Colis } from '../colis.api';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { AppShell } from '@/layout/AppShell';
-import { PageHeader, Card, Badge } from '@/ui';
+import { PageHeader, Card, Badge, Input } from '@/ui';
 
 const STATUS_TONE: Record<string, 'sky' | 'cargo' | 'green' | 'amber' | 'red' | 'slate'> = {
   ENREGISTRE: 'slate',
@@ -29,6 +30,7 @@ const listItem = {
 export default function ReceptionConsultationPage() {
   const [colis, setColis] = useState<Colis[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -43,6 +45,21 @@ export default function ReceptionConsultationPage() {
     refresh();
   }, [refresh]);
 
+  const fuse = useMemo(
+    () =>
+      new Fuse(colis, {
+        keys: ['trackingId', 'client.fullName', 'client.phoneGn', 'client.phoneWhatsapp'],
+        threshold: 0.35,
+        ignoreLocation: true,
+      }),
+    [colis],
+  );
+
+  const filteredColis = useMemo(
+    () => (query.trim() ? fuse.search(query.trim()).map((r) => r.item) : colis),
+    [query, fuse, colis],
+  );
+
   return (
     <AppShell>
       <PageHeader
@@ -51,15 +68,23 @@ export default function ReceptionConsultationPage() {
       />
 
       <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-night-700">
-          <h2 className="font-medium text-night-800 dark:text-slate-100">Colis ({colis.length})</h2>
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-night-700 space-y-3">
+          <h2 className="font-medium text-night-800 dark:text-slate-100">
+            Colis ({filteredColis.length})
+          </h2>
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher par N° de suivi, Nom client, ou Téléphone..."
+          />
         </div>
 
         {loading ? (
           <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
-        ) : colis.length === 0 ? (
+        ) : filteredColis.length === 0 ? (
           <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
-            Aucun colis enregistré pour le moment.
+            {query.trim() ? 'Aucun colis ne correspond à cette recherche.' : 'Aucun colis enregistré pour le moment.'}
           </p>
         ) : (
           <motion.div
@@ -68,7 +93,7 @@ export default function ReceptionConsultationPage() {
             animate="show"
             className="divide-y divide-slate-100 dark:divide-night-700 max-h-[32rem] overflow-y-auto"
           >
-            {colis.map((c) => (
+            {filteredColis.map((c) => (
               <motion.div
                 key={c.id}
                 variants={listItem}
@@ -85,9 +110,11 @@ export default function ReceptionConsultationPage() {
                 <Badge tone={STATUS_TONE[c.status] ?? 'slate'}>
                   {COLIS_STATUS_LABELS[c.status] ?? c.status}
                 </Badge>
-                <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
-                  {Number(c.montantEstime).toLocaleString('fr-FR')} {c.currency}
-                </p>
+                {c.montantEstime !== undefined && (
+                  <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
+                    {Number(c.montantEstime).toLocaleString('fr-FR')} {c.currency}
+                  </p>
+                )}
               </motion.div>
             ))}
           </motion.div>

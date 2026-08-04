@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
+import { canReadPricing } from './colis.presenter';
 
 // Scan QR à l'arrivée entrepôt Madina (Agent Guinée) : identifie le colis et vérifie
 // si sa facture est payée. Règle 3.4 GEMINI.md : un colis ne peut pas être livré tant
@@ -22,6 +23,10 @@ export async function scanColisHandler(req: Request, res: Response) {
   const livraisonDebloqueeManuel = colis.facture?.livraisonDebloqueeManuel ?? false;
   const livraisonAutorisee = !colis.facture || estPaye || livraisonDebloqueeManuel;
 
+  // Agent Guinée : ne voit ni montant/devise du colis, ni créance client, ni montant de
+  // facture — seulement les booléens dérivés nécessaires au verrou de livraison (règle 3.4).
+  const canSeePricing = canReadPricing(req.user!.roleName);
+
   return res.status(200).json({
     success: true,
     data: {
@@ -30,14 +35,13 @@ export async function scanColisHandler(req: Request, res: Response) {
         description: colis.description,
         poidsReelKg: colis.poidsReelKg,
         status: colis.status,
-        montantEstime: colis.montantEstime,
-        currency: colis.currency,
+        ...(canSeePricing ? { montantEstime: colis.montantEstime, currency: colis.currency } : {}),
       },
       client: {
         id: colis.client.id,
         clientCode: colis.client.clientCode,
         fullName: colis.client.fullName,
-        outstandingBalance: colis.client.outstandingBalance,
+        ...(canSeePricing ? { outstandingBalance: colis.client.outstandingBalance } : {}),
       },
       lot: colis.lot ? { lotNumber: colis.lot.lotNumber, status: colis.lot.status } : null,
       facture: colis.facture
@@ -45,7 +49,7 @@ export async function scanColisHandler(req: Request, res: Response) {
             id: colis.facture.id,
             factureNumber: colis.facture.factureNumber,
             status: colis.facture.status,
-            montantTotal: colis.facture.montantTotal,
+            ...(canSeePricing ? { montantTotal: colis.facture.montantTotal } : {}),
             livraisonDebloqueeManuel,
           }
         : null,

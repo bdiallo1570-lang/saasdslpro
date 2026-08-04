@@ -1,16 +1,19 @@
 import { prisma } from '@/lib/prisma';
+import { getSeuilsAlertes } from '@/lib/settings';
 
 // Ancienneté d'une créance = jours écoulés depuis la création de la facture impayée
-// la plus ancienne du client. Seuils règle métier : < 7j, 8-30j, > 30j (rouge).
+// la plus ancienne du client. Seuil "risque élevé" configurable (jours_avant_alerte_creance,
+// défaut 7j) — le palier "moyen" reste fixé à 30j (pas de Setting dédié demandé pour celui-ci).
 export type RiskTier = 'FAIBLE' | 'MOYEN' | 'ELEVE';
 
-function computeRiskTier(ageDays: number): RiskTier {
-  if (ageDays <= 7) return 'FAIBLE';
+function computeRiskTier(ageDays: number, seuilJours: number): RiskTier {
+  if (ageDays <= seuilJours) return 'FAIBLE';
   if (ageDays <= 30) return 'MOYEN';
   return 'ELEVE';
 }
 
 export async function getCreancesKpis() {
+  const seuils = await getSeuilsAlertes();
   const facturesImpayees = await prisma.facture.findMany({
     where: { status: { in: ['IMPAYE', 'PARTIEL'] }, deletedAt: null },
     include: { client: true, paiements: { where: { deletedAt: null } } },
@@ -25,7 +28,7 @@ export async function getCreancesKpis() {
     facturesImpayees
       .filter((f) => {
         const ageDays = Math.floor((Date.now() - f.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-        return computeRiskTier(ageDays) === 'ELEVE';
+        return computeRiskTier(ageDays, seuils.joursAvantAlerteCreance) === 'ELEVE';
       })
       .map((f) => f.clientId),
   ).size;
@@ -41,6 +44,7 @@ export async function getCreancesKpis() {
 }
 
 export async function listClientsDebiteurs() {
+  const seuils = await getSeuilsAlertes();
   const facturesImpayees = await prisma.facture.findMany({
     where: { status: { in: ['IMPAYE', 'PARTIEL'] }, deletedAt: null },
     include: { client: true, paiements: { where: { deletedAt: null } } },
@@ -52,8 +56,10 @@ export async function listClientsDebiteurs() {
     {
       client: (typeof facturesImpayees)[number]['client'];
       soldeDu: number;
+      montantPayeTotal: number;
       ancienneteJours: number;
-      nombreFactures: number;
+      // Avec la facturation auto 1 colis = 1 facture, une facture impayée = un colis en attente.
+      nombreColisEnAttente: number;
       aPaiementPartiel: boolean;
     }
   >();
@@ -66,15 +72,17 @@ export async function listClientsDebiteurs() {
     const existing = byClient.get(f.clientId);
     if (existing) {
       existing.soldeDu += soldeDu;
+      existing.montantPayeTotal += paye;
       existing.ancienneteJours = Math.max(existing.ancienneteJours, ageDays);
-      existing.nombreFactures += 1;
+      existing.nombreColisEnAttente += 1;
       existing.aPaiementPartiel = existing.aPaiementPartiel || f.status === 'PARTIEL';
     } else {
       byClient.set(f.clientId, {
         client: f.client,
         soldeDu,
+        montantPayeTotal: paye,
         ancienneteJours: ageDays,
-        nombreFactures: 1,
+        nombreColisEnAttente: 1,
         aPaiementPartiel: f.status === 'PARTIEL',
       });
     }
@@ -88,12 +96,14 @@ export async function listClientsDebiteurs() {
         fullName: entry.client.fullName,
         phoneGn: entry.client.phoneGn,
         phoneWhatsapp: entry.client.phoneWhatsapp,
+        telephone: entry.client.phoneWhatsapp ?? entry.client.phoneGn,
       },
       soldeDu: entry.soldeDu,
+      montantPayeTotal: entry.montantPayeTotal,
       ancienneteJours: entry.ancienneteJours,
-      nombreFactures: entry.nombreFactures,
+      nombreColisEnAttente: entry.nombreColisEnAttente,
       aPaiementPartiel: entry.aPaiementPartiel,
-      niveauRisque: computeRiskTier(entry.ancienneteJours),
+      niveauRisque: computeRiskTier(entry.ancienneteJours, seuils.joursAvantAlerteCreance),
     }))
-    .sort((a, b) => b.ancienneteJours - a.ancienneteJours);
+    .sort((a, b) => b.soldeDu - a.soldeDu);
 }

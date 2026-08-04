@@ -3,7 +3,7 @@ import { ROLE_NAMES } from '@/lib/roles';
 export interface NavItem {
   label: string;
   to: string;
-  icon: 'dashboard' | 'creances' | 'reception' | 'lots' | 'caisse' | 'client';
+  icon: 'dashboard' | 'creances' | 'reception' | 'lots' | 'caisse' | 'client' | 'alert' | 'settings';
   roles: string[];
 }
 
@@ -18,7 +18,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Créances & impayés',
     to: '/creances',
     icon: 'creances',
-    roles: [ROLE_NAMES.ADMIN],
+    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE],
+  },
+  {
+    label: 'Alertes',
+    to: '/alertes',
+    icon: 'alert',
+    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE],
   },
   {
     label: 'Réception (Chine)',
@@ -30,7 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Lots / Manifeste',
     to: '/lots',
     icon: 'lots',
-    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE],
+    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE, ROLE_NAMES.AGENT_GUINEE],
   },
   {
     label: 'Réception (consultation)',
@@ -48,6 +54,18 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Caisse (consultation)',
     to: '/caisse/consultation',
     icon: 'caisse',
+    roles: [ROLE_NAMES.ADMIN],
+  },
+  {
+    label: 'Écarts de poids',
+    to: '/ecarts-poids',
+    icon: 'alert',
+    roles: [ROLE_NAMES.ADMIN],
+  },
+  {
+    label: 'Taux de change',
+    to: '/parametres/taux-change',
+    icon: 'settings',
     roles: [ROLE_NAMES.ADMIN],
   },
   {

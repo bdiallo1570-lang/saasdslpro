@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileTopbar } from './MobileTopbar';
+import { GlobalFab } from '@/components/GlobalFab';
 
 interface AppShellProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </motion.main>
       </div>
+      <GlobalFab />
     </div>
   );
 }

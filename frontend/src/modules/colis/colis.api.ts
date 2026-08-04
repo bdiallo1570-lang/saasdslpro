@@ -2,7 +2,13 @@ import { apiClient, ApiResponse } from '@/lib/apiClient';
 import { Client } from '@/modules/clients/clients.api';
 
 export type PricingCategory = 'STANDARD' | 'RISQUE' | 'PERSONNALISE';
+export type StatutPaiementColis = 'IMPAYE' | 'PARTIEL' | 'SOLDE' | 'TROP_PERCU';
 
+// montantEstime/currency/pricingRuleId/categorieTarif et les champs de facturation du client
+// sont absents de la réponse pour Agent Chine (voir backend colis.presenter.ts) — optionnels
+// ici pour refléter fidèlement ce que le rôle courant peut recevoir. Les champs
+// montantDuGnf/montantPayeGnf/resteAPayerGnf/statutPaiement sont dérivés côté backend depuis
+// la facture mono-colis (module Agent Guinée) — présents pour Admin/Caissier/Agent Guinée.
 export interface Colis {
   id: string;
   trackingId: string;
@@ -11,10 +17,15 @@ export interface Colis {
   poidsVolumetriqueKg: string;
   poidsTaxableKg: string;
   categorieTarif: PricingCategory;
-  montantEstime: string;
-  currency: string;
+  montantEstime?: string;
+  currency?: string;
   status: string;
-  client: Client;
+  client: Partial<Client> & Pick<Client, 'id' | 'clientCode' | 'fullName'>;
+  montantDuGnf?: number;
+  montantPayeGnf?: number;
+  resteAPayerGnf?: number;
+  tropPercuGnf?: number;
+  statutPaiement?: StatutPaiementColis;
 }
 
 export interface CreateColisInput {
@@ -39,9 +50,22 @@ export async function getColisByTrackingId(trackingId: string): Promise<Colis> {
   return res.data.data!;
 }
 
-export async function listColis(params?: { lotId?: string; status?: string }): Promise<Colis[]> {
-  const res = await apiClient.get<ApiResponse<Colis[]>>('/colis', { params });
+export async function listColis(params?: {
+  lotId?: string;
+  status?: string | string[];
+}): Promise<Colis[]> {
+  const status = Array.isArray(params?.status) ? params.status.join(',') : params?.status;
+  const res = await apiClient.get<ApiResponse<Colis[]>>('/colis', {
+    params: { ...params, status },
+  });
   return res.data.data ?? [];
+}
+
+// Statuts modifiables manuellement depuis les pills du Dashboard — LIVRE en est exclu
+// délibérément côté backend (verrou entrepôt lié au paiement, règle 3.4 GEMINI.md).
+export async function updateColisStatus(trackingId: string, status: string): Promise<Colis> {
+  const res = await apiClient.patch<ApiResponse<Colis>>(`/colis/${trackingId}/statut`, { status });
+  return res.data.data!;
 }
 
 export interface PriceSimulationResult {
@@ -63,27 +87,29 @@ export async function simulatePrice(
   return res.data.data!;
 }
 
+// montantEstime/currency/outstandingBalance/montantTotal absents pour l'Agent Guinée (voir
+// backend scan.controller.ts) — optionnels pour refléter fidèlement la réponse selon le rôle.
 export interface ScanResult {
   colis: {
     trackingId: string;
     description: string;
     poidsReelKg: string;
     status: string;
-    montantEstime: string;
-    currency: string;
+    montantEstime?: string;
+    currency?: string;
   };
   client: {
     id: string;
     clientCode: string;
     fullName: string;
-    outstandingBalance: string;
+    outstandingBalance?: string;
   };
   lot: { lotNumber: string; status: string } | null;
   facture: {
     id: string;
     factureNumber: string;
     status: 'IMPAYE' | 'PARTIEL' | 'PAYE';
-    montantTotal: string;
+    montantTotal?: string;
     livraisonDebloqueeManuel: boolean;
   } | null;
   paymentStatus: 'PAYE' | 'IMPAYE_OU_PARTIEL' | 'NON_FACTURE';
@@ -97,6 +123,51 @@ export async function scanColis(trackingId: string): Promise<ScanResult> {
 
 export async function marquerColisLivre(trackingId: string): Promise<Colis> {
   const res = await apiClient.post<ApiResponse<Colis>>(`/colis/${trackingId}/livrer`);
+  return res.data.data!;
+}
+
+export interface WeightDiscrepancy {
+  id: string;
+  colisId: string;
+  lotId: string | null;
+  poidsChineKg: string;
+  poidsGuineeKg: string;
+  ecartPourcent: string;
+  seuilAppliquePourcent: string;
+  depasseSeuil: boolean;
+  agentChineUserId: string | null;
+  agentGuineeUserId: string;
+  resolvedAt: string | null;
+  resolvedByUserId: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  colis?: Colis;
+}
+
+export async function reportWeightDiscrepancy(
+  trackingId: string,
+  poidsGuineeKg: number,
+): Promise<WeightDiscrepancy> {
+  const res = await apiClient.post<ApiResponse<WeightDiscrepancy>>(
+    `/colis/${trackingId}/signaler-ecart-poids`,
+    { poidsGuineeKg },
+  );
+  return res.data.data!;
+}
+
+export async function listUnresolvedWeightDiscrepancies(): Promise<WeightDiscrepancy[]> {
+  const res = await apiClient.get<ApiResponse<WeightDiscrepancy[]>>('/colis/ecarts-poids');
+  return res.data.data ?? [];
+}
+
+export async function resolveWeightDiscrepancy(
+  id: string,
+  resolutionNote?: string,
+): Promise<WeightDiscrepancy> {
+  const res = await apiClient.patch<ApiResponse<WeightDiscrepancy>>(
+    `/colis/ecarts-poids/${id}/resoudre`,
+    { resolutionNote },
+  );
   return res.data.data!;
 }
 

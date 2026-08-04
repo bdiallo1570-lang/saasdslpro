@@ -78,7 +78,20 @@ enum CashTransactionType {
 enum PaymentMethod {
   ESPECES
   ORANGE_MONEY
+  MTN_MOMO
   VIREMENT
+  AUTRE
+}
+
+// Catégories de dépenses opérationnelles rattachées à un lot (module Agent Guinée) —
+// Dédouanement et Transport aéroport→Madina sont les deux postes prioritaires métier.
+enum CategorieDepenseLot {
+  DEDOUANEMENT
+  TRANSPORT_AEROPORT_MADINA
+  MANUTENTION
+  STOCKAGE
+  DOCUMENTATION
+  DIVERS
 }
 
 enum CashClosureStatus {
@@ -222,13 +235,52 @@ model Lot {
   freightCost      Decimal?  @map("freight_cost") @db.Decimal(18, 2)
   status           LotStatus @default(EN_RECEPTION)
 
-  colis Colis[]
+  // Taux de change figé à la première assignation d'un colis en devise étrangère à ce lot
+  // (règle : facturation GNF au taux du lot, jamais le taux global du jour — voir Paiement).
+  tauxVersGnfFige   Decimal?  @map("taux_vers_gnf_fige") @db.Decimal(18, 6)
+  tauxDeviseOrigine Currency? @map("taux_devise_origine")
+
+  colis    Colis[]
+  depenses DepenseLot[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   @@map("lots")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Dépenses de lot (module Agent Guinée) — chaque lot est une unité économique
+// autonome : toute dépense est obligatoirement rattachée à un lot, jamais mutualisée.
+// Conversion devise : tauxVersGnf saisi manuellement, montantGnf calculé et figé
+// côté backend uniquement, jamais recalculé rétroactivement (même règle que Paiement).
+// ─────────────────────────────────────────────────────────────────────────
+
+model DepenseLot {
+  id        String              @id @default(uuid())
+  lotId     String              @map("lot_id")
+  lot       Lot                 @relation(fields: [lotId], references: [id])
+  categorie CategorieDepenseLot
+
+  libelle         String
+  montant         Decimal  @db.Decimal(18, 2)
+  currency        Currency @default(GNF)
+  tauxVersGnf     Decimal  @default(1) @map("taux_vers_gnf") @db.Decimal(18, 6)
+  montantGnf      Decimal  @map("montant_gnf") @db.Decimal(18, 2)
+  dateDepense     DateTime @map("date_depense")
+  beneficiaire    String?
+  referenceRecu   String?  @map("reference_recu")
+  justificatifUrl String?  @map("justificatif_url")
+
+  saisiParUserId String @map("saisi_par_user_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([lotId, categorie])
+  @@map("depenses_lot")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -275,11 +327,44 @@ model Colis {
 
   createdByUserId String? @map("created_by_user_id")
 
+  weightDiscrepancies WeightDiscrepancy[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   @@map("colis")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Écarts de poids Chine → Guinée (mécanisme transversal critique — corridor)
+// Le poids saisi en Chine (Colis.poidsReelKg) n'est JAMAIS modifié ; le poids
+// constaté en Guinée vit uniquement ici. Alerte Admin si écart > seuil configurable
+// (Setting "seuil_ecart_poids_pourcent", défaut 3%).
+// ─────────────────────────────────────────────────────────────────────────
+
+model WeightDiscrepancy {
+  id      String  @id @default(uuid())
+  colisId String  @map("colis_id")
+  colis   Colis   @relation(fields: [colisId], references: [id])
+  lotId   String? @map("lot_id")
+
+  poidsChineKg          Decimal @map("poids_chine_kg") @db.Decimal(10, 2)
+  poidsGuineeKg         Decimal @map("poids_guinee_kg") @db.Decimal(10, 2)
+  ecartPourcent         Decimal @map("ecart_pourcent") @db.Decimal(6, 2)
+  seuilAppliquePourcent Decimal @map("seuil_applique_pourcent") @db.Decimal(6, 2)
+  depasseSeuil          Boolean @map("depasse_seuil")
+
+  agentChineUserId  String? @map("agent_chine_user_id")
+  agentGuineeUserId String  @map("agent_guinee_user_id")
+
+  resolvedAt       DateTime? @map("resolved_at")
+  resolvedByUserId String?   @map("resolved_by_user_id")
+  resolutionNote   String?   @map("resolution_note")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("weight_discrepancies")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { nextSequenceNumber } from '@/lib/sequence';
 
@@ -57,6 +58,36 @@ export async function createFacture(clientId: string, colisIds: string[]) {
       include: { colis: true, client: true },
     });
   });
+}
+
+// Facturation automatique 1 colis = 1 facture (module Agent Guinée) — dès qu'un colis devient
+// facturable (arrivée), on lui garantit une facture mono-colis pour que le solde/reste à payer
+// puisse être suivi précisément par colis, sans dupliquer la logique de createFacture ci-dessus.
+// Idempotent : no-op si le colis a déjà une facture. Doit être appelée dans une transaction.
+export async function ensureFactureForColis(colisId: string, tx: Prisma.TransactionClient) {
+  const colis = await tx.colis.findFirst({ where: { id: colisId, deletedAt: null } });
+  if (!colis) throw new FactureError('Colis introuvable.', 404);
+  if (colis.factureId) return tx.facture.findUniqueOrThrow({ where: { id: colis.factureId } });
+
+  const factureNumber = await nextSequenceNumber(tx, 'FACTURE', 'FAC');
+
+  const facture = await tx.facture.create({
+    data: {
+      factureNumber,
+      clientId: colis.clientId,
+      montantTotal: colis.montantEstime,
+      currency: colis.currency,
+      status: 'IMPAYE',
+    },
+  });
+
+  await tx.colis.update({ where: { id: colisId }, data: { factureId: facture.id } });
+  await tx.client.update({
+    where: { id: colis.clientId },
+    data: { outstandingBalance: { increment: colis.montantEstime } },
+  });
+
+  return facture;
 }
 
 export async function getFactureById(id: string) {

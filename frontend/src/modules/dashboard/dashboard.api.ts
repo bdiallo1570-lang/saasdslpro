@@ -9,6 +9,7 @@ export interface DashboardOverview {
   nombreFacturesImpayees: number;
   caisseDuJourGnf: number;
   nombreCaissesOuvertes: number;
+  colisParStatut: Partial<Record<string, number>>;
   derniereActivite: {
     dernierColis: {
       trackingId: string;

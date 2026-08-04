@@ -11,9 +11,9 @@ interface TestimonialsProps {
 const TESTIMONIALS = [
   {
     quote:
-      'Mes colis de vêtements arrivent à Madina sans aucun retard. Le suivi WhatsApp est un vrai plus !',
+      'Mes colis de vêtements arrivent à Conakry sans aucun retard. Le suivi WhatsApp est un vrai plus !',
     name: 'Aissatou B.',
-    role: 'Commerçante à Madina',
+    role: 'Commerçante à Conakry',
   },
   {
     quote:
@@ -117,7 +117,7 @@ export function Testimonials({ isDark }: TestimonialsProps) {
                     {t.name}
                     <BadgeCheck size={14} className="text-sky-500" />
                   </p>
-                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t.role}</p>
+                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t.role}</p>
                 </div>
               </div>
             </motion.div>

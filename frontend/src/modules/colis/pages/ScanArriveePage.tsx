@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QrScanner } from '../components/QrScanner';
-import { scanColis, marquerColisLivre, ScanResult } from '../colis.api';
+import { scanColis, marquerColisLivre, reportWeightDiscrepancy, ScanResult } from '../colis.api';
 import { relancerClient } from '@/modules/paiements/paiements.api';
 import { debloquerLivraison } from '@/modules/factures/factures.api';
 import { extractErrorMessage } from '@/lib/apiClient';
@@ -16,11 +16,16 @@ export default function ScanArriveePage() {
   const [loading, setLoading] = useState(false);
   const [motifDeblocage, setMotifDeblocage] = useState('');
   const [showDeblocageForm, setShowDeblocageForm] = useState(false);
+  const [poidsGuinee, setPoidsGuinee] = useState('');
+  const [signalingWeight, setSignalingWeight] = useState(false);
+  const [weightSignaled, setWeightSignaled] = useState(false);
 
   async function handleScan(trackingId: string) {
     setScanning(false);
     setLoading(true);
     setError(null);
+    setPoidsGuinee('');
+    setWeightSignaled(false);
     try {
       const data = await scanColis(trackingId.trim());
       setResult(data);
@@ -28,6 +33,24 @@ export default function ScanArriveePage() {
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSignalerEcart() {
+    if (!result || !poidsGuinee) return;
+    setSignalingWeight(true);
+    try {
+      const discrepancy = await reportWeightDiscrepancy(result.colis.trackingId, Number(poidsGuinee));
+      setWeightSignaled(true);
+      notify.success(
+        discrepancy.depasseSeuil
+          ? "Écart signalé — au-delà du seuil, une alerte a été envoyée à l'Admin."
+          : 'Écart signalé et journalisé (sous le seuil, aucune alerte nécessaire).',
+      );
+    } catch (err) {
+      notify.error(extractErrorMessage(err));
+    } finally {
+      setSignalingWeight(false);
     }
   }
 
@@ -138,11 +161,41 @@ export default function ScanArriveePage() {
                   <p className="text-xs text-slate-400">{result.client.clientCode}</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-night-700 rounded-lg p-3">
-                  <p className="text-xs text-slate-400">Poids réel</p>
+                  <p className="text-xs text-slate-400">Poids saisi en Chine (lecture seule)</p>
                   <p className="font-medium text-night-900 dark:text-slate-100">
                     {result.colis.poidsReelKg} kg
                   </p>
                 </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-night-700 rounded-lg p-3 space-y-2">
+                <p className="text-xs text-slate-400">Poids constaté à Conakry (contrôle)</p>
+                {weightSignaled ? (
+                  <p className="text-sm text-green-700 dark:text-emerald-300">
+                    Écart signalé et journalisé.
+                  </p>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="Poids constaté (kg)"
+                      value={poidsGuinee}
+                      onChange={(e) => setPoidsGuinee(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={!poidsGuinee}
+                      loading={signalingWeight}
+                      onClick={handleSignalerEcart}
+                    >
+                      Signaler l'écart
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {!result.livraisonAutorisee ? (
@@ -150,9 +203,11 @@ export default function ScanArriveePage() {
                   <p className="font-bold text-red-700 dark:text-red-300 text-base">
                     ⚠️ IMPAYÉ — LIVRAISON BLOQUÉE
                   </p>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    Solde restant : {Number(result.client.outstandingBalance).toLocaleString('fr-FR')} GNF
-                  </p>
+                  {result.client.outstandingBalance !== undefined && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                      Solde restant : {Number(result.client.outstandingBalance).toLocaleString('fr-FR')} GNF
+                    </p>
+                  )}
                   {result.facture && (
                     <p className="text-xs text-red-500 dark:text-red-400 mt-1">
                       Facture {result.facture.factureNumber} —{' '}

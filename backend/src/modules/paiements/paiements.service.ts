@@ -1,7 +1,9 @@
 import { Currency, PaymentMethod } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getCurrentRateToGnf } from '@/lib/exchangeRate';
+import { resolveRateForFacture } from '@/lib/exchangeRate';
 import { sendRelanceImpaye } from '@/lib/whatsapp/notifications';
+import { ensureFactureForColis } from '@/modules/factures/factures.service';
+import { computePaiementColis } from '@/modules/colis/colis.presenter';
 
 export class PaiementError extends Error {
   constructor(message: string, public statusCode = 400) {
@@ -18,17 +20,23 @@ interface CreatePaiementInput {
 }
 
 // Enregistre un paiement (règle 3.6 : plusieurs paiements possibles, devises différentes,
-// taux figé au moment du paiement — jamais recalculé rétroactivement).
+// taux figé au moment du paiement — jamais recalculé rétroactivement). Le taux appliqué
+// provient du lot des colis facturés si déterminable (Phase 3), sinon du taux global du jour
+// (comportement historique inchangé).
 export async function createPaiement(input: CreatePaiementInput, receivedByUserId: string) {
-  const tauxVersGnf = await getCurrentRateToGnf(input.currency);
-  const montantGnf = input.montant * tauxVersGnf;
-
   return prisma.$transaction(async (tx) => {
     const facture = await tx.facture.findFirst({
       where: { id: input.factureId, deletedAt: null },
-      include: { paiements: { where: { deletedAt: null } }, client: true },
+      include: { paiements: { where: { deletedAt: null } }, client: true, colis: true },
     });
     if (!facture) throw new PaiementError('Facture introuvable.', 404);
+
+    const { rate: tauxVersGnf, source: tauxSource, lotId: tauxLotId } = await resolveRateForFacture(
+      input.currency,
+      facture.colis.map((c) => c.lotId),
+      tx,
+    );
+    const montantGnf = input.montant * tauxVersGnf;
 
     let cashTransactionId: string | null = null;
     if (input.closureId) {
@@ -63,6 +71,18 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
       },
     });
 
+    if (input.currency !== 'GNF') {
+      await tx.auditLog.create({
+        data: {
+          userId: receivedByUserId,
+          action: 'paiement:taux_resolu',
+          entityType: 'Paiement',
+          entityId: paiement.id,
+          metadata: { source: tauxSource, lotId: tauxLotId, tauxApplique: tauxVersGnf },
+        },
+      });
+    }
+
     // Total déjà payé en GNF (converti au taux figé de chaque paiement).
     const totalPayeGnf =
       facture.paiements.reduce((sum, p) => sum + Number(p.montant) * Number(p.tauxVersGnf), 0) +
@@ -91,6 +111,58 @@ export async function listPaiementsByFacture(factureId: string) {
     where: { factureId, deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
+}
+
+interface CreatePaiementForColisInput {
+  colisId: string;
+  montant: number;
+  currency: Currency;
+  tauxVersGnf?: number;
+  method: PaymentMethod;
+  reference?: string;
+  datePaiement?: Date;
+  commentaire?: string;
+}
+
+// Paiement colis-par-colis (module Agent Guinée) — règle 2 : un paiement doit référencer un
+// colis appartenant au lot indiqué en paramètre de route, sinon erreur 422. Garantit la
+// facture mono-colis (créée automatiquement si absente), puis délègue à createPaiement pour
+// ne pas dupliquer la logique de taux/statut/solde déjà éprouvée.
+export async function createPaiementForColis(
+  lotId: string,
+  input: CreatePaiementForColisInput,
+  userId: string,
+) {
+  const colis = await prisma.colis.findFirst({ where: { id: input.colisId, deletedAt: null } });
+  if (!colis) throw new PaiementError('Colis introuvable.', 404);
+  if (colis.lotId !== lotId) {
+    throw new PaiementError("Ce colis n'appartient pas au lot indiqué.", 422);
+  }
+
+  const factureId = await prisma.$transaction(async (tx) => {
+    const facture = await ensureFactureForColis(input.colisId, tx);
+    return facture.id;
+  });
+
+  // Avertissement non bloquant si le montant dépasse le reste à payer (règle : bloquer
+  // seulement si montant <= 0, jamais si le client paie plus que dû — cf. TROP_PERCU).
+  const factureAvecPaiements = await prisma.facture.findUniqueOrThrow({
+    where: { id: factureId },
+    include: { paiements: { where: { deletedAt: null } } },
+  });
+  const { resteAPayerGnf } = computePaiementColis(factureAvecPaiements);
+  const montantGnfEstime = input.currency === 'GNF' ? input.montant : input.montant * (input.tauxVersGnf ?? 1);
+  const avertissement =
+    montantGnfEstime > resteAPayerGnf && resteAPayerGnf > 0
+      ? `Le montant saisi dépasse le reste à payer (${Math.round(resteAPayerGnf).toLocaleString('fr-FR')} GNF) — l'excédent sera enregistré comme trop-perçu.`
+      : undefined;
+
+  const paiement = await createPaiement(
+    { factureId, montant: input.montant, currency: input.currency, method: input.method },
+    userId,
+  );
+
+  return { paiement, avertissement };
 }
 
 export async function getPaiementForReceipt(paiementId: string) {

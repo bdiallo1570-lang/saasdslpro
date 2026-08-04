@@ -31,6 +31,7 @@ export async function getDashboardOverview() {
     caissesOuvertesAujourdhui,
     dernierColis,
     dernierLot,
+    colisParStatutBrut,
   ] = await Promise.all([
     prisma.colis.count({
       where: { status: { in: [...STATUTS_EN_TRANSIT] }, deletedAt: null },
@@ -62,7 +63,18 @@ export async function getDashboardOverview() {
       where: { deletedAt: null },
       orderBy: { updatedAt: 'desc' },
     }),
+    prisma.colis.groupBy({
+      by: ['status'],
+      where: { deletedAt: null },
+      _count: true,
+    }),
   ]);
+
+  // Compteur par statut technique — alimente les pills de filtre du Dashboard Financier
+  // (regroupées côté frontend en 4 catégories : en attente / en vol / en douane / livré).
+  const colisParStatut = Object.fromEntries(
+    colisParStatutBrut.map((g) => [g.status, g._count]),
+  ) as Partial<Record<string, number>>;
 
   // CA encaissé = somme des paiements réels (convertis en GNF au taux figé de chaque paiement).
   const caEncaisse = facturesPayees.reduce(
@@ -100,6 +112,7 @@ export async function getDashboardOverview() {
     nombreFacturesImpayees: facturesImpayees.length,
     caisseDuJourGnf,
     nombreCaissesOuvertes,
+    colisParStatut,
     derniereActivite: {
       dernierColis: dernierColis
         ? {

@@ -2,6 +2,8 @@ import { LotStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { nextSequenceNumber } from '@/lib/sequence';
 import { sendArriveeLotNotification } from '@/lib/whatsapp/notifications';
+import { getCurrentRateToGnf } from '@/lib/exchangeRate';
+import { ensureFactureForColis } from '@/modules/factures/factures.service';
 
 export class LotError extends Error {
   constructor(message: string, public statusCode = 400) {
@@ -27,7 +29,14 @@ export async function listLots() {
 export async function getLotById(id: string) {
   return prisma.lot.findFirst({
     where: { id, deletedAt: null },
-    include: { colis: { include: { client: true } } },
+    include: {
+      colis: {
+        include: {
+          client: true,
+          facture: { include: { paiements: { where: { deletedAt: null } } } },
+        },
+      },
+    },
   });
 }
 
@@ -35,9 +44,29 @@ export async function assignColisToLot(lotId: string, colisIds: string[]) {
   const lot = await prisma.lot.findFirst({ where: { id: lotId, deletedAt: null } });
   if (!lot) throw new LotError('Lot introuvable.', 404);
 
-  await prisma.colis.updateMany({
-    where: { id: { in: colisIds }, deletedAt: null },
-    data: { lotId, status: 'ASSIGNE_LOT' },
+  await prisma.$transaction(async (tx) => {
+    await tx.colis.updateMany({
+      where: { id: { in: colisIds }, deletedAt: null },
+      data: { lotId, status: 'ASSIGNE_LOT' },
+    });
+
+    // Fige le taux de change du lot à la première assignation d'un colis en devise étrangère
+    // (règle Phase 3 : facturation GNF au taux du lot, jamais le taux global du jour). Ne
+    // s'applique qu'une seule fois par lot — les assignations suivantes ne recalculent rien.
+    if (!lot.tauxVersGnfFige) {
+      const colisAssignes = await tx.colis.findMany({
+        where: { id: { in: colisIds }, deletedAt: null },
+        select: { currency: true },
+      });
+      const deviseEtrangere = colisAssignes.find((c) => c.currency !== 'GNF')?.currency;
+      if (deviseEtrangere) {
+        const taux = await getCurrentRateToGnf(deviseEtrangere, tx);
+        await tx.lot.update({
+          where: { id: lotId },
+          data: { tauxVersGnfFige: taux, tauxDeviseOrigine: deviseEtrangere },
+        });
+      }
+    }
   });
 
   return getLotById(lotId);
@@ -85,6 +114,16 @@ export async function updateLotStatus(lotId: string, status: LotStatus) {
       where: { lotId, deletedAt: null },
       include: { client: true },
     });
+
+    // Filet de sécurité facturation auto (module Agent Guinée) : garantit qu'aucun colis
+    // arrivé en entrepôt n'échappe à la facturation même s'il a sauté l'étape ARRIVE explicite.
+    for (const c of colisDuLot) {
+      if (!c.factureId) {
+        await prisma.$transaction((tx) => ensureFactureForColis(c.id, tx)).catch((err) =>
+          console.error('Échec facturation automatique colis', c.trackingId, err),
+        );
+      }
+    }
 
     const trackingIdsByClient = new Map<string, { client: (typeof colisDuLot)[number]['client']; trackingIds: string[] }>();
     for (const c of colisDuLot) {

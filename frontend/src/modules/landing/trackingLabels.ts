@@ -4,6 +4,6 @@ export const COLIS_STATUS_LABELS: Record<string, string> = {
   ENVOLE: 'Envolé vers la Guinée',
   ARRIVE: 'Arrivé en Guinée',
   EN_DEDOUANEMENT: 'En dédouanement',
-  DISPONIBLE_ENTREPOT: 'Disponible à l\'entrepôt de Madina',
+  DISPONIBLE_ENTREPOT: 'Disponible à l\'entrepôt de Conakry',
   LIVRE: 'Livré',
 };

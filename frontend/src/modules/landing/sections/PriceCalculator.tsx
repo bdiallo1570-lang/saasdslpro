@@ -2,6 +2,7 @@ import { useState, useMemo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Package, ShieldAlert, MapPin } from 'lucide-react';
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
+import { StatCounter } from '@/ui';
 import { AuroraBackground } from './AuroraBackground';
 import { CursorSpotlight } from './CursorSpotlight';
 
@@ -93,10 +94,12 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                   const Icon = cat.icon;
                   const active = categorie === cat.value;
                   return (
-                    <button
+                    <motion.button
                       key={cat.value}
                       onClick={() => setCategorie(cat.value)}
-                      className={`relative text-left rounded-2xl border-2 p-4 transition-all ${
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`relative text-left rounded-2xl border-2 p-4 transition-colors overflow-hidden ${
                         active
                           ? isDark
                             ? 'border-emerald-400 bg-emerald-500/10'
@@ -106,10 +109,21 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                             : 'border-slate-200 hover:border-slate-300'
                       }`}
                     >
-                      <Icon
-                        size={20}
-                        className={active ? 'text-emerald-500' : isDark ? 'text-slate-400' : 'text-slate-400'}
-                      />
+                      {active && (
+                        <motion.div
+                          layoutId="calculator-active-glow"
+                          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                          className={`absolute inset-0 -z-10 ${
+                            isDark ? 'bg-emerald-500/5' : 'bg-emerald-100/40'
+                          }`}
+                        />
+                      )}
+                      <motion.div animate={{ scale: active ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
+                        <Icon
+                          size={20}
+                          className={active ? 'text-emerald-500' : isDark ? 'text-slate-400' : 'text-slate-400'}
+                        />
+                      </motion.div>
                       <p className={`mt-2 font-semibold text-sm ${isDark ? 'text-white' : 'text-night-900'}`}>
                         {cat.label}
                       </p>
@@ -119,7 +133,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                       <p className={`text-[11px] mt-1.5 leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         {cat.examples}
                       </p>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -139,7 +153,12 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 step={0.5}
                 value={poidsKg}
                 onChange={(e) => setPoidsKg(Number(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="calculator-slider w-full accent-emerald-500"
+                style={{
+                  background: `linear-gradient(to right, #10B981 ${((poidsKg - 0.5) / 199.5) * 100}%, ${
+                    isDark ? '#1E293B' : '#E2E8F0'
+                  } ${((poidsKg - 0.5) / 199.5) * 100}%)`,
+                }}
               />
               <div className="flex justify-between text-xs mt-1">
                 <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>0.5 kg</span>
@@ -162,7 +181,10 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
 
             {/* Résultat */}
             <div className="flex flex-col justify-between">
-              <div
+              <motion.div
+                animate={{ scale: [1, 1.015, 1] }}
+                transition={{ duration: 0.3 }}
+                key={categorie}
                 className={`rounded-2xl border p-6 text-center ${
                   isDark
                     ? 'bg-gradient-to-br from-emerald-500/10 to-sky-500/10 border-emerald-500/30'
@@ -172,8 +194,12 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                   Prix total estimé
                 </p>
-                <p className={`mt-2 text-4xl font-extrabold ${isDark ? 'text-white' : 'text-night-900'}`}>
-                  {poidsKg > 0 ? Math.round(totalEstime).toLocaleString('fr-FR') : '—'}
+                <p className={`mt-2 text-4xl font-extrabold tabular-nums ${isDark ? 'text-white' : 'text-night-900'}`}>
+                  {poidsKg > 0 ? (
+                    <StatCounter value={totalEstime} duration={0.5} />
+                  ) : (
+                    '—'
+                  )}
                   <span className="text-lg font-semibold ml-1">GNF</span>
                 </p>
                 {poidsKg > 0 && (
@@ -181,7 +207,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                     {poidsKg} kg × {selectedCategorie.pricePerKg.toLocaleString('fr-FR')} GNF/kg
                   </p>
                 )}
-              </div>
+              </motion.div>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}

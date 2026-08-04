@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
+import { canReadPricing, computePaiementColis } from './colis.presenter';
 
 // Marque un colis comme livré. Bloqué côté backend si la facture associée n'est pas
 // payée, sauf si un déblocage manuel admin a été tracé (règle 3.4 GEMINI.md).
@@ -8,7 +9,7 @@ export async function marquerLivreHandler(req: Request, res: Response) {
 
   const colis = await prisma.colis.findFirst({
     where: { trackingId, deletedAt: null },
-    include: { facture: true },
+    include: { facture: { include: { paiements: { where: { deletedAt: null } } } } },
   });
 
   if (!colis) {
@@ -16,11 +17,11 @@ export async function marquerLivreHandler(req: Request, res: Response) {
   }
 
   if (colis.facture && colis.facture.status !== 'PAYE' && !colis.facture.livraisonDebloqueeManuel) {
+    const { resteAPayerGnf } = computePaiementColis(colis.facture);
     return res.status(403).json({
       success: false,
       data: null,
-      error:
-        "Livraison bloquée : la facture associée n'est pas payée. Un déblocage manuel admin est requis.",
+      error: `Sortie bloquée — reste à payer : ${Math.round(resteAPayerGnf).toLocaleString('fr-FR')} GNF`,
     });
   }
 
@@ -29,5 +30,9 @@ export async function marquerLivreHandler(req: Request, res: Response) {
     data: { status: 'LIVRE' },
   });
 
-  return res.status(200).json({ success: true, data: updated, error: null });
+  if (canReadPricing(req.user!.roleName)) {
+    return res.status(200).json({ success: true, data: updated, error: null });
+  }
+  const { montantEstime, currency, pricingRuleId, categorieTarif, ...rest } = updated;
+  return res.status(200).json({ success: true, data: rest, error: null });
 }

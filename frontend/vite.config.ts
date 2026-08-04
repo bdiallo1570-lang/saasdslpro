@@ -11,5 +11,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Écoute sur toutes les interfaces (pas seulement 127.0.0.1) pour être accessible
+    // depuis un téléphone sur le même réseau Wi-Fi, via l'IP locale de la machine.
+    host: true,
   },
 });

@@ -13,11 +13,30 @@ import { facturesRouter } from '@/modules/factures/factures.routes';
 import { paiementsRouter } from '@/modules/paiements/paiements.routes';
 import { caisseRouter } from '@/modules/caisse/caisse.routes';
 import { creancesRouter } from '@/modules/creances/creances.routes';
+import { exchangeRatesRouter } from '@/modules/exchangeRates/exchangeRates.routes';
+import { auditRouter } from '@/modules/audit/audit.routes';
+import { depenseLotRouter } from '@/modules/lots/depenses/depenseLot.routes';
+import { alertesRouter } from '@/modules/alertes/alertes.routes';
+import { parametresAlertesRouter } from '@/modules/parametres/parametresAlertes.routes';
 
 export const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+// Autorise à la fois localhost (accès depuis le PC) et l'IP réseau (accès depuis un téléphone
+// sur le même Wi-Fi) — FRONTEND_URL peut contenir plusieurs origines séparées par une virgule.
+const allowedOrigins = env.FRONTEND_URL.split(',').map((origin) => origin.trim());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Origine non autorisée par la politique CORS.'));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
@@ -35,6 +54,11 @@ app.use('/api/v1/factures', facturesRouter);
 app.use('/api/v1/paiements', paiementsRouter);
 app.use('/api/v1/caisse', caisseRouter);
 app.use('/api/v1/creances', creancesRouter);
+app.use('/api/v1/exchange-rates', exchangeRatesRouter);
+app.use('/api/v1/audit', auditRouter);
+app.use('/api/v1/depenses', depenseLotRouter);
+app.use('/api/v1/alertes', alertesRouter);
+app.use('/api/v1/parametres/alertes', parametresAlertesRouter);
 
 // 404 par défaut
 app.use((_req, res) => {

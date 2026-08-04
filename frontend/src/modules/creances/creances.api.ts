@@ -16,10 +16,12 @@ export interface ClientDebiteur {
     fullName: string;
     phoneGn: string | null;
     phoneWhatsapp: string | null;
+    telephone: string | null;
   };
   soldeDu: number;
+  montantPayeTotal: number;
   ancienneteJours: number;
-  nombreFactures: number;
+  nombreColisEnAttente: number;
   aPaiementPartiel: boolean;
   niveauRisque: RiskTier;
 }
