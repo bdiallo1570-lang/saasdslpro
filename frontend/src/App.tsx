@@ -36,9 +36,16 @@ export default function App() {
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN]} />}>
               <Route path="/dashboard/financier" element={<DashboardFinancierPage />} />
               <Route path="/caisse/consultation" element={<CaisseConsultationPage />} />
-              <Route path="/reception/consultation" element={<ReceptionConsultationPage />} />
               <Route path="/ecarts-poids" element={<EcartsPoidsPage />} />
               <Route path="/parametres/taux-change" element={<ExchangeRatesPage />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE]} />
+              }
+            >
+              <Route path="/reception/consultation" element={<ReceptionConsultationPage />} />
             </Route>
 
             <Route

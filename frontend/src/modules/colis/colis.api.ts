@@ -4,11 +4,13 @@ import { Client } from '@/modules/clients/clients.api';
 export type PricingCategory = 'STANDARD' | 'RISQUE' | 'PERSONNALISE';
 export type StatutPaiementColis = 'IMPAYE' | 'PARTIEL' | 'SOLDE' | 'TROP_PERCU';
 
-// montantEstime/currency/pricingRuleId/categorieTarif et les champs de facturation du client
-// sont absents de la réponse pour Agent Chine (voir backend colis.presenter.ts) — optionnels
-// ici pour refléter fidèlement ce que le rôle courant peut recevoir. Les champs
+// montantEstime/currency/pricingRuleId sont optionnels ici pour refléter fidèlement le typage
+// backend (canReadPricing) — présents pour Admin/Caissier/Agent Guinée/Agent Chine (celui-ci
+// fixe le prix à la réception et peut le modifier ensuite, voir updateColisPrice ci-dessous),
+// absents uniquement pour les rôles sans accès aux prix (aucun rôle actuel n'est dans ce cas
+// pour colis:read, ce typage optionnel reste défensif). Les champs
 // montantDuGnf/montantPayeGnf/resteAPayerGnf/statutPaiement sont dérivés côté backend depuis
-// la facture mono-colis (module Agent Guinée) — présents pour Admin/Caissier/Agent Guinée.
+// la facture mono-colis (module Agent Guinée).
 export interface Colis {
   id: string;
   trackingId: string;
@@ -65,6 +67,20 @@ export async function listColis(params?: {
 // délibérément côté backend (verrou entrepôt lié au paiement, règle 3.4 GEMINI.md).
 export async function updateColisStatus(trackingId: string, status: string): Promise<Colis> {
   const res = await apiClient.patch<ApiResponse<Colis>>(`/colis/${trackingId}/statut`, { status });
+  return res.data.data!;
+}
+
+// Modification du prix par l'Agent Chine/Admin — bloquée côté backend dès qu'un paiement a été
+// enregistré sur le colis (409). Motif obligatoire, tracé dans le journal d'audit.
+export async function updateColisPrice(
+  trackingId: string,
+  montantEstime: number,
+  motif: string,
+): Promise<Colis> {
+  const res = await apiClient.patch<ApiResponse<Colis>>(`/colis/${trackingId}/prix`, {
+    montantEstime,
+    motif,
+  });
   return res.data.data!;
 }
 

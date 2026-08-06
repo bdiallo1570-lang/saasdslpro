@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
 import { listColis, Colis } from '../colis.api';
+import { ModifierPrixModal } from '../components/ModifierPrixModal';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
+import { useAuth } from '@/context/AuthContext';
+import { ROLE_NAMES } from '@/lib/roles';
 import { AppShell } from '@/layout/AppShell';
-import { PageHeader, Card, Badge, Input } from '@/ui';
+import { PageHeader, Card, Badge, Input, Button } from '@/ui';
 
 const STATUS_TONE: Record<string, 'sky' | 'cargo' | 'green' | 'amber' | 'red' | 'slate'> = {
   ENREGISTRE: 'slate',
@@ -25,12 +28,19 @@ const listItem = {
   show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
 };
 
-// Vue Admin en lecture seule de la Réception — consultation uniquement, aucune création/action
-// (l'enregistrement de colis reste réservé à l'agent Chine sur ReceptionPage).
+const CAN_EDIT_PRICE_ROLES: string[] = [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE];
+
+// Liste de tous les colis enregistrés, avec recherche fuzzy. Pour Admin/Agent Chine, permet de
+// corriger le prix d'un colis tant qu'aucun paiement n'a été enregistré (verrouillé par le
+// backend au-delà, 409) — l'enregistrement initial du colis reste sur ReceptionPage.
 export default function ReceptionConsultationPage() {
+  const { user } = useAuth();
   const [colis, setColis] = useState<Colis[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [editingColis, setEditingColis] = useState<Colis | null>(null);
+
+  const canEditPrice = !!user && CAN_EDIT_PRICE_ROLES.includes(user.role);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -63,8 +73,12 @@ export default function ReceptionConsultationPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Réception — Consultation"
-        description="Vue d'ensemble de tous les colis enregistrés (lecture seule)."
+        title="Colis enregistrés"
+        description={
+          canEditPrice
+            ? "Vue d'ensemble de tous les colis — le prix reste modifiable tant qu'aucun paiement n'a été enregistré."
+            : "Vue d'ensemble de tous les colis enregistrés (lecture seule)."
+        }
       />
 
       <Card className="overflow-hidden">
@@ -115,11 +129,24 @@ export default function ReceptionConsultationPage() {
                     {Number(c.montantEstime).toLocaleString('fr-FR')} {c.currency}
                   </p>
                 )}
+                {canEditPrice && c.statutPaiement !== 'PARTIEL' && c.statutPaiement !== 'SOLDE' && (
+                  <Button variant="secondary" size="sm" onClick={() => setEditingColis(c)}>
+                    Modifier le prix
+                  </Button>
+                )}
               </motion.div>
             ))}
           </motion.div>
         )}
       </Card>
+
+      <ModifierPrixModal
+        colis={editingColis}
+        onClose={() => setEditingColis(null)}
+        onUpdated={(updated) => {
+          setColis((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+        }}
+      />
     </AppShell>
   );
 }

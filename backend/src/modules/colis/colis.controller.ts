@@ -1,7 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
 import * as colisService from './colis.service';
-import { createColisSchema, priceSimulationSchema, updateColisStatusSchema } from './colis.schema';
+import {
+  createColisSchema,
+  priceSimulationSchema,
+  updateColisStatusSchema,
+  updateColisPriceSchema,
+} from './colis.schema';
 import { getActivePricingRule } from './pricing';
 import { presentColis } from './colis.presenter';
 import { listPaiementsByFacture } from '@/modules/paiements/paiements.service';
@@ -66,6 +71,25 @@ export async function updateColisStatusHandler(req: Request, res: Response) {
     const colis = await colisService.updateColisStatus(
       req.params.trackingId,
       parsed.data.status,
+      req.user!.sub,
+    );
+    return res.status(200).json({ success: true, data: presentColis(colis, req.user!.roleName), error: null });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function updateColisPriceHandler(req: Request, res: Response) {
+  const parsed = updateColisPriceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, data: null, error: parsed.error.issues[0].message });
+  }
+
+  try {
+    const colis = await colisService.updateColisPrice(
+      req.params.trackingId,
+      parsed.data.montantEstime,
+      parsed.data.motif,
       req.user!.sub,
     );
     return res.status(200).json({ success: true, data: presentColis(colis, req.user!.roleName), error: null });

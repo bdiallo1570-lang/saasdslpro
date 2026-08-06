@@ -30,6 +30,12 @@ export function ColisLabel({ colis }: ColisLabelProps) {
           <p>
             <span className="font-semibold">Client :</span> {colis.client.fullName}
           </p>
+          {(colis.client.phoneWhatsapp || colis.client.phoneGn) && (
+            <p>
+              <span className="font-semibold">Téléphone :</span>{' '}
+              {colis.client.phoneWhatsapp || colis.client.phoneGn}
+            </p>
+          )}
           <p>
             <span className="font-semibold">Code :</span> {colis.client.clientCode}
           </p>

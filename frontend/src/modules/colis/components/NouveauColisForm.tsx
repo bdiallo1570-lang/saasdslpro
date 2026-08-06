@@ -1,11 +1,11 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClientPicker } from '@/modules/clients/components/ClientPicker';
 import { Client } from '@/modules/clients/clients.api';
-import { createColis, Colis, PricingCategory } from '../colis.api';
+import { createColis, simulatePrice, Colis, PricingCategory } from '../colis.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { ColisLabel } from './ColisLabel';
-import { Card, Button, Input, Textarea, Select, notify } from '@/ui';
+import { Card, Button, Input, Textarea, Select, StatCounter, notify } from '@/ui';
 
 const DIVISEUR_VOLUMETRIQUE = 6000;
 
@@ -13,9 +13,11 @@ interface NouveauColisFormProps {
   onCreated?: (colis: Colis) => void;
 }
 
-// Catégorie de tarif — l'Agent Chine ne voit ni prix ni marges (règle corridor Chine→Guinée) :
-// pas de montant affiché pendant la saisie, et la catégorie "Personnalisé" (tarif négocié
-// manuellement) est réservée à l'Admin, contrôlée aussi côté backend (createColisHandler).
+// L'Agent Chine fixe le prix à la réception : le montant estimé est calculé automatiquement
+// (poids × tarif en vigueur) et affiché en direct pendant la saisie. Il peut être corrigé après
+// coup tant qu'aucun paiement n'est enregistré (voir ModifierPrixModal), toute modification
+// étant tracée dans le journal d'audit. La catégorie "Personnalisé" (tarif négocié manuellement)
+// reste réservée à l'Admin, contrôlée aussi côté backend (createColisHandler).
 // Extrait de ReceptionPage pour être réutilisable dans le modal du FAB global.
 export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [client, setClient] = useState<Client | null>(null);
@@ -26,6 +28,9 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [hauteurCm, setHauteurCm] = useState('');
   const [categorie, setCategorie] = useState<PricingCategory>('STANDARD');
 
+  const [montantEstime, setMontantEstime] = useState<number | null>(null);
+  const [loadingEstimate, setLoadingEstimate] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdColis, setCreatedColis] = useState<Colis | null>(null);
@@ -35,6 +40,25 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
       ? (Number(longueurCm) * Number(largeurCm) * Number(hauteurCm)) / DIVISEUR_VOLUMETRIQUE
       : 0;
   const poidsTaxable = Math.max(Number(poidsReelKg) || 0, poidsVolumetrique);
+
+  useEffect(() => {
+    if (!poidsReelKg || Number(poidsReelKg) <= 0 || categorie === 'PERSONNALISE') {
+      setMontantEstime(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingEstimate(true);
+      try {
+        const result = await simulatePrice(categorie, Number(poidsReelKg));
+        setMontantEstime(result.totalEstime);
+      } catch {
+        setMontantEstime(null);
+      } finally {
+        setLoadingEstimate(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [poidsReelKg, categorie]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -118,8 +142,8 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   value={categorie}
                   onChange={(e) => setCategorie(e.target.value as PricingCategory)}
                 >
-                  <option value="STANDARD">Standard</option>
-                  <option value="RISQUE">Sensible / à risque</option>
+                  <option value="STANDARD">Standard (160 000 GNF/kg)</option>
+                  <option value="RISQUE">Sensible / à risque (180 000 GNF/kg)</option>
                 </Select>
               </div>
 
@@ -157,6 +181,23 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   </p>
                 )}
               </div>
+
+              <Card glow="cargo" className="px-4 py-3 flex items-center justify-between bg-cargo-50/60 dark:bg-cargo-500/5 border-cargo-200 dark:border-cargo-500/30">
+                <span className="text-sm font-medium text-night-800 dark:text-slate-200">
+                  Montant estimé
+                </span>
+                <span className="text-2xl font-bold text-cargo-600 dark:text-cargo-400">
+                  {loadingEstimate ? (
+                    '…'
+                  ) : montantEstime !== null ? (
+                    <>
+                      <StatCounter value={montantEstime} duration={0.5} /> GNF
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </span>
+              </Card>
 
               <AnimatePresence>
                 {error && (

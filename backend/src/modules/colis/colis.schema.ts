@@ -39,3 +39,8 @@ export const updateColisStatusSchema = z.object({
     'DISPONIBLE_ENTREPOT',
   ]),
 });
+
+export const updateColisPriceSchema = z.object({
+  montantEstime: z.coerce.number().positive('Le montant doit être supérieur à 0.'),
+  motif: z.string().trim().min(3, 'Un motif est requis pour justifier la modification du prix.'),
+});

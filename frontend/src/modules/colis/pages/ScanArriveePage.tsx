@@ -1,16 +1,33 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Keyboard, QrCode } from 'lucide-react';
 import { QrScanner } from '../components/QrScanner';
-import { scanColis, marquerColisLivre, reportWeightDiscrepancy, ScanResult } from '../colis.api';
+import {
+  scanColis,
+  marquerColisLivre,
+  reportWeightDiscrepancy,
+  updateColisStatus,
+  ScanResult,
+} from '../colis.api';
 import { relancerClient } from '@/modules/paiements/paiements.api';
 import { debloquerLivraison } from '@/modules/factures/factures.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { Button, Card, Input, notify } from '@/ui';
+
+// Progression de statut côté Guinée : arrivée → dédouanement → disponible entrepôt (Conakry).
+// Chaque étape n'affiche que le passage suivant, jamais de retour en arrière ni de saut.
+const STATUT_SUIVANT_GUINEE: Record<string, string | undefined> = {
+  ARRIVE: 'EN_DEDOUANEMENT',
+  EN_DEDOUANEMENT: 'DISPONIBLE_ENTREPOT',
+};
 
 export default function ScanArriveePage() {
   const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
+  const [manualTrackingId, setManualTrackingId] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -19,9 +36,11 @@ export default function ScanArriveePage() {
   const [poidsGuinee, setPoidsGuinee] = useState('');
   const [signalingWeight, setSignalingWeight] = useState(false);
   const [weightSignaled, setWeightSignaled] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   async function handleScan(trackingId: string) {
     setScanning(false);
+    setManualEntry(false);
     setLoading(true);
     setError(null);
     setPoidsGuinee('');
@@ -34,6 +53,13 @@ export default function ScanArriveePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleManualSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!manualTrackingId.trim()) return;
+    await handleScan(manualTrackingId.trim());
+    setManualTrackingId('');
   }
 
   async function handleSignalerEcart() {
@@ -86,6 +112,21 @@ export default function ScanArriveePage() {
     }
   }
 
+  async function handleAvancerStatut(nextStatus: string) {
+    if (!result) return;
+    setUpdatingStatus(true);
+    try {
+      await updateColisStatus(result.colis.trackingId, nextStatus);
+      notify.success(`Statut mis à jour : « ${COLIS_STATUS_LABELS[nextStatus] ?? nextStatus} ».`);
+      const refreshed = await scanColis(result.colis.trackingId);
+      setResult(refreshed);
+    } catch (err) {
+      notify.error(extractErrorMessage(err));
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
   async function handleMarquerLivre() {
     if (!result) return;
     setLoading(true);
@@ -104,19 +145,35 @@ export default function ScanArriveePage() {
 
   return (
     <div className="space-y-4">
-      {!scanning && !result && (
-        <Button
-          variant="cargo"
-          fullWidth
-          size="lg"
-          onClick={() => {
-            setResult(null);
-            setError(null);
-            setScanning(true);
-          }}
-        >
-          Scanner un colis (QR Code)
-        </Button>
+      {!scanning && !manualEntry && !result && (
+        <div className="flex gap-2">
+          <Button
+            variant="cargo"
+            fullWidth
+            size="lg"
+            onClick={() => {
+              setResult(null);
+              setError(null);
+              setScanning(true);
+            }}
+          >
+            <QrCode size={18} className="mr-2" />
+            Scanner (QR Code)
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            size="lg"
+            onClick={() => {
+              setResult(null);
+              setError(null);
+              setManualEntry(true);
+            }}
+          >
+            <Keyboard size={18} className="mr-2" />
+            Saisir manuellement
+          </Button>
+        </div>
       )}
 
       {scanning && (
@@ -126,6 +183,41 @@ export default function ScanArriveePage() {
             Annuler
           </Button>
         </div>
+      )}
+
+      {manualEntry && (
+        <form onSubmit={handleManualSubmit} className="space-y-3">
+          <Input
+            type="text"
+            autoFocus
+            label="Numéro de suivi du colis"
+            placeholder="Ex : DSL-2026-00042"
+            value={manualTrackingId}
+            onChange={(e) => setManualTrackingId(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              variant="cargo"
+              fullWidth
+              loading={loading}
+              disabled={!manualTrackingId.trim()}
+            >
+              Rechercher le colis
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setManualEntry(false);
+                setManualTrackingId('');
+              }}
+            >
+              Annuler
+            </Button>
+          </div>
+        </form>
       )}
 
       {loading && <p className="text-center text-sm text-slate-400">Traitement en cours…</p>}
@@ -195,6 +287,25 @@ export default function ScanArriveePage() {
                       Signaler l'écart
                     </Button>
                   </div>
+                )}
+              </div>
+
+              <div className="bg-slate-50 dark:bg-night-700 rounded-lg p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs text-slate-400">Statut du colis</p>
+                  <p className="font-medium text-night-900 dark:text-slate-100">
+                    {COLIS_STATUS_LABELS[result.colis.status] ?? result.colis.status}
+                  </p>
+                </div>
+                {STATUT_SUIVANT_GUINEE[result.colis.status] && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={updatingStatus}
+                    onClick={() => handleAvancerStatut(STATUT_SUIVANT_GUINEE[result.colis.status]!)}
+                  >
+                    Passer à « {COLIS_STATUS_LABELS[STATUT_SUIVANT_GUINEE[result.colis.status]!]} »
+                  </Button>
                 )}
               </div>
 
@@ -286,10 +397,10 @@ export default function ScanArriveePage() {
                 fullWidth
                 onClick={() => {
                   setResult(null);
-                  setScanning(true);
+                  setError(null);
                 }}
               >
-                Scanner un autre colis
+                Contrôler un autre colis
               </Button>
             </Card>
           </motion.div>

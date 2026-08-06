@@ -51,8 +51,13 @@ colisRouter.post(
 );
 colisRouter.patch(
   '/:trackingId/statut',
-  requirePermission('colis:write'),
+  requirePermission('colis:update_status'),
   asyncHandler(colisController.updateColisStatusHandler),
+);
+colisRouter.patch(
+  '/:trackingId/prix',
+  requirePermission('colis:write_pricing'),
+  asyncHandler(colisController.updateColisPriceHandler),
 );
 colisRouter.get(
   '/:colisId/paiements',

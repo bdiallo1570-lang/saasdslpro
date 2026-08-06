@@ -1,10 +1,11 @@
 import { Client, Facture, Paiement } from '@prisma/client';
 
 // Rôles autorisés à voir prix de vente / marges / créances client sur les réponses colis.
-// L'Agent Chine en est exclu (règle corridor Chine→Guinée) même s'il a colis:read — le
-// filtrage se fait ici, en sortie, jamais sur le calcul/stockage. L'Agent Guinée EST autorisé
-// (contrairement à l'Agent Chine) : il gère l'encaissement, il doit voir montant dû/payé/reste.
-const PRICING_ROLES = new Set(['Admin', 'Caissier', 'Agent Guinée']);
+// L'Agent Chine fixe le prix à la création et peut le modifier ensuite (tant qu'aucun paiement
+// n'est enregistré, voir colis.service.ts::updateColisPrice) — il doit donc le voir. L'Agent
+// Guinée gère l'encaissement, il doit voir montant dû/payé/reste. Le filtrage se fait ici, en
+// sortie, jamais sur le calcul/stockage.
+const PRICING_ROLES = new Set(['Admin', 'Caissier', 'Agent Guinée', 'Agent Chine']);
 
 export function canReadPricing(roleName: string): boolean {
   return PRICING_ROLES.has(roleName);

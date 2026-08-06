@@ -197,3 +197,67 @@ export async function updateColisStatus(trackingId: string, status: string, user
     return updated;
   });
 }
+
+// Modification du prix par l'Agent Chine (ou l'Admin), tracée dans AuditLog avec motif
+// obligatoire. Verrouillé dès qu'un paiement a été enregistré sur le colis — le montant payé
+// est figé au taux du moment, le modifier après coup rendrait le solde client incohérent sans
+// logique de remboursement (hors scope). Resynchronise Facture.montantTotal et
+// Client.outstandingBalance dans la même transaction si une facture existe déjà (colis ARRIVE),
+// pour ne jamais laisser Colis/Facture/Client diverger (aucune de ces valeurs n'est recalculée
+// automatiquement ailleurs dans le système).
+export async function updateColisPrice(
+  trackingId: string,
+  nouveauMontant: number,
+  motif: string,
+  userId: string,
+) {
+  const colis = await prisma.colis.findFirst({
+    where: { trackingId, deletedAt: null },
+    include: { facture: { include: { paiements: { where: { deletedAt: null } } } } },
+  });
+  if (!colis) {
+    throw new PricingError('Colis introuvable.', 404);
+  }
+
+  if (colis.facture && colis.facture.paiements.length > 0) {
+    throw new PricingError(
+      'Impossible de modifier le prix : un paiement a déjà été enregistré sur ce colis.',
+      409,
+    );
+  }
+
+  const ancienMontant = Number(colis.montantEstime);
+  const delta = nouveauMontant - ancienMontant;
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.colis.update({
+      where: { id: colis.id },
+      data: { montantEstime: nouveauMontant },
+      include: { client: true },
+    });
+
+    if (colis.factureId) {
+      await tx.facture.update({
+        where: { id: colis.factureId },
+        data: { montantTotal: nouveauMontant },
+      });
+      await tx.client.update({
+        where: { id: colis.clientId },
+        data: { outstandingBalance: { increment: delta } },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        userId,
+        action: 'colis:prix_modifie',
+        entityType: 'Colis',
+        entityId: colis.id,
+        reason: motif,
+        metadata: { trackingId, ancienMontant, nouveauMontant, currency: colis.currency },
+      },
+    });
+
+    return updated;
+  });
+}
