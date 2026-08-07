@@ -8,6 +8,11 @@ export async function searchClientsHandler(req: Request, res: Response) {
   return res.status(200).json({ success: true, data: clients, error: null });
 }
 
+export async function listAllClientsHandler(_req: Request, res: Response) {
+  const clients = await clientsService.listAllClients();
+  return res.status(200).json({ success: true, data: clients, error: null });
+}
+
 export async function createClientHandler(req: Request, res: Response) {
   const parsed = createClientSchema.safeParse(req.body);
   if (!parsed.success) {

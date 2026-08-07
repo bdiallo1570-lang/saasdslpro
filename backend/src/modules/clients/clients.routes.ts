@@ -17,6 +17,12 @@ clientsRouter.post(
   requirePermission('clients:write'),
   asyncHandler(clientsController.createClientHandler),
 );
+// Route spécifique placée AVANT /:id pour ne pas être capturée par la route paramétrique.
+clientsRouter.get(
+  '/liste-complete',
+  requirePermission('clients:read'),
+  asyncHandler(clientsController.listAllClientsHandler),
+);
 clientsRouter.get(
   '/:id',
   requirePermission('clients:read'),

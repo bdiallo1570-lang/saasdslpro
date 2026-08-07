@@ -51,7 +51,7 @@ export function ModifierPrixModal({ colis, onClose, onUpdated }: ModifierPrixMod
             </span>
           </p>
           <Input
-            label="Nouveau montant (GNF)"
+            label={`Nouveau montant (${colis.currency ?? 'GNF'})`}
             type="number"
             min="1"
             value={montant}

@@ -29,3 +29,21 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const res = await apiClient.post<ApiResponse<Client>>('/clients', input);
   return res.data.data!;
 }
+
+export interface ClientListItem {
+  id: string;
+  clientCode: string;
+  fullName: string;
+  phoneGn: string | null;
+  phoneCn: string | null;
+  phoneWhatsapp: string | null;
+  corridor: string;
+  nombreColis: number;
+}
+
+// Liste complète des clients avec nombre de colis — page Clients (Admin/Agent Chine/Agent
+// Guinée). Distinct de searchClients (bornée à 20, sans compteur, utilisée par ClientPicker).
+export async function listAllClients(): Promise<ClientListItem[]> {
+  const res = await apiClient.get<ApiResponse<ClientListItem[]>>('/clients/liste-complete');
+  return res.data.data ?? [];
+}

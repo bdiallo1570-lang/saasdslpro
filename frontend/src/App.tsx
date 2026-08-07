@@ -20,6 +20,7 @@ import LotDetailPage from '@/modules/lots/pages/LotDetailPage';
 import PortailClientPage from '@/modules/simulator/pages/PortailClientPage';
 import CreancesDashboardPage from '@/modules/creances/pages/CreancesDashboardPage';
 import AlertesPage from '@/modules/alertes/pages/AlertesPage';
+import ClientsListPage from '@/modules/clients/pages/ClientsListPage';
 
 export default function App() {
   return (
@@ -74,6 +75,7 @@ export default function App() {
             >
               <Route path="/lots" element={<LotsListPage />} />
               <Route path="/lots/:id" element={<LotDetailPage />} />
+              <Route path="/clients" element={<ClientsListPage />} />
             </Route>
 
             <Route

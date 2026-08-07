@@ -30,6 +30,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
 
   const [montantEstime, setMontantEstime] = useState<number | null>(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
+  const [pricePerKg, setPricePerKg] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,18 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
       ? (Number(longueurCm) * Number(largeurCm) * Number(hauteurCm)) / DIVISEUR_VOLUMETRIQUE
       : 0;
   const poidsTaxable = Math.max(Number(poidsReelKg) || 0, poidsVolumetrique);
+
+  // Tarif/kg en vigueur, affiché dès le choix de catégorie (indépendant du poids saisi) —
+  // jamais codé en dur (règle 3.5 GEMINI.md), toujours dérivé du tarif actif réel.
+  useEffect(() => {
+    if (categorie === 'PERSONNALISE') {
+      setPricePerKg(null);
+      return;
+    }
+    simulatePrice(categorie, 1)
+      .then((result) => setPricePerKg(result.pricePerKg))
+      .catch(() => setPricePerKg(null));
+  }, [categorie]);
 
   useEffect(() => {
     if (!poidsReelKg || Number(poidsReelKg) <= 0 || categorie === 'PERSONNALISE') {
@@ -142,10 +155,17 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   value={categorie}
                   onChange={(e) => setCategorie(e.target.value as PricingCategory)}
                 >
-                  <option value="STANDARD">Standard (160 000 GNF/kg)</option>
-                  <option value="RISQUE">Sensible / à risque (180 000 GNF/kg)</option>
+                  <option value="STANDARD">Standard</option>
+                  <option value="RISQUE">Sensible / à risque</option>
                 </Select>
               </div>
+              {/* Tarif/kg toujours celui en vigueur (jamais codé en dur, règle 3.5 GEMINI.md) —
+                  dérivé de la même simulation que le montant estimé affiché plus bas. */}
+              {pricePerKg && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
+                  Tarif en vigueur : {Number(pricePerKg).toLocaleString('fr-FR')} GNF/kg
+                </p>
+              )}
 
               <div>
                 <p className="block text-sm font-medium text-night-700 dark:text-slate-300 mb-1.5">

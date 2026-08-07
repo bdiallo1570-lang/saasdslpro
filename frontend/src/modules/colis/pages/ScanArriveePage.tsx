@@ -297,7 +297,7 @@ export default function ScanArriveePage() {
                     {COLIS_STATUS_LABELS[result.colis.status] ?? result.colis.status}
                   </p>
                 </div>
-                {STATUT_SUIVANT_GUINEE[result.colis.status] && (
+                {user?.role !== 'Caissier' && STATUT_SUIVANT_GUINEE[result.colis.status] && (
                   <Button
                     variant="secondary"
                     size="sm"

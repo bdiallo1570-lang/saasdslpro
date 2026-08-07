@@ -154,10 +154,11 @@ const STATUTS_MODIFIABLES_MANUELLEMENT = [
   'DISPONIBLE_ENTREPOT',
 ] as const;
 
-// Mise à jour manuelle de statut depuis les pills du Dashboard Financier. LIVRE est exclu
-// délibérément : la transition vers "livré" reste réservée au flux de scan/livraison dédié
-// (marquerColisLivre) qui vérifie le verrou entrepôt lié au paiement (règle 3.4 GEMINI.md) —
-// contourner ce contrôle via un simple update de statut casserait cette règle non négociable.
+// Mise à jour manuelle de statut depuis les pills du Dashboard Financier et depuis l'écran de
+// contrôle Agent Guinée. LIVRE est exclu délibérément : la transition vers "livré" reste
+// réservée au flux de scan/livraison dédié (marquerColisLivre) qui vérifie le verrou entrepôt
+// lié au paiement (règle 3.4 GEMINI.md) — contourner ce contrôle via un simple update de statut
+// casserait cette règle non négociable.
 export async function updateColisStatus(trackingId: string, status: string, userId: string) {
   if (!(STATUTS_MODIFIABLES_MANUELLEMENT as readonly string[]).includes(status)) {
     throw new PricingError(
@@ -169,6 +170,22 @@ export async function updateColisStatus(trackingId: string, status: string, user
   const colis = await prisma.colis.findFirst({ where: { trackingId, deletedAt: null } });
   if (!colis) {
     throw new PricingError('Colis introuvable.', 404);
+  }
+
+  // Interdit tout retour en arrière ou saut : seule la progression vers l'étape suivante (ou
+  // le statut déjà atteint, no-op) est autorisée. Évite qu'un colis déjà facturé/en entrepôt
+  // soit accidentellement remis à un statut antérieur via un appel API direct.
+  const currentIndex = STATUTS_MODIFIABLES_MANUELLEMENT.indexOf(
+    colis.status as (typeof STATUTS_MODIFIABLES_MANUELLEMENT)[number],
+  );
+  const targetIndex = STATUTS_MODIFIABLES_MANUELLEMENT.indexOf(
+    status as (typeof STATUTS_MODIFIABLES_MANUELLEMENT)[number],
+  );
+  if (currentIndex !== -1 && targetIndex < currentIndex) {
+    throw new PricingError(
+      `Impossible de revenir en arrière : le colis est déjà au statut « ${colis.status} ».`,
+      400,
+    );
   }
 
   return prisma.$transaction(async (tx) => {
@@ -230,16 +247,18 @@ export async function updateColisPrice(
   const delta = nouveauMontant - ancienMontant;
 
   return prisma.$transaction(async (tx) => {
-    const updated = await tx.colis.update({
+    await tx.colis.update({
       where: { id: colis.id },
       data: { montantEstime: nouveauMontant },
-      include: { client: true },
     });
 
     if (colis.factureId) {
+      // La facture peut en théorie couvrir plusieurs colis (createFacture accepte un tableau) —
+      // on ajuste son montantTotal du delta plutôt que de l'écraser avec le seul nouveau prix
+      // de ce colis, pour ne pas effacer la contribution des autres colis de la même facture.
       await tx.facture.update({
         where: { id: colis.factureId },
-        data: { montantTotal: nouveauMontant },
+        data: { montantTotal: { increment: delta } },
       });
       await tx.client.update({
         where: { id: colis.clientId },
@@ -258,6 +277,12 @@ export async function updateColisPrice(
       },
     });
 
-    return updated;
+    // Recharge avec la facture+paiements à jour pour que presentColis puisse recalculer
+    // montantDuGnf/resteAPayerGnf/statutPaiement dans la réponse immédiate (sinon le frontend
+    // affiche des valeurs de paiement obsolètes jusqu'au prochain rafraîchissement).
+    return tx.colis.findUniqueOrThrow({
+      where: { id: colis.id },
+      include: { client: true, facture: { include: { paiements: { where: { deletedAt: null } } } } },
+    });
   });
 }
