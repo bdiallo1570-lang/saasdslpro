@@ -25,10 +25,14 @@ app.use(helmet());
 // Autorise à la fois localhost (accès depuis le PC) et l'IP réseau (accès depuis un téléphone
 // sur le même Wi-Fi) — FRONTEND_URL peut contenir plusieurs origines séparées par une virgule.
 const allowedOrigins = env.FRONTEND_URL.split(',').map((origin) => origin.trim());
+// Vercel génère une URL unique par déploiement (preview ou production) en plus de l'alias
+// stable — ex. saasdslpro-abc123-dsl-cargo.vercel.app. On autorise tout sous-domaine
+// *.vercel.app pour ne pas casser l'accès à chaque nouveau déploiement.
+const isVercelPreviewOrigin = (origin: string) => /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || isVercelPreviewOrigin(origin)) {
         callback(null, true);
       } else {
         console.warn(`CORS refusé pour l'origine : ${origin}`);
