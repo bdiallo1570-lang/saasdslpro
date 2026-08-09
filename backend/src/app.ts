@@ -31,6 +31,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn(`CORS refusé pour l'origine : ${origin}`);
         callback(new Error('Origine non autorisée par la politique CORS.'));
       }
     },
