@@ -22,12 +22,20 @@ export interface Colis {
   montantEstime?: string;
   currency?: string;
   status: string;
+  createdAt: string;
+  dateReception: string | null;
   client: Partial<Client> & Pick<Client, 'id' | 'clientCode' | 'fullName'>;
   montantDuGnf?: number;
   montantPayeGnf?: number;
   resteAPayerGnf?: number;
   tropPercuGnf?: number;
   statutPaiement?: StatutPaiementColis;
+}
+
+// Date de réception effective à afficher/trier : la date saisie manuellement si renseignée,
+// sinon l'horodatage système de création.
+export function dateReceptionEffective(colis: Pick<Colis, 'dateReception' | 'createdAt'>): string {
+  return colis.dateReception ?? colis.createdAt;
 }
 
 export interface CreateColisInput {
@@ -40,6 +48,7 @@ export interface CreateColisInput {
   categorieTarif: PricingCategory;
   tarifManuelParKg?: number;
   motifTarifManuel?: string;
+  dateReception?: string;
 }
 
 export async function createColis(input: CreateColisInput): Promise<Colis> {

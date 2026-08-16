@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Wallet, PackageCheck, Receipt, TrendingUp } from 'lucide-react';
 import { Lot, LotStatus, LOT_STATUS_LABELS, setLotFlightInfo, updateLotStatus, assignColisToLot } from '../../lots.api';
 import { RentabiliteLot } from '../../rentabilite.api';
-import { Colis } from '@/modules/colis/colis.api';
+import { Colis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Button, Badge, Input, StatCard, notify } from '@/ui';
 
@@ -206,7 +206,14 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
                 <span className="text-night-800 dark:text-slate-200">
                   {c.trackingId} — {c.client.fullName}
                 </span>
-                <span className="text-slate-400 dark:text-slate-500">{c.poidsReelKg} kg</span>
+                <span className="text-slate-400 dark:text-slate-500">
+                  {c.poidsReelKg} kg ·{' '}
+                  {new Date(dateReceptionEffective(c)).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })}
+                </span>
               </div>
             ))}
           </div>

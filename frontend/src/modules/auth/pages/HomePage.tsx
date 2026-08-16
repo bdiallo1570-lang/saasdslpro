@@ -5,7 +5,10 @@ import { Hero } from '@/modules/landing/sections/Hero';
 import { PriceCalculator } from '@/modules/landing/sections/PriceCalculator';
 import { Testimonials } from '@/modules/landing/sections/Testimonials';
 import { WarehousesSection } from '@/modules/landing/sections/WarehousesSection';
+import { ForbiddenItems } from '@/modules/landing/sections/ForbiddenItems';
+import { FAQ } from '@/modules/landing/sections/FAQ';
 import { Footer } from '@/modules/landing/sections/Footer';
+import { ChatAssistant } from '@/modules/landing/assistant/ChatAssistant';
 
 export default function HomePage() {
   const { isDark, toggle } = useLandingTheme();
@@ -26,7 +29,10 @@ export default function HomePage() {
       <PriceCalculator isDark={isDark} ref={calculatorRef} />
       <Testimonials isDark={isDark} />
       <WarehousesSection isDark={isDark} />
+      <ForbiddenItems isDark={isDark} />
+      <FAQ isDark={isDark} />
       <Footer isDark={isDark} onToggleTheme={toggle} />
+      <ChatAssistant isDark={isDark} />
     </div>
   );
 }

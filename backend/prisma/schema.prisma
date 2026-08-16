@@ -325,6 +325,11 @@ model Colis {
   photos Json? // liste d'URLs/chemins de photos
   status ColisStatus @default(ENREGISTRE)
 
+  // Date de réception saisie manuellement par l'agent (ex : colis physiquement reçu plus tôt
+  // que sa saisie informatique). Optionnelle — si absente, createdAt fait foi comme avant.
+  // Ne remplace jamais createdAt (horodatage système réel, utilisé pour l'audit).
+  dateReception DateTime? @map("date_reception")
+
   createdByUserId String? @map("created_by_user_id")
 
   weightDiscrepancies WeightDiscrepancy[]

@@ -80,6 +80,7 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
         currency,
         photos: input.photos ?? undefined,
         createdByUserId,
+        dateReception: input.dateReception ?? null,
       },
       include: { client: true },
     });
@@ -92,7 +93,10 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
         action: 'colis:cree',
         entityType: 'Colis',
         entityId: created.id,
-        metadata: { trackingId: created.trackingId },
+        metadata: {
+          trackingId: created.trackingId,
+          ...(input.dateReception ? { dateReceptionManuelle: input.dateReception } : {}),
+        },
       },
     });
 
@@ -131,7 +135,7 @@ export async function listColis(params: { lotId?: string; status?: string | stri
       ? { status: params.status as never }
       : {};
 
-  return prisma.colis.findMany({
+  const colis = await prisma.colis.findMany({
     where: {
       deletedAt: null,
       ...(params.lotId ? { lotId: params.lotId } : {}),
@@ -141,8 +145,15 @@ export async function listColis(params: { lotId?: string; status?: string | stri
       client: true,
       facture: { include: { paiements: { where: { deletedAt: null } } } },
     },
-    orderBy: { createdAt: 'desc' },
   });
+
+  // Tri par date de réception effective (dateReception si saisie manuellement, sinon createdAt)
+  // — Prisma ne sait pas trier nativement sur un COALESCE de deux colonnes.
+  return colis.sort((a, b) => dateReceptionEffective(b).getTime() - dateReceptionEffective(a).getTime());
+}
+
+function dateReceptionEffective(colis: { dateReception: Date | null; createdAt: Date }): Date {
+  return colis.dateReception ?? colis.createdAt;
 }
 
 const STATUTS_MODIFIABLES_MANUELLEMENT = [

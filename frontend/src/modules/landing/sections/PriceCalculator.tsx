@@ -5,6 +5,7 @@ import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModa
 import { StatCounter } from '@/ui';
 import { AuroraBackground } from './AuroraBackground';
 import { CursorSpotlight } from './CursorSpotlight';
+import { SectionHeading } from './SectionHeading';
 
 interface PriceCalculatorProps {
   isDark: boolean;
@@ -55,24 +56,13 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
       <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <p className={`text-xs font-semibold uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-            Nos tarifs
-          </p>
-          <h2 className={`text-3xl sm:text-4xl font-bold ${isDark ? 'text-white' : 'text-night-900'}`}>
-            Calculez le prix de votre envoi en direct
-          </h2>
-          <p className={`mt-3 max-w-xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Aucune surprise : le tarif au kilo est fixe et transparent, affiché avant même votre
-            première expédition.
-          </p>
-        </motion.div>
+        <SectionHeading
+          isDark={isDark}
+          eyebrow="Nos tarifs"
+          title="Calculez le prix de votre envoi en direct"
+          description="Aucune surprise : le tarif au kilo est fixe et transparent, affiché avant même votre première expédition."
+          className="mb-12"
+        />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}

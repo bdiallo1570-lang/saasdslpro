@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
-import { listColis, Colis } from '../colis.api';
+import { listColis, Colis, dateReceptionEffective } from '../colis.api';
 import { ModifierPrixModal } from '../components/ModifierPrixModal';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { useAuth } from '@/context/AuthContext';
@@ -65,10 +65,14 @@ export default function ReceptionConsultationPage() {
     [colis],
   );
 
-  const filteredColis = useMemo(
-    () => (query.trim() ? fuse.search(query.trim()).map((r) => r.item) : colis),
-    [query, fuse, colis],
-  );
+  // Le score de pertinence Fuse casserait l'ordre chronologique lors d'une recherche —
+  // on retrie systématiquement par date d'enregistrement décroissante (le plus récent en premier).
+  const filteredColis = useMemo(() => {
+    const base = query.trim() ? fuse.search(query.trim()).map((r) => r.item) : colis;
+    return [...base].sort(
+      (a, b) => new Date(dateReceptionEffective(b)).getTime() - new Date(dateReceptionEffective(a)).getTime(),
+    );
+  }, [query, fuse, colis]);
 
   return (
     <AppShell>
@@ -118,7 +122,14 @@ export default function ReceptionConsultationPage() {
                     {c.trackingId} · {c.client.fullName}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                    {c.description} · {c.poidsReelKg} kg
+                    {c.description} · {c.poidsReelKg} kg · Reçu le{' '}
+                    {new Date(dateReceptionEffective(c)).toLocaleString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </p>
                 </div>
                 <Badge tone={STATUS_TONE[c.status] ?? 'slate'}>

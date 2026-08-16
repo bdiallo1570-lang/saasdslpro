@@ -8,6 +8,8 @@ const NAV_LINKS = [
   { label: 'Suivi de Colis', href: '#suivi' },
   { label: 'Nos Tarifs', href: '#calculateur' },
   { label: 'Espaces Entrepôts', href: '#entrepots' },
+  { label: 'Produits interdits', href: '#produits-interdits' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 interface NavbarProps {

@@ -21,6 +21,11 @@ export async function getPaiementsParClientHandler(req: Request, res: Response) 
   return res.status(200).json({ success: true, data: parClient, error: null });
 }
 
+export async function getPaiementsParLotHandler(_req: Request, res: Response) {
+  const parLot = await paiementsLotService.getPaiementsParLot();
+  return res.status(200).json({ success: true, data: parLot, error: null });
+}
+
 export async function createPaiementHandler(req: Request, res: Response) {
   const parsed = createPaiementColisSchema.safeParse(req.body);
   if (!parsed.success) {

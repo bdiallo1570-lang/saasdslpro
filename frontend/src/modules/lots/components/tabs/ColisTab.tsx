@@ -1,4 +1,4 @@
-import { Colis, StatutPaiementColis } from '@/modules/colis/colis.api';
+import { Colis, StatutPaiementColis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { STATUT_PAIEMENT_LABELS } from '../../paiementsLot.api';
 import { Card, Badge } from '@/ui';
@@ -30,6 +30,7 @@ export function ColisTab({ colis }: ColisTabProps) {
             <thead>
               <tr className="text-left text-xs text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-night-700">
                 <th className="px-5 py-3 font-medium">Colis</th>
+                <th className="px-3 py-3 font-medium">Reçu le</th>
                 <th className="px-3 py-3 font-medium">Client</th>
                 <th className="px-3 py-3 font-medium">Statut</th>
                 <th className="px-3 py-3 font-medium text-right">Dû</th>
@@ -42,6 +43,15 @@ export function ColisTab({ colis }: ColisTabProps) {
               {colis.map((c) => (
                 <tr key={c.id} className="border-b border-slate-100 dark:border-night-700 last:border-0">
                   <td className="px-5 py-3 font-medium text-night-800 dark:text-slate-100">{c.trackingId}</td>
+                  <td className="px-3 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    {new Date(dateReceptionEffective(c)).toLocaleString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </td>
                   <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{c.client.fullName}</td>
                   <td className="px-3 py-3">
                     <Badge tone="slate">{COLIS_STATUS_LABELS[c.status] ?? c.status}</Badge>

@@ -27,6 +27,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [largeurCm, setLargeurCm] = useState('');
   const [hauteurCm, setHauteurCm] = useState('');
   const [categorie, setCategorie] = useState<PricingCategory>('STANDARD');
+  const [dateReceptionManuelle, setDateReceptionManuelle] = useState('');
 
   const [montantEstime, setMontantEstime] = useState<number | null>(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
@@ -90,6 +91,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
         largeurCm: largeurCm ? Number(largeurCm) : undefined,
         hauteurCm: hauteurCm ? Number(hauteurCm) : undefined,
         categorieTarif: categorie,
+        dateReception: dateReceptionManuelle || undefined,
       });
       setCreatedColis(colis);
       notify.success(`Colis enregistré — ${colis.trackingId}`);
@@ -110,6 +112,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
     setLargeurCm('');
     setHauteurCm('');
     setCategorie('STANDARD');
+    setDateReceptionManuelle('');
   }
 
   return (
@@ -200,6 +203,20 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                     {poidsTaxable.toFixed(2)} kg (facturation au poids réel)
                   </p>
                 )}
+              </div>
+
+              <div>
+                <Input
+                  label="Date de réception (optionnel)"
+                  type="datetime-local"
+                  max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  value={dateReceptionManuelle}
+                  onChange={(e) => setDateReceptionManuelle(e.target.value)}
+                />
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  Laisser vide pour utiliser la date et l'heure actuelles. À renseigner si le
+                  colis a été reçu avant sa saisie informatique.
+                </p>
               </div>
 
               <Card glow="cargo" className="px-4 py-3 flex items-center justify-between bg-cargo-50/60 dark:bg-cargo-500/5 border-cargo-200 dark:border-cargo-500/30">

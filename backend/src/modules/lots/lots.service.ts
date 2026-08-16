@@ -27,7 +27,7 @@ export async function listLots() {
 }
 
 export async function getLotById(id: string) {
-  return prisma.lot.findFirst({
+  const lot = await prisma.lot.findFirst({
     where: { id, deletedAt: null },
     include: {
       colis: {
@@ -38,6 +38,14 @@ export async function getLotById(id: string) {
       },
     },
   });
+  if (!lot) return lot;
+
+  // Tri par date de réception effective (dateReception si saisie manuellement, sinon createdAt)
+  // — Prisma ne sait pas trier nativement sur un COALESCE de deux colonnes.
+  lot.colis.sort(
+    (a, b) => (b.dateReception ?? b.createdAt).getTime() - (a.dateReception ?? a.createdAt).getTime(),
+  );
+  return lot;
 }
 
 export async function assignColisToLot(lotId: string, colisIds: string[]) {

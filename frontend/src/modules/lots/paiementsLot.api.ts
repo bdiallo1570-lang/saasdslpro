@@ -35,6 +35,25 @@ export interface ClientPaiementsGroupe {
   colis: ClientColisPaiement[];
 }
 
+export interface LotColisPaiement {
+  colisId: string;
+  trackingId: string;
+  client: { id: string; fullName: string };
+  dûGnf: number;
+  payéGnf: number;
+  resteGnf: number;
+  statutPaiement: StatutPaiementColis;
+}
+
+export interface LotPaiementsGroupe {
+  lot: { id: string; lotNumber: string; flightNumber: string | null; status: string };
+  dûGnf: number;
+  payéGnf: number;
+  resteGnf: number;
+  solde: boolean;
+  colis: LotColisPaiement[];
+}
+
 export interface Paiement {
   id: string;
   factureId: string;
@@ -58,6 +77,13 @@ export interface CreatePaiementColisInput {
 
 export async function getPaiementsParClient(lotId: string): Promise<ClientPaiementsGroupe[]> {
   const res = await apiClient.get<ApiResponse<ClientPaiementsGroupe[]>>(`/lots/${lotId}/paiements/par-client`);
+  return res.data.data ?? [];
+}
+
+// Vue globale "Caisse Madina" — tous les colis facturés groupés par lot, avec dû/payé/reste
+// et le flag `solde` (tous les colis du lot sont soldés) pour le badge "lot traité".
+export async function getPaiementsParLot(): Promise<LotPaiementsGroupe[]> {
+  const res = await apiClient.get<ApiResponse<LotPaiementsGroupe[]>>('/lots/paiements/par-lot');
   return res.data.data ?? [];
 }
 

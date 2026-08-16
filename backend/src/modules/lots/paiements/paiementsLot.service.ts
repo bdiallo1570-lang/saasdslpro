@@ -74,3 +74,80 @@ export async function getPaiementsParClient(lotId: string) {
 
   return Array.from(byClient.values()).sort((a, b) => b.resteGnf - a.resteGnf);
 }
+
+// Vue globale "Caisse Madina" (onglet principal Agent Guinée) : tous les colis facturés,
+// groupés par lot, avec leurs infos comptables (dû/payé/reste). `solde` est vrai quand chaque
+// colis du lot est SOLDE ou TROP_PERCU (reste à payer nul) — sert au badge vert "lot traité".
+// Réutilise computePaiementColis (même source de vérité que getPaiementsParClient/presentColis).
+export async function getPaiementsParLot() {
+  const colis = await prisma.colis.findMany({
+    where: { deletedAt: null, lotId: { not: null }, factureId: { not: null } },
+    include: {
+      client: true,
+      lot: true,
+      facture: { include: { paiements: { where: { deletedAt: null } } } },
+    },
+    orderBy: { trackingId: 'asc' },
+  });
+
+  const byLot = new Map<
+    string,
+    {
+      lot: { id: string; lotNumber: string; flightNumber: string | null; status: string };
+      dûGnf: number;
+      payéGnf: number;
+      resteGnf: number;
+      solde: boolean;
+      colis: {
+        colisId: string;
+        trackingId: string;
+        client: { id: string; fullName: string };
+        dûGnf: number;
+        payéGnf: number;
+        resteGnf: number;
+        statutPaiement: string;
+      }[];
+    }
+  >();
+
+  for (const c of colis) {
+    if (!c.lot) continue;
+    const { montantDuGnf, montantPayeGnf, resteAPayerGnf, statutPaiement } = computePaiementColis(c.facture);
+
+    const entry = byLot.get(c.lot.id) ?? {
+      lot: {
+        id: c.lot.id,
+        lotNumber: c.lot.lotNumber,
+        flightNumber: c.lot.flightNumber,
+        status: c.lot.status,
+      },
+      dûGnf: 0,
+      payéGnf: 0,
+      resteGnf: 0,
+      solde: true,
+      colis: [],
+    };
+
+    entry.dûGnf += montantDuGnf;
+    entry.payéGnf += montantPayeGnf;
+    entry.resteGnf += resteAPayerGnf;
+    if (resteAPayerGnf > 0) entry.solde = false;
+    entry.colis.push({
+      colisId: c.id,
+      trackingId: c.trackingId,
+      client: { id: c.client.id, fullName: c.client.fullName },
+      dûGnf: montantDuGnf,
+      payéGnf: montantPayeGnf,
+      resteGnf: resteAPayerGnf,
+      statutPaiement,
+    });
+
+    byLot.set(c.lot.id, entry);
+  }
+
+  // Lots non soldés en premier (ce qu'il reste à régler), lots traités relégués en fin de liste.
+  return Array.from(byLot.values()).sort((a, b) => {
+    if (a.solde !== b.solde) return a.solde ? 1 : -1;
+    return b.resteGnf - a.resteGnf;
+  });
+}

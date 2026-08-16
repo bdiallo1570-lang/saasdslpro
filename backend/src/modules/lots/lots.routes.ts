@@ -53,6 +53,13 @@ lotsRouter.get(
 );
 
 // Paiements colis regroupés par lot / par client.
+// Route spécifique placée AVANT /:lotId/paiements pour ne pas être capturée par la route
+// paramétrique — vue globale tous lots confondus (onglet Caisse Madina, Agent Guinée).
+lotsRouter.get(
+  '/paiements/par-lot',
+  requirePermission('lots:read_costs'),
+  asyncHandler(paiementsLotController.getPaiementsParLotHandler),
+);
 lotsRouter.get(
   '/:lotId/paiements',
   requirePermission('lots:read_costs'),

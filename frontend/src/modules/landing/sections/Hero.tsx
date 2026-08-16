@@ -32,6 +32,42 @@ const ROTATING_PHRASES = [
 
 const PHRASE_INTERVAL_MS = 4200;
 
+// Révèle un texte mot par mot : chaque mot glisse hors d'un masque (clip via overflow-hidden),
+// stagger court entre les mots. Coûte transform + opacity uniquement — safe à rejouer toutes les
+// 4.2s sans à-coup, contrairement à un flou par caractère.
+function WordReveal({
+  text,
+  className,
+  delayStart = 0,
+}: {
+  text: string;
+  className?: string;
+  delayStart?: number;
+}) {
+  const words = text.split(' ');
+  return (
+    <>
+      {words.map((word, i) => (
+        <span key={i} className="inline-block overflow-hidden align-bottom pb-1 -mb-1">
+          <motion.span
+            initial={{ y: '110%' }}
+            animate={{ y: '0%' }}
+            transition={{
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+              delay: (delayStart + i) * 0.045,
+            }}
+            className={`inline-block ${className ?? ''}`}
+          >
+            {word}
+            {i < words.length - 1 ? ' ' : ''}
+          </motion.span>
+        </span>
+      ))}
+    </>
+  );
+}
+
 export function Hero({ onSimulateClick }: HeroProps) {
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,21 +121,20 @@ export function Hero({ onSimulateClick }: HeroProps) {
           Fret aérien Chine → Guinée
         </motion.p>
 
-        {/* Phrase défilante — transition en fondu + glissement + léger flou pour un effet marquant */}
+        {/* Phrase défilante — moment fort de la page : chaque mot glisse hors d'un masque plutôt
+            qu'un simple fondu, pour un effet de "révélation" propre à ce mécanisme rotatif. */}
         <div className="min-h-[4.5rem] sm:min-h-[3.5rem] flex items-center justify-center px-2">
           <AnimatePresence mode="wait">
             <motion.h1
               key={phraseIndex}
-              initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -18, filter: 'blur(8px)' }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
               className="text-xl sm:text-2xl md:text-3xl font-medium max-w-2xl mx-auto leading-snug tracking-tight text-slate-100 drop-shadow-lg"
             >
-              {ROTATING_PHRASES[phraseIndex].lead}{' '}
-              <span className="bg-gradient-to-r from-sky-400 via-emerald-300 to-cargo-400 bg-clip-text text-transparent font-semibold">
-                {ROTATING_PHRASES[phraseIndex].highlight}
-              </span>
+              <WordReveal text={ROTATING_PHRASES[phraseIndex].lead} />{' '}
+              <WordReveal
+                text={ROTATING_PHRASES[phraseIndex].highlight}
+                delayStart={ROTATING_PHRASES[phraseIndex].lead.split(' ').length}
+                className="bg-gradient-to-r from-sky-400 via-emerald-300 to-cargo-400 bg-clip-text text-transparent font-semibold"
+              />
               .
             </motion.h1>
           </AnimatePresence>

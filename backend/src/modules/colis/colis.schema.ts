@@ -12,6 +12,13 @@ export const createColisSchema = z.object({
   tarifManuelParKg: z.coerce.number().positive().optional(),
   motifTarifManuel: z.string().trim().optional(),
   photos: z.array(z.string()).optional(),
+  // Date de réception réelle du colis, saisie manuellement si différente du moment de la saisie
+  // informatique (ex : colis reçu la veille). Ne peut pas être dans le futur — un colis ne peut
+  // pas être "reçu" avant d'avoir été physiquement reçu.
+  dateReception: z.coerce
+    .date()
+    .max(new Date(), 'La date de réception ne peut pas être dans le futur.')
+    .optional(),
 });
 
 export type CreateColisInput = z.infer<typeof createColisSchema>;

@@ -3,6 +3,7 @@ import { Star, BadgeCheck } from 'lucide-react';
 import { StatCounter } from '@/ui';
 import { AuroraBackground } from './AuroraBackground';
 import { CursorSpotlight } from './CursorSpotlight';
+import { SectionHeading } from './SectionHeading';
 
 interface TestimonialsProps {
   isDark: boolean;
@@ -46,20 +47,12 @@ export function Testimonials({ isDark }: TestimonialsProps) {
       <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-14"
-        >
-          <p className={`text-xs font-semibold uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-            Ils nous font confiance
-          </p>
-          <h2 className={`text-3xl sm:text-4xl font-bold ${isDark ? 'text-white' : 'text-night-900'}`}>
-            Des centaines de commerçants livrés chaque mois
-          </h2>
-        </motion.div>
+        <SectionHeading
+          isDark={isDark}
+          eyebrow="Ils nous font confiance"
+          title="Des centaines de commerçants livrés chaque mois"
+          className="mb-14"
+        />
 
         {/* Métriques */}
         <motion.div
