@@ -31,11 +31,13 @@ export async function listPaiementsHandler(req: Request, res: Response) {
 
 export async function downloadReceiptHandler(req: Request, res: Response) {
   try {
-    const paiement = await paiementsService.getPaiementForReceipt(req.params.id);
+    const { paiement, agent } = await paiementsService.getPaiementForReceipt(req.params.id);
     const pdfBuffer = await generatePaymentReceiptPdf({
       paiement,
       facture: paiement.facture,
       client: paiement.facture.client,
+      colis: paiement.facture.colis,
+      agent,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

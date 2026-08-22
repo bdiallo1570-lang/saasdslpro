@@ -168,10 +168,16 @@ export async function createPaiementForColis(
 export async function getPaiementForReceipt(paiementId: string) {
   const paiement = await prisma.paiement.findFirst({
     where: { id: paiementId, deletedAt: null },
-    include: { facture: { include: { client: true } } },
+    include: { facture: { include: { client: true, colis: true } } },
   });
   if (!paiement) throw new PaiementError('Paiement introuvable.', 404);
-  return paiement;
+
+  // Pas de relation Prisma déclarée sur receivedByUserId (champ libre) — lookup manuel.
+  const agent = paiement.receivedByUserId
+    ? await prisma.user.findUnique({ where: { id: paiement.receivedByUserId } })
+    : null;
+
+  return { paiement, agent };
 }
 
 // Bouton "Relancer sur WhatsApp" — envoie le modèle de relance avec le montant exact dû.
