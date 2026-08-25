@@ -3,18 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ScanArriveePage from '@/modules/colis/pages/ScanArriveePage';
 import CaisseRegistrePage from './CaisseRegistrePage';
 import { LotsAReglerTab } from '../components/LotsAReglerTab';
+import { VueEnsembleCaisseTab } from '../components/VueEnsembleCaisseTab';
 import { AppShell } from '@/layout/AppShell';
 
-type Tab = 'scan' | 'caisse' | 'a-regler';
+type Tab = 'vue-ensemble' | 'scan' | 'caisse' | 'a-regler';
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: 'vue-ensemble', label: "Vue d'ensemble" },
   { key: 'scan', label: 'Scan arrivée' },
   { key: 'caisse', label: 'Caisse du jour' },
   { key: 'a-regler', label: 'Lots à régler' },
 ];
 
 export default function CaisseHubPage() {
-  const [tab, setTab] = useState<Tab>('scan');
+  const [tab, setTab] = useState<Tab>('vue-ensemble');
 
   return (
     <AppShell>
@@ -47,6 +49,7 @@ export default function CaisseHubPage() {
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.2 }}
           >
+            {tab === 'vue-ensemble' && <VueEnsembleCaisseTab />}
             {tab === 'scan' && <ScanArriveePage />}
             {tab === 'caisse' && <CaisseRegistrePage />}
             {tab === 'a-regler' && <LotsAReglerTab />}

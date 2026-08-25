@@ -51,6 +51,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE],
   },
   {
+    label: 'Colis',
+    to: '/colis',
+    icon: 'reception',
+    roles: [ROLE_NAMES.AGENT_GUINEE],
+  },
+  {
     label: 'Caisse Madina',
     to: '/caisse',
     icon: 'caisse',

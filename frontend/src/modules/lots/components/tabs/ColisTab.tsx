@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Colis, StatutPaiementColis, dateReceptionEffective } from '@/modules/colis/colis.api';
+import { ColisActionsModal } from '@/modules/colis/components/ColisActionsModal';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { STATUT_PAIEMENT_LABELS } from '../../paiementsLot.api';
+import { useAuth } from '@/context/AuthContext';
 import { Card, Badge } from '@/ui';
 
 const STATUT_PAIEMENT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
@@ -15,8 +18,14 @@ interface ColisTabProps {
 }
 
 // Onglet "Colis" — liste du manifeste avec colonnes Payé / Reste à payer + pastille de statut
-// (rouge Impayé, orange Partiel, vert Soldé, bleu Trop-perçu).
+// (rouge Impayé, orange Partiel, vert Soldé, bleu Trop-perçu). Pour Admin/Agent Guinée (les
+// seuls avec paiements:write), une ligne cliquable ouvre le panneau d'actions centralisé
+// (paiement, reçu, message client, statut) — évite de naviguer vers un autre écran.
 export function ColisTab({ colis }: ColisTabProps) {
+  const { user } = useAuth();
+  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
+  const canAgir = user?.role === 'Admin' || user?.role === 'Agent Guinée';
+
   return (
     <Card className="overflow-hidden">
       <div className="px-5 py-4 border-b border-slate-100 dark:border-night-700">
@@ -41,7 +50,13 @@ export function ColisTab({ colis }: ColisTabProps) {
             </thead>
             <tbody>
               {colis.map((c) => (
-                <tr key={c.id} className="border-b border-slate-100 dark:border-night-700 last:border-0">
+                <tr
+                  key={c.id}
+                  onClick={canAgir ? () => setSelectedColis(c) : undefined}
+                  className={`border-b border-slate-100 dark:border-night-700 last:border-0 ${
+                    canAgir ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-night-700/50 transition-colors' : ''
+                  }`}
+                >
                   <td className="px-5 py-3 font-medium text-night-800 dark:text-slate-100">{c.trackingId}</td>
                   <td className="px-3 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {new Date(dateReceptionEffective(c)).toLocaleString('fr-FR', {
@@ -77,6 +92,10 @@ export function ColisTab({ colis }: ColisTabProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {canAgir && (
+        <ColisActionsModal colis={selectedColis} onClose={() => setSelectedColis(null)} />
       )}
     </Card>
   );

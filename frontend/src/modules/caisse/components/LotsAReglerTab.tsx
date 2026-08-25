@@ -7,7 +7,10 @@ import {
   STATUT_PAIEMENT_LABELS,
   StatutPaiementColis,
 } from '@/modules/lots/paiementsLot.api';
-import { Card, Badge } from '@/ui';
+import { getColisByTrackingId, Colis } from '@/modules/colis/colis.api';
+import { ColisActionsModal } from '@/modules/colis/components/ColisActionsModal';
+import { extractErrorMessage } from '@/lib/apiClient';
+import { Card, Badge, notify } from '@/ui';
 
 const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -24,6 +27,8 @@ export function LotsAReglerTab() {
   const [groupes, setGroupes] = useState<LotPaiementsGroupe[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedLotId, setExpandedLotId] = useState<string | null>(null);
+  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
+  const [loadingColisId, setLoadingColisId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -37,6 +42,19 @@ export function LotsAReglerTab() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Cette vue n'a que le résumé du colis (dû/payé/reste) — on récupère l'objet complet au clic
+  // pour alimenter le panneau d'actions centralisé (paiement, reçu, message, statut).
+  async function handleOuvrirColis(colisId: string, trackingId: string) {
+    setLoadingColisId(colisId);
+    try {
+      setSelectedColis(await getColisByTrackingId(trackingId));
+    } catch (err) {
+      notify.error(extractErrorMessage(err));
+    } finally {
+      setLoadingColisId(null);
+    }
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -96,9 +114,11 @@ export function LotsAReglerTab() {
                       className="overflow-hidden bg-slate-50 dark:bg-night-900/40"
                     >
                       {g.colis.map((c) => (
-                        <div
+                        <button
                           key={c.colisId}
-                          className="px-5 py-2.5 border-t border-slate-100 dark:border-night-700 flex items-center justify-between gap-3 text-sm"
+                          onClick={() => handleOuvrirColis(c.colisId, c.trackingId)}
+                          disabled={loadingColisId === c.colisId}
+                          className="w-full px-5 py-2.5 border-t border-slate-100 dark:border-night-700 flex items-center justify-between gap-3 text-sm text-left hover:bg-slate-100 dark:hover:bg-night-800/60 transition-colors disabled:opacity-60"
                         >
                           <span className="text-night-700 dark:text-slate-200 truncate">
                             {c.trackingId} — {c.client.fullName}
@@ -111,7 +131,7 @@ export function LotsAReglerTab() {
                           <Badge tone={STATUT_TONE[c.statutPaiement]}>
                             {STATUT_PAIEMENT_LABELS[c.statutPaiement]}
                           </Badge>
-                        </div>
+                        </button>
                       ))}
                     </motion.div>
                   )}
@@ -121,6 +141,12 @@ export function LotsAReglerTab() {
           })}
         </div>
       )}
+
+      <ColisActionsModal
+        colis={selectedColis}
+        onClose={() => setSelectedColis(null)}
+        onUpdated={() => refresh()}
+      />
     </Card>
   );
 }

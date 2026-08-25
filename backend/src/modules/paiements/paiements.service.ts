@@ -11,6 +11,12 @@ export class PaiementError extends Error {
   }
 }
 
+// Le timeout par défaut de Prisma (5s) est trop court pour cette transaction qui enchaîne
+// plusieurs requêtes séquentielles (facture, taux de change, caisse, paiement, facture, client)
+// — chaque aller-retour réseau vers la base compte, surtout en dev où la latence est plus
+// variable qu'en production (backend colocalisé avec la base).
+const TRANSACTION_OPTIONS = { timeout: 15000, maxWait: 10000 };
+
 interface CreatePaiementInput {
   factureId: string;
   montant: number;
@@ -103,7 +109,7 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
     });
 
     return tx.paiement.findUniqueOrThrow({ where: { id: paiement.id } });
-  });
+  }, TRANSACTION_OPTIONS);
 }
 
 export async function listPaiementsByFacture(factureId: string) {

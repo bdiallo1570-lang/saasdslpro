@@ -14,6 +14,7 @@ export type StatutPaiementColis = 'IMPAYE' | 'PARTIEL' | 'SOLDE' | 'TROP_PERCU';
 export interface Colis {
   id: string;
   trackingId: string;
+  lotId: string | null;
   description: string;
   poidsReelKg: string;
   poidsVolumetriqueKg: string;

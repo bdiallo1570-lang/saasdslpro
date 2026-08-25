@@ -11,6 +11,7 @@ import AccessDeniedPage from '@/modules/auth/pages/AccessDeniedPage';
 import DashboardFinancierPage from '@/modules/dashboard/pages/DashboardFinancierPage';
 import ReceptionPage from '@/modules/colis/pages/ReceptionPage';
 import ReceptionConsultationPage from '@/modules/colis/pages/ReceptionConsultationPage';
+import ColisGuineePage from '@/modules/colis/pages/ColisGuineePage';
 import EcartsPoidsPage from '@/modules/colis/pages/EcartsPoidsPage';
 import ExchangeRatesPage from '@/modules/exchangeRates/pages/ExchangeRatesPage';
 import CaisseHubPage from '@/modules/caisse/pages/CaisseHubPage';
@@ -84,6 +85,14 @@ export default function App() {
               }
             >
               <Route path="/caisse" element={<CaisseHubPage />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE]} />
+              }
+            >
+              <Route path="/colis" element={<ColisGuineePage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.CLIENT]} />}>
