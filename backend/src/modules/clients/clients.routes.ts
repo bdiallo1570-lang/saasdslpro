@@ -28,3 +28,13 @@ clientsRouter.get(
   requirePermission('clients:read'),
   asyncHandler(clientsController.getClientHandler),
 );
+clientsRouter.put(
+  '/:id',
+  requirePermission('clients:write'),
+  asyncHandler(clientsController.updateClientHandler),
+);
+clientsRouter.delete(
+  '/:id',
+  requirePermission('clients:write'),
+  asyncHandler(clientsController.deleteClientHandler),
+);

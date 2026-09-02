@@ -43,7 +43,10 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
       } finally {
         setLoading(false);
       }
-    }, 300);
+      // Debounce à 500ms plutôt que 300 — la latence réseau vers la base (Neon, hors Guinée)
+      // dépasse souvent 1s par requête ; un debounce plus court laisse presque chaque frappe
+      // déclencher son propre appel au lieu d'attendre une pause dans la saisie.
+    }, 500);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 

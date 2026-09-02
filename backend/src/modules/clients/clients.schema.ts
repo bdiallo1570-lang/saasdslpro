@@ -12,4 +12,7 @@ export const createClientSchema = z.object({
   address: z.string().trim().optional(),
 });
 
+export const updateClientSchema = createClientSchema;
+
 export type CreateClientInput = z.infer<typeof createClientSchema>;
+export type UpdateClientInput = z.infer<typeof updateClientSchema>;

@@ -1,6 +1,13 @@
 import { Request, Response } from 'express';
 import * as clientsService from './clients.service';
-import { createClientSchema } from './clients.schema';
+import { createClientSchema, updateClientSchema } from './clients.schema';
+
+function handleError(res: Response, error: unknown) {
+  if (error instanceof clientsService.ClientError) {
+    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
+  }
+  throw error;
+}
 
 export async function searchClientsHandler(req: Request, res: Response) {
   const query = typeof req.query.q === 'string' ? req.query.q : undefined;
@@ -29,4 +36,27 @@ export async function getClientHandler(req: Request, res: Response) {
     return res.status(404).json({ success: false, data: null, error: 'Client introuvable.' });
   }
   return res.status(200).json({ success: true, data: client, error: null });
+}
+
+export async function updateClientHandler(req: Request, res: Response) {
+  const parsed = updateClientSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, data: null, error: parsed.error.issues[0].message });
+  }
+
+  try {
+    const client = await clientsService.updateClient(req.params.id, parsed.data);
+    return res.status(200).json({ success: true, data: client, error: null });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function deleteClientHandler(req: Request, res: Response) {
+  try {
+    await clientsService.deleteClient(req.params.id);
+    return res.status(200).json({ success: true, data: null, error: null });
+  } catch (error) {
+    return handleError(res, error);
+  }
 }

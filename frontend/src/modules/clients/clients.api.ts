@@ -25,9 +25,23 @@ export async function searchClients(query: string): Promise<Client[]> {
   return res.data.data ?? [];
 }
 
+export async function getClientById(id: string): Promise<Client> {
+  const res = await apiClient.get<ApiResponse<Client>>(`/clients/${id}`);
+  return res.data.data!;
+}
+
 export async function createClient(input: CreateClientInput): Promise<Client> {
   const res = await apiClient.post<ApiResponse<Client>>('/clients', input);
   return res.data.data!;
+}
+
+export async function updateClient(id: string, input: CreateClientInput): Promise<Client> {
+  const res = await apiClient.put<ApiResponse<Client>>(`/clients/${id}`, input);
+  return res.data.data!;
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  await apiClient.delete<ApiResponse<null>>(`/clients/${id}`);
 }
 
 export interface ClientListItem {

@@ -82,18 +82,20 @@ export function generatePaymentReceiptPdf({ paiement, facture, client, colis, ag
       .font('Helvetica')
       .text(COMPANY.addressGuinee, marginX + 64, 66, { width: contentWidth - 64 });
 
-    // Bandeau "REÇU DE PAIEMENT"
+    let y = headerHeight + 18;
+
+    // Bandeau "REÇU DE PAIEMENT" — centré, juste sous l'en-tête
     doc
       .fillColor(COLOR_CARGO)
       .fontSize(11)
       .font('Helvetica-Bold')
-      .text('REÇU DE PAIEMENT', marginX, headerHeight - 22, {
+      .text('REÇU DE PAIEMENT', marginX, y, {
         width: contentWidth,
-        align: 'right',
+        align: 'center',
         characterSpacing: 1,
       });
 
-    let y = headerHeight + 18;
+    y += 20;
 
     // ─── Bloc N° reçu / date / facture ─────────────────────────────────────
     doc.fillColor(COLOR_SLATE).fontSize(8).font('Helvetica');

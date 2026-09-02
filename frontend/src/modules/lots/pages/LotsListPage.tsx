@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FileDown } from 'lucide-react';
 import { listLots, createLot, Lot, LotStatus, LOT_STATUS_LABELS } from '../lots.api';
+import { downloadBilanPdf } from '../rentabilite.api';
+import { hasPermission } from '@/lib/permissions';
+import { useAuth } from '@/context/AuthContext';
 import { AppShell } from '@/layout/AppShell';
 import { Card, Button, Badge, Input, PageHeader, SkeletonRow } from '@/ui';
 
@@ -17,10 +21,13 @@ const STATUS_TONE: Record<LotStatus, 'sky' | 'cargo' | 'amber' | 'green' | 'slat
 
 export default function LotsListPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const peutVoirRapport = hasPermission(user?.role, 'finance:read_margins');
   const [lots, setLots] = useState<Lot[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [flightNumber, setFlightNumber] = useState('');
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   async function refresh() {
     setLoading(true);
@@ -44,6 +51,16 @@ export default function LotsListPage() {
       navigate(`/lots/${lot.id}`);
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleExportRapport(e: MouseEvent, lot: Lot) {
+    e.stopPropagation();
+    setExportingId(lot.id);
+    try {
+      await downloadBilanPdf(lot.id, lot.lotNumber);
+    } finally {
+      setExportingId(null);
     }
   }
 
@@ -106,7 +123,20 @@ export default function LotsListPage() {
                     {lot._count?.colis ?? 0} colis
                   </p>
                 </div>
-                <Badge tone={STATUS_TONE[lot.status]}>{LOT_STATUS_LABELS[lot.status]}</Badge>
+                <div className="flex items-center gap-3">
+                  {peutVoirRapport && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={exportingId === lot.id}
+                      onClick={(e) => handleExportRapport(e, lot)}
+                    >
+                      <FileDown size={14} className="mr-1.5" />
+                      Rapport
+                    </Button>
+                  )}
+                  <Badge tone={STATUS_TONE[lot.status]}>{LOT_STATUS_LABELS[lot.status]}</Badge>
+                </div>
               </Card>
             </motion.div>
           ))}

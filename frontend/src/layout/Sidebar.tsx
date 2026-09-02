@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { NAV_ITEMS } from './navConfig';
 import { NavIcon } from './NavIcon';
-import { listAlertes } from '@/modules/alertes/alertes.api';
+import { getAlertesCritiquesCount } from './alertesCriticalCount';
 import { ROLE_NAMES } from '@/lib/roles';
 
 export function Sidebar() {
@@ -15,13 +15,12 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  // Compteur d'alertes critiques — chargé une fois au montage (pas de polling agressif),
-  // pour les rôles ayant accès à /alertes uniquement.
+  // Compteur d'alertes critiques — mis en cache 60s (voir alertesCriticalCount.ts) car la
+  // Sidebar est remontée à chaque navigation (AppShell est rendu par page, pas au niveau du
+  // routeur) : sans ce cache, chaque changement de page relance l'appel réseau.
   useEffect(() => {
     if (user?.role === ROLE_NAMES.ADMIN || user?.role === ROLE_NAMES.AGENT_GUINEE) {
-      listAlertes({ niveau: 'CRITIQUE' })
-        .then((alertes) => setAlertesCritiquesCount(alertes.length))
-        .catch(() => setAlertesCritiquesCount(0));
+      getAlertesCritiquesCount().then(setAlertesCritiquesCount);
     }
   }, [user?.role]);
 

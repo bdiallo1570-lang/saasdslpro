@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import Papa from 'papaparse';
 import {
@@ -9,6 +9,7 @@ import {
   RiskTier,
 } from '../creances.api';
 import { relancerClient } from '@/modules/paiements/paiements.api';
+import { ClientActionsModal } from '@/modules/clients/components/ClientActionsModal';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Button, StatCard, notify } from '@/ui';
 
@@ -43,6 +44,7 @@ export default function CreancesDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [relanceEnCours, setRelanceEnCours] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, string>>({});
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -61,7 +63,8 @@ export default function CreancesDashboardPage() {
 
   const totalGeneralGnf = useMemo(() => debiteurs.reduce((sum, d) => sum + d.soldeDu, 0), [debiteurs]);
 
-  async function handleRelance(clientId: string) {
+  async function handleRelance(e: MouseEvent, clientId: string) {
+    e.stopPropagation();
     setRelanceEnCours(clientId);
     try {
       await relancerClient(clientId);
@@ -101,7 +104,7 @@ export default function CreancesDashboardPage() {
     <AppShell>
       <PageHeader
         title="Suivi des créances & impayés"
-        description="Vue d'ensemble des soldes clients et relances en cours."
+        description="Cliquez sur un client pour voir le détail, encaisser un paiement ou le relancer."
       />
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -170,7 +173,8 @@ export default function CreancesDashboardPage() {
                     <motion.tr
                       key={d.client.id}
                       variants={listItem}
-                      className={`border-b border-slate-100 dark:border-night-700 last:border-0 ${
+                      onClick={() => setSelectedClientId(d.client.id)}
+                      className={`border-b border-slate-100 dark:border-night-700 last:border-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-night-700/50 transition-colors ${
                         surligne ? 'bg-red-50 dark:bg-red-500/10' : ''
                       }`}
                     >
@@ -198,7 +202,7 @@ export default function CreancesDashboardPage() {
                           variant="secondary"
                           size="sm"
                           loading={relanceEnCours === d.client.id}
-                          onClick={() => handleRelance(d.client.id)}
+                          onClick={(e) => handleRelance(e, d.client.id)}
                         >
                           Relancer
                         </Button>
@@ -214,6 +218,12 @@ export default function CreancesDashboardPage() {
           </div>
         )}
       </Card>
+
+      <ClientActionsModal
+        clientId={selectedClientId}
+        onClose={() => setSelectedClientId(null)}
+        onUpdated={refresh}
+      />
     </AppShell>
   );
 }

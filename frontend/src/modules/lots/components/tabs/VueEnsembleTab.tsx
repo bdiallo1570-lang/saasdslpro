@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, PackageCheck, Receipt, TrendingUp } from 'lucide-react';
+import { Wallet, PackageCheck, Receipt, TrendingUp, FileDown } from 'lucide-react';
 import { Lot, LotStatus, LOT_STATUS_LABELS, setLotFlightInfo, updateLotStatus, assignColisToLot } from '../../lots.api';
-import { RentabiliteLot } from '../../rentabilite.api';
+import { RentabiliteLot, downloadBilanPdf } from '../../rentabilite.api';
 import { Colis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Button, Badge, Input, StatCard, notify } from '@/ui';
@@ -38,6 +38,7 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
   const [departureDate, setDepartureDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exportingRapport, setExportingRapport] = useState(false);
 
   const currentIndex = STATUS_ORDER.indexOf(lot.status);
   const nextStatus = STATUS_ORDER[currentIndex + 1];
@@ -83,6 +84,15 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
     }
   }
 
+  async function handleExportRapport() {
+    setExportingRapport(true);
+    try {
+      await downloadBilanPdf(lot.id, lot.lotNumber);
+    } finally {
+      setExportingRapport(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {(user?.role === 'Admin' || user?.role === 'Agent Guinée') && (
@@ -90,40 +100,45 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <StatCard
-            label="CA facturé"
-            value={rentabilite?.revenus.caFactureGnf ?? 0}
-            formatter={formatGnf}
-            tone="sky"
-            icon={<Receipt size={18} />}
-            loading={rentabiliteLoading}
-          />
-          <StatCard
-            label="Encaissé"
-            value={rentabilite?.revenus.encaissementsGnf ?? 0}
-            formatter={formatGnf}
-            tone="green"
-            icon={<Wallet size={18} />}
-            loading={rentabiliteLoading}
-          />
-          <StatCard
-            label="Dépenses"
-            value={rentabilite?.depenses.totalGnf ?? 0}
-            formatter={formatGnf}
-            tone="cargo"
-            icon={<PackageCheck size={18} />}
-            loading={rentabiliteLoading}
-          />
-          <StatCard
-            label="Marge brute"
-            value={margeBrute}
-            formatter={formatGnf}
-            tone={margeBrute >= 0 ? 'green' : 'red'}
-            icon={<TrendingUp size={18} />}
-            loading={rentabiliteLoading}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="CA facturé"
+              value={rentabilite?.revenus.caFactureGnf ?? 0}
+              formatter={formatGnf}
+              tone="sky"
+              icon={<Receipt size={18} />}
+              loading={rentabiliteLoading}
+            />
+            <StatCard
+              label="Encaissé"
+              value={rentabilite?.revenus.encaissementsGnf ?? 0}
+              formatter={formatGnf}
+              tone="green"
+              icon={<Wallet size={18} />}
+              loading={rentabiliteLoading}
+            />
+            <StatCard
+              label="Dépenses"
+              value={rentabilite?.depenses.totalGnf ?? 0}
+              formatter={formatGnf}
+              tone="cargo"
+              icon={<PackageCheck size={18} />}
+              loading={rentabiliteLoading}
+            />
+            <StatCard
+              label="Marge brute"
+              value={margeBrute}
+              formatter={formatGnf}
+              tone={margeBrute >= 0 ? 'green' : 'red'}
+              icon={<TrendingUp size={18} />}
+              loading={rentabiliteLoading}
+            />
+          </div>
+          <Button variant="secondary" size="sm" className="mt-3" loading={exportingRapport} onClick={handleExportRapport}>
+            <FileDown size={14} className="mr-1.5" />
+            Télécharger le rapport du lot (PDF)
+          </Button>
         </motion.div>
       )}
 

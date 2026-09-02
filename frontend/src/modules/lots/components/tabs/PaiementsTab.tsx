@@ -174,7 +174,14 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                         </p>
                       </div>
                     </div>
-                    {g.resteGnf > 0 ? (
+                    {g.dûGnf <= 0 ? (
+                      // dûGnf à 0 signifie qu'aucun colis de ce client n'est encore facturé
+                      // (pas de Facture créée) — à ne jamais confondre avec "Soldé" (facturé
+                      // ET payé). C'est la confusion qui a fait apparaître un client n'ayant
+                      // rien payé comme "Soldé" alors que son colis n'avait simplement pas
+                      // encore de facture.
+                      <Badge tone="slate">Non facturé</Badge>
+                    ) : g.resteGnf > 0 ? (
                       <Badge tone="red">Reste dû</Badge>
                     ) : (
                       <Badge tone="green">Soldé</Badge>

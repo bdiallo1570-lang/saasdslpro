@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { listAllClients, ClientListItem } from '../clients.api';
+import { ClientActionsModal } from '../components/ClientActionsModal';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Input, Select } from '@/ui';
 
@@ -23,6 +24,7 @@ export default function ClientsListPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [corridorFiltre, setCorridorFiltre] = useState(CORRIDOR_TOUS);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -55,7 +57,7 @@ export default function ClientsListPage() {
     <AppShell>
       <PageHeader
         title="Clients"
-        description="Vue d'ensemble de tous les clients, leur corridor et leur nombre de colis."
+        description="Cliquez sur un client pour voir ses colis, encaisser, le relancer ou modifier ses informations."
       />
 
       <Card className="overflow-hidden">
@@ -106,7 +108,8 @@ export default function ClientsListPage() {
                   <motion.tr
                     key={c.id}
                     variants={listItem}
-                    className="border-b border-slate-100 dark:border-night-700 last:border-0"
+                    onClick={() => setSelectedClientId(c.id)}
+                    className="border-b border-slate-100 dark:border-night-700 last:border-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-night-700/50 transition-colors"
                   >
                     <td className="px-5 py-3">
                       <p className="font-medium text-night-800 dark:text-slate-100">{c.fullName}</p>
@@ -128,6 +131,12 @@ export default function ClientsListPage() {
           </div>
         )}
       </Card>
+
+      <ClientActionsModal
+        clientId={selectedClientId}
+        onClose={() => setSelectedClientId(null)}
+        onUpdated={refresh}
+      />
     </AppShell>
   );
 }

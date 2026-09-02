@@ -17,6 +17,7 @@ export class PaiementError extends Error {
 // variable qu'en production (backend colocalisé avec la base).
 const TRANSACTION_OPTIONS = { timeout: 15000, maxWait: 10000 };
 
+
 interface CreatePaiementInput {
   factureId: string;
   montant: number;
@@ -36,6 +37,14 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
       include: { paiements: { where: { deletedAt: null } }, client: true, colis: true },
     });
     if (!facture) throw new PaiementError('Facture introuvable.', 404);
+
+    // Une facture déjà soldée (reste à payer = 0) ne doit plus accepter de nouveau paiement —
+    // sans ce garde-fou, un agent qui ressaisit un encaissement déjà enregistré (parfois des
+    // heures après, donc hors de portée d'une simple fenêtre anti double-clic) crée un doublon
+    // silencieux : le client apparaît en trop-perçu alors qu'il n'a payé qu'une fois.
+    if (facture.status === 'PAYE') {
+      throw new PaiementError('Cette facture est déjà soldée — aucun nouveau paiement ne peut y être ajouté.', 409);
+    }
 
     const { rate: tauxVersGnf, source: tauxSource, lotId: tauxLotId } = await resolveRateForFacture(
       input.currency,
