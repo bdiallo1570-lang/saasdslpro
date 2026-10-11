@@ -92,7 +92,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.94 }}
         aria-label={open ? 'Fermer Oury' : "Ouvrir Oury, l'assistant virtuel"}
-        className="fixed bottom-5 right-5 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-sky-500 to-cargo-500 shadow-glow-cargo flex items-center justify-center text-white"
+        className="fixed bottom-5 right-5 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_0_1px_rgba(14,165,233,0.4),0_8px_24px_-4px_rgba(14,165,233,0.35)] flex items-center justify-center text-white"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
@@ -127,7 +127,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
             }`}
           >
             {/* En-tête */}
-            <div className="shrink-0 px-4 py-3.5 flex items-center gap-2.5 bg-gradient-to-r from-sky-500 to-cargo-500 text-white">
+            <div className="shrink-0 px-4 py-3.5 flex items-center gap-2.5 bg-gradient-to-r from-blue-400 to-blue-600 text-white">
               <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                 <Sparkles size={16} />
               </div>
@@ -150,7 +150,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                     <div
                       className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                         m.role === 'user'
-                          ? 'bg-sky-500 text-white rounded-br-md'
+                          ? 'bg-blue-500 text-white rounded-br-md'
                           : isDark
                             ? 'bg-night-700 text-slate-200 rounded-bl-md'
                             : 'bg-slate-100 text-slate-700 rounded-bl-md'
@@ -228,8 +228,8 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                 placeholder="Posez votre question…"
                 className={`flex-1 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-colors ${
                   isDark
-                    ? 'bg-night-900 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-400/50'
-                    : 'bg-slate-100 text-night-900 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400/40'
+                    ? 'bg-night-900 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-400/50'
+                    : 'bg-slate-100 text-night-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-400/40'
                 }`}
               />
               <motion.button
@@ -238,7 +238,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                 type="submit"
                 disabled={!input.trim()}
                 aria-label="Envoyer"
-                className="shrink-0 h-10 w-10 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-white flex items-center justify-center transition-colors"
+                className="shrink-0 h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-400 disabled:opacity-40 text-white flex items-center justify-center transition-colors"
               >
                 <Send size={16} />
               </motion.button>

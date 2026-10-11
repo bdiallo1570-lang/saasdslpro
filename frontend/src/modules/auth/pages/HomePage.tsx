@@ -9,6 +9,7 @@ import { ForbiddenItems } from '@/modules/landing/sections/ForbiddenItems';
 import { FAQ } from '@/modules/landing/sections/FAQ';
 import { Footer } from '@/modules/landing/sections/Footer';
 import { ChatAssistant } from '@/modules/landing/assistant/ChatAssistant';
+import { WhatsAppFab } from '@/modules/landing/assistant/WhatsAppFab';
 
 export default function HomePage() {
   const { isDark, toggle } = useLandingTheme();
@@ -33,6 +34,7 @@ export default function HomePage() {
       <FAQ isDark={isDark} />
       <Footer isDark={isDark} onToggleTheme={toggle} />
       <ChatAssistant isDark={isDark} />
+      <WhatsAppFab />
     </div>
   );
 }
