@@ -11,6 +11,9 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   OTP_EXPIRES_IN_MINUTES: z.coerce.number().default(5),
+  // Optionnelles — tant qu'absentes, getWhatsAppProvider() retombe sur le stub (log console).
+  GREEN_API_INSTANCE_ID: z.string().optional(),
+  GREEN_API_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

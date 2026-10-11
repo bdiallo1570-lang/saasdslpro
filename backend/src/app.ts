@@ -21,6 +21,12 @@ import { parametresAlertesRouter } from '@/modules/parametres/parametresAlertes.
 
 export const app = express();
 
+// Nécessaire pour que le rate limiting (et tout req.ip) identifie le vrai client plutôt que le
+// reverse proxy de l'hébergeur — sans ça, toutes les requêtes partageraient l'IP du proxy et
+// un seul utilisateur pourrait bloquer tout le monde. `1` = on fait confiance au premier saut
+// uniquement (le proxy immédiat), pas à une chaîne X-Forwarded-For arbitraire côté client.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 // Autorise à la fois localhost (accès depuis le PC) et l'IP réseau (accès depuis un téléphone
 // sur le même Wi-Fi) — FRONTEND_URL peut contenir plusieurs origines séparées par une virgule.

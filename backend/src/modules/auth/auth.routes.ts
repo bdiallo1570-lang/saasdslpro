@@ -3,16 +3,30 @@ import * as authController from './auth.controller';
 import { requireAuth } from '@/middleware/auth';
 import { prisma } from '@/lib/prisma';
 import { asyncHandler } from '@/lib/asyncHandler';
+import {
+  loginRateLimiter,
+  otpRequestRateLimiter,
+  otpVerifyRateLimiter,
+  refreshRateLimiter,
+} from '@/middleware/rateLimit';
 
 export const authRouter = Router();
 
-authRouter.post('/login', asyncHandler(authController.loginHandler));
-authRouter.post('/otp/request', asyncHandler(authController.requestOtpHandler));
-authRouter.post('/otp/verify', asyncHandler(authController.verifyOtpHandler));
-authRouter.post('/refresh', asyncHandler(authController.refreshHandler));
+authRouter.post('/login', loginRateLimiter, asyncHandler(authController.loginHandler));
+authRouter.post('/otp/request', otpRequestRateLimiter, asyncHandler(authController.requestOtpHandler));
+authRouter.post('/otp/verify', otpVerifyRateLimiter, asyncHandler(authController.verifyOtpHandler));
+authRouter.post('/refresh', refreshRateLimiter, asyncHandler(authController.refreshHandler));
 authRouter.post('/logout', asyncHandler(authController.logoutHandler));
-authRouter.post('/password/reset-request', asyncHandler(authController.requestPasswordResetHandler));
-authRouter.post('/password/reset-confirm', asyncHandler(authController.confirmPasswordResetHandler));
+authRouter.post(
+  '/password/reset-request',
+  otpRequestRateLimiter,
+  asyncHandler(authController.requestPasswordResetHandler),
+);
+authRouter.post(
+  '/password/reset-confirm',
+  otpVerifyRateLimiter,
+  asyncHandler(authController.confirmPasswordResetHandler),
+);
 
 // Retourne le profil de l'utilisateur connecté (utile pour la redirection côté frontend au reload).
 authRouter.get(
