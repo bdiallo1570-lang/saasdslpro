@@ -1,6 +1,27 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+const LAN_HOST = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/;
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1)$/;
+
+// Quand le site est ouvert depuis un téléphone via l'IP du Mac (ex. http://192.168.1.100:5173),
+// « localhost » désigne le téléphone lui-même : l'API y est introuvable (« erreur de connexion »).
+// On remplace alors localhost par l'adresse qui sert la page. Sans effet en production, où
+// VITE_API_BASE_URL pointe vers le vrai serveur, ni sur l'ordinateur qui héberge le serveur.
+function resolveApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+  try {
+    const url = new URL(configured);
+    if (LOCAL_HOST.test(url.hostname) && LAN_HOST.test(window.location.hostname)) {
+      url.hostname = window.location.hostname;
+      return url.toString().replace(/\/$/, '');
+    }
+  } catch {
+    /* URL invalide : on la garde telle quelle */
+  }
+  return configured;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

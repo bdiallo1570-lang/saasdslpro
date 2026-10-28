@@ -1,3 +1,4 @@
+import { copyToClipboard } from '@/lib/clipboard';
 import { useState, useEffect } from 'react';
 import { listWarehouses, WarehouseLocation } from './warehouses.api';
 import { Modal, Card, Button, Badge, notify } from '@/ui';
@@ -26,7 +27,10 @@ export function WarehouseAddressModal({ open, onClose }: WarehouseAddressModalPr
     const text = [warehouse.name, warehouse.addressZh, warehouse.addressFr]
       .filter(Boolean)
       .join('\n');
-    await navigator.clipboard.writeText(text);
+    if (!(await copyToClipboard(text))) {
+      notify.error('Impossible de copier — sélectionnez le texte manuellement.');
+      return;
+    }
     setCopiedId(warehouse.id);
     notify.success('Adresse copiée dans le presse-papiers.');
     setTimeout(() => setCopiedId(null), 2000);

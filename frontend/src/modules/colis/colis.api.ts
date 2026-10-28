@@ -31,6 +31,14 @@ export interface Colis {
   resteAPayerGnf?: number;
   tropPercuGnf?: number;
   statutPaiement?: StatutPaiementColis;
+  facture?: {
+    id: string;
+    factureNumber: string;
+    status: 'IMPAYE' | 'PARTIEL' | 'PAYE';
+    montantTotal?: string;
+    currency?: string;
+    livraisonDebloqueeManuel: boolean;
+  } | null;
 }
 
 // Date de réception effective à afficher/trier : la date saisie manuellement si renseignée,
@@ -64,6 +72,7 @@ export async function getColisByTrackingId(trackingId: string): Promise<Colis> {
 
 export async function listColis(params?: {
   lotId?: string;
+  clientId?: string;
   status?: string | string[];
 }): Promise<Colis[]> {
   const status = Array.isArray(params?.status) ? params.status.join(',') : params?.status;
@@ -199,8 +208,6 @@ export async function resolveWeightDiscrepancy(
 
 export interface PublicTrackingResult {
   trackingId: string;
-  description: string;
-  poidsReelKg: string;
   status: string;
   createdAt: string;
   lot: {

@@ -3,7 +3,7 @@ import { ROLE_NAMES } from '@/lib/roles';
 export interface NavItem {
   label: string;
   to: string;
-  icon: 'dashboard' | 'creances' | 'reception' | 'lots' | 'caisse' | 'client' | 'alert' | 'settings';
+  icon: 'dashboard' | 'creances' | 'reception' | 'lots' | 'caisse' | 'client' | 'alert' | 'settings' | 'factures';
   roles: string[];
 }
 
@@ -61,6 +61,12 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/caisse',
     icon: 'caisse',
     roles: [ROLE_NAMES.AGENT_GUINEE, ROLE_NAMES.CAISSIER],
+  },
+  {
+    label: 'Factures',
+    to: '/factures',
+    icon: 'factures',
+    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE, ROLE_NAMES.CAISSIER],
   },
   {
     label: 'Caisse (consultation)',

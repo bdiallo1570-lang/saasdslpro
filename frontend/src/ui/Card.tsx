@@ -22,8 +22,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <motion.div
         ref={ref}
-        className={`rounded-2xl border border-slate-200 bg-white shadow-card dark:border-night-600 dark:bg-night-800 dark:shadow-card-dark transition-all duration-200 ${
-          interactive ? `cursor-pointer ${glowClass} hover:-translate-y-0.5` : ''
+        className={`rounded-2xl border border-slate-200/80 bg-white shadow-card dark:border-night-600 dark:bg-night-800 dark:shadow-card-dark transition-[transform,box-shadow,border-color] duration-300 ease-out ${
+          interactive ? `cursor-pointer ${glowClass} hover:-translate-y-1` : ''
         } ${className}`}
         {...props}
       >

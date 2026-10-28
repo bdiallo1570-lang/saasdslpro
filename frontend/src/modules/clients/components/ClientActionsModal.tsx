@@ -59,8 +59,7 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
     if (!clientId) return;
     setLoadingColis(true);
     try {
-      const tous = await listColis();
-      setColisDuClient(tous.filter((c) => c.client.id === clientId));
+      setColisDuClient(await listColis({ clientId }));
     } finally {
       setLoadingColis(false);
     }

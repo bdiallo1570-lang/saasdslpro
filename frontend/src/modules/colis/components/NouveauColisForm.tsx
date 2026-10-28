@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClientPicker } from '@/modules/clients/components/ClientPicker';
 import { Client } from '@/modules/clients/clients.api';
@@ -42,6 +42,11 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
       ? (Number(longueurCm) * Number(largeurCm) * Number(hauteurCm)) / DIVISEUR_VOLUMETRIQUE
       : 0;
   const poidsTaxable = Math.max(Number(poidsReelKg) || 0, poidsVolumetrique);
+
+  const maxDateReception = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }, []);
 
   // Tarif/kg en vigueur, affiché dès le choix de catégorie (indépendant du poids saisi) —
   // jamais codé en dur (règle 3.5 GEMINI.md), toujours dérivé du tarif actif réel.
@@ -209,7 +214,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                 <Input
                   label="Date de réception (optionnel)"
                   type="datetime-local"
-                  max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  max={maxDateReception}
                   value={dateReceptionManuelle}
                   onChange={(e) => setDateReceptionManuelle(e.target.value)}
                 />

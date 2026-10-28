@@ -116,7 +116,7 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
       'Équivalent GNF': Math.round(Number(d.montantGnf)),
     }));
     const csv = Papa.unparse(rows);
-    const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -229,9 +229,6 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
             />
             <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
               <option value="GNF">GNF</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="CNY">CNY</option>
             </Select>
           </div>
           {currency !== 'GNF' && (

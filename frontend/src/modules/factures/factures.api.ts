@@ -42,3 +42,14 @@ export async function debloquerLivraison(factureId: string, motif: string): Prom
   });
   return res.data.data!;
 }
+
+export async function downloadFacturePdf(factureId: string, factureNumber: string): Promise<void> {
+  const res = await apiClient.get(`/factures/${factureId}/pdf`, { responseType: 'blob' });
+  const blob = new Blob([res.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `facture-${factureNumber}.pdf`;
+  link.click();
+  window.URL.revokeObjectURL(url);
+}

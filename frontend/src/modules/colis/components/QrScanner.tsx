@@ -11,7 +11,10 @@ const SCANNER_ELEMENT_ID = 'dsl-qr-scanner';
 export function QrScanner({ onScan, active }: QrScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const onScanRef = useRef(onScan);
-  onScanRef.current = onScan;
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
 
   useEffect(() => {
     if (!active) return;

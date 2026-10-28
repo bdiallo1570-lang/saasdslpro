@@ -22,6 +22,7 @@ import PortailClientPage from '@/modules/simulator/pages/PortailClientPage';
 import CreancesDashboardPage from '@/modules/creances/pages/CreancesDashboardPage';
 import AlertesPage from '@/modules/alertes/pages/AlertesPage';
 import ClientsListPage from '@/modules/clients/pages/ClientsListPage';
+import FacturesPage from '@/modules/factures/pages/FacturesPage';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/caisse/consultation" element={<CaisseConsultationPage />} />
               <Route path="/ecarts-poids" element={<EcartsPoidsPage />} />
               <Route path="/parametres/taux-change" element={<ExchangeRatesPage />} />
+              <Route path="/factures" element={<FacturesPage />} />
             </Route>
 
             <Route
@@ -85,6 +87,7 @@ export default function App() {
               }
             >
               <Route path="/caisse" element={<CaisseHubPage />} />
+              <Route path="/factures" element={<FacturesPage />} />
             </Route>
 
             <Route

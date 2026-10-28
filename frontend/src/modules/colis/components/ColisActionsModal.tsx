@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, FormEvent } from 'react';
-import { CreditCard, Receipt, Truck, Scale, DollarSign, AlertTriangle } from 'lucide-react';
+import { CreditCard, Receipt, Truck, Scale, DollarSign, AlertTriangle, FileText, Download } from 'lucide-react';
 import {
   Colis,
   updateColisStatus,
@@ -20,7 +20,7 @@ import {
   MODE_PAIEMENT_LABELS,
   STATUT_PAIEMENT_LABELS,
 } from '@/modules/lots/paiementsLot.api';
-import { debloquerLivraison } from '@/modules/factures/factures.api';
+import { debloquerLivraison, downloadFacturePdf } from '@/modules/factures/factures.api';
 import { RelancerWhatsAppButton } from '@/modules/paiements/components/RelancerWhatsAppButton';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { extractErrorMessage } from '@/lib/apiClient';
@@ -98,6 +98,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
   const [poidsGuinee, setPoidsGuinee] = useState('');
   const [signalingWeight, setSignalingWeight] = useState(false);
 
+  const [downloadingDoc, setDownloadingDoc] = useState<'facture' | 'bonsortie' | null>(null);
+
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [loadingScan, setLoadingScan] = useState(false);
@@ -153,7 +155,6 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
     setMotifDeblocage('');
     setShowDeblocageForm(false);
     setScanResult(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colisProp]);
 
   useEffect(() => {
@@ -304,6 +305,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
   const prixVerrouille =
     colis.statutPaiement === 'PARTIEL' || colis.statutPaiement === 'SOLDE' || colis.statutPaiement === 'TROP_PERCU';
 
+  const peutVoirDocuments = hasPermission(role, 'factures:read');
+
   const tabs = [
     { key: 'infos', label: 'Infos' },
     ...(peutModifierPrix ? [{ key: 'prix', label: 'Prix' }] : []),
@@ -311,6 +314,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
     ...(peutPayer ? [{ key: 'recu', label: 'Reçu' }] : []),
     ...(peutSignalerEcart ? [{ key: 'ecart', label: 'Écart de poids' }] : []),
     ...(peutChangerStatut ? [{ key: 'statut', label: 'Statut' }] : []),
+    ...(peutVoirDocuments ? [{ key: 'documents', label: 'Documents' }] : []),
     ...(peutMessager ? [{ key: 'message', label: 'Message client' }] : []),
   ];
 
@@ -440,9 +444,6 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 />
                 <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                   <option value="GNF">GNF</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="CNY">CNY</option>
                 </Select>
               </div>
               {currency !== 'GNF' && (
@@ -625,6 +626,101 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
             </Button>
           ) : (
             <p className="text-sm text-slate-400 dark:text-slate-500">Aucune avancée de statut disponible pour le moment.</p>
+          )}
+        </div>
+      )}
+
+      {tab === 'documents' && (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Téléchargez les documents officiels liés à ce colis.
+          </p>
+
+          {/* Facture PDF */}
+          {colis.facture ? (
+            <div className="rounded-lg border border-slate-200 dark:border-night-600 p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-sky-50 dark:bg-sky-500/10 p-2">
+                  <FileText size={18} className="text-sky-600 dark:text-sky-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-night-800 dark:text-slate-100">{colis.facture.factureNumber}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Facture · {Number(colis.facture.montantTotal ?? 0).toLocaleString('fr-FR')} {colis.facture.currency ?? 'GNF'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={downloadingDoc === 'facture'}
+                onClick={async () => {
+                  if (!colis.facture) return;
+                  setDownloadingDoc('facture');
+                  try {
+                    await downloadFacturePdf(colis.facture.id, colis.facture.factureNumber);
+                  } catch (err) {
+                    notify.error(extractErrorMessage(err));
+                  } finally {
+                    setDownloadingDoc(null);
+                  }
+                }}
+              >
+                <Download size={14} className="mr-1.5" />
+                PDF
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 p-4 text-center">
+              <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">Aucune facture générée pour ce colis</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">La facture sera disponible dès que le caissier l'émettra.</p>
+            </div>
+          )}
+
+          {/* Bon de sortie PDF */}
+          {(colis.status === 'LIVRE' || colis.facture?.status === 'PAYE' || colis.facture?.livraisonDebloqueeManuel) && (
+            <div className="rounded-lg border border-slate-200 dark:border-night-600 p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-cargo-50 dark:bg-cargo-500/10 p-2">
+                  <Truck size={18} className="text-cargo-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-night-800 dark:text-slate-100">Bon de sortie d'entrepôt</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Document de livraison officiel signé</p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={downloadingDoc === 'bonsortie'}
+                onClick={async () => {
+                  setDownloadingDoc('bonsortie');
+                  try {
+                    const apiBase = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000') + '/api/v1';
+                    const token = localStorage.getItem('dsl_token');
+                    const resp = await fetch(
+                      `${apiBase}/colis/${colis.trackingId}/bon-sortie-pdf`,
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
+                    if (!resp.ok) throw new Error('Impossible de générer le bon de sortie.');
+                    const blob = await resp.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `bon-sortie-${colis.trackingId}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err) {
+                    notify.error(extractErrorMessage(err));
+                  } finally {
+                    setDownloadingDoc(null);
+                  }
+                }}
+              >
+                <Download size={14} className="mr-1.5" />
+                PDF
+              </Button>
+            </div>
           )}
         </div>
       )}

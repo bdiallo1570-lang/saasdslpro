@@ -10,6 +10,7 @@ const PATHS: Record<NavItem['icon'], string> = {
   alert: 'M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z',
   settings:
     'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm9-3a9 9 0 0 0-.1-1.3l2-1.6-2-3.4-2.4 1a9 9 0 0 0-2.2-1.3L16 2h-4l-.3 2.4a9 9 0 0 0-2.2 1.3l-2.4-1-2 3.4 2 1.6A9 9 0 0 0 3 12c0 .4 0 .9.1 1.3l-2 1.6 2 3.4 2.4-1a9 9 0 0 0 2.2 1.3L8 22h4l.3-2.4a9 9 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.9.1-1.3Z',
+  factures: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm-1 1.5L18.5 9H13V3.5ZM8 13h8m-8 3h5',
 };
 
 export function NavIcon({ icon, className = 'w-5 h-5' }: { icon: NavItem['icon']; className?: string }) {

@@ -124,7 +124,8 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
       if (avertissement) notify.error(avertissement);
       setModalOpen(false);
       setHistoriqueParColis((prev) => {
-        const { [selectedColis.id]: _removed, ...rest } = prev;
+        const rest = { ...prev };
+        delete rest[selectedColis.id];
         return rest;
       });
       await refresh();
@@ -306,9 +307,6 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
               />
               <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 <option value="GNF">GNF</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="CNY">CNY</option>
               </Select>
             </div>
             {currency !== 'GNF' && (
