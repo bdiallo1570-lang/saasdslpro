@@ -8,8 +8,17 @@ export default {
         sans: ['"Plus Jakarta Sans Variable"', '"Inter Variable"', 'system-ui', 'sans-serif'],
         // Police signature pour le nom de l'entreprise — élégante, professionnelle
         serif: ['"Playfair Display Variable"', 'Georgia', 'serif'],
+        // Police d'affichage de la barre de menu : large, géométrique, très reconnaissable
+        // Titres éditoriaux (grands, fins) et petits libellés techniques en mono — langage de la landing
+        editorial: ['"Instrument Serif"', 'Georgia', 'serif'],
+        label: ['"JetBrains Mono Variable"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        display: ['"Syne Variable"', '"Plus Jakarta Sans Variable"', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Palette « salle de cinéma » de la landing : noir chaud, crème, une seule lueur ambre
+        ink: { 950: '#050608', 900: '#0a0b0e', 800: '#101216', 700: '#17191e' },
+        cream: '#EDE7DB',
+        ember: { 300: '#FFD9A8', 400: '#FFB35C', 500: '#F59E0B' },
         // Fond bleu nuit profond (mode sombre par défaut)
         night: {
           950: '#0B1120',

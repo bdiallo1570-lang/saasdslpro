@@ -96,7 +96,7 @@ const TONE_CLASSES = {
     activeLight: 'bg-emerald-600 text-white',
     activeDark: 'bg-emerald-500 text-white',
     cardLight: 'bg-white border-slate-200',
-    cardDark: 'bg-night-900 border-white/10',
+    cardDark: 'bg-ink-950 border-white/10',
     textLight: 'text-emerald-600',
     textDark: 'text-emerald-400',
     markLight: 'text-emerald-500',
@@ -169,7 +169,7 @@ export function ForbiddenItems({ isDark }: ForbiddenItemsProps) {
     <section
       id="produits-interdits"
       className={`relative overflow-hidden py-20 sm:py-28 transition-colors duration-300 ${
-        isDark ? 'bg-night-800' : 'bg-slate-50'
+        isDark ? 'bg-ink-900' : 'bg-slate-50'
       }`}
     >
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
@@ -187,7 +187,7 @@ export function ForbiddenItems({ isDark }: ForbiddenItemsProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.4 }}
-          className={`flex rounded-xl p-1 mb-6 text-sm font-medium ${isDark ? 'bg-night-900' : 'bg-white border border-slate-200'}`}
+          className={`flex rounded-xl p-1 mb-6 text-sm font-medium ${isDark ? 'bg-ink-950' : 'bg-white border border-slate-200'}`}
         >
           {TABS.map((t) => {
             const active = tab === t.key;

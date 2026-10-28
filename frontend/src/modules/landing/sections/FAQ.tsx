@@ -26,7 +26,7 @@ const FAQ_ITEMS = [
   {
     question: 'Comment je suis mon colis ?',
     answer:
-      'Chaque colis a un numéro de suivi unique dès son enregistrement (genre DSL-2026-00042). Entrez-le dans la barre de suivi en haut de la page et vous voyez tout en direct : enregistré, en vol, en douane, disponible à Conakry. En plus, on vous prévient par WhatsApp à chaque étape importante.',
+      'Chaque colis a un numéro de suivi unique dès son enregistrement (genre DSL-2026-00042). On vous prévient par WhatsApp à chaque étape importante : enregistré, en vol, en douane, disponible à Conakry. Le suivi en ligne sur le site arrive bientôt.',
   },
   {
     question: 'Y a-t-il des restrictions sur ce que je peux envoyer ?',
@@ -67,7 +67,7 @@ export function FAQ({ isDark }: FAQProps) {
     <section
       id="faq"
       className={`relative overflow-hidden py-20 sm:py-28 transition-colors duration-300 ${
-        isDark ? 'bg-night-900' : 'bg-white'
+        isDark ? 'bg-ink-950' : 'bg-white'
       }`}
     >
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
@@ -89,7 +89,7 @@ export function FAQ({ isDark }: FAQProps) {
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.35, delay: Math.min(i * 0.05, 0.3) }}
                 className={`rounded-2xl border overflow-hidden ${
-                  isDark ? 'bg-night-800 border-white/10' : 'bg-slate-50 border-slate-200'
+                  isDark ? 'bg-ink-900 border-white/10' : 'bg-slate-50 border-slate-200'
                 }`}
               >
                 <button

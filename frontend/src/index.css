@@ -1,12 +1,18 @@
 @import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/playfair-display';
+@import '@fontsource-variable/syne';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource-variable/jetbrains-mono';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html {
+  /* Les liens d'ancre (menu, repère de sections) s'arrêtent sous la barre de menu collée en haut */
+  scroll-padding-top: 72px;
   font-family: 'Plus Jakarta Sans Variable', 'Inter Variable', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -109,4 +115,20 @@ body {
     height: 150mm;
     margin: 0;
   }
+}
+
+/* Lenis (défilement à inertie de la landing) — feuille de base du paquet, recopiée ici car le
+   paquet ne l'expose pas dans ses « exports ». */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }

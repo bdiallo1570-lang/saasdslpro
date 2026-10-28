@@ -123,7 +123,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className={`fixed bottom-24 right-5 z-50 w-[calc(100vw-2.5rem)] max-w-sm h-[32rem] max-h-[75vh] rounded-2xl border shadow-2xl flex flex-col overflow-hidden ${
-              isDark ? 'bg-night-800 border-white/10' : 'bg-white border-slate-200'
+              isDark ? 'bg-ink-900 border-white/10' : 'bg-white border-slate-200'
             }`}
           >
             {/* En-tête */}
@@ -152,7 +152,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                         m.role === 'user'
                           ? 'bg-blue-500 text-white rounded-br-md'
                           : isDark
-                            ? 'bg-night-700 text-slate-200 rounded-bl-md'
+                            ? 'bg-ink-800 text-slate-200 rounded-bl-md'
                             : 'bg-slate-100 text-slate-700 rounded-bl-md'
                       }`}
                     >
@@ -189,7 +189,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                   <div
                     className={`rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1 ${
-                      isDark ? 'bg-night-700' : 'bg-slate-100'
+                      isDark ? 'bg-ink-800' : 'bg-slate-100'
                     }`}
                   >
                     {[0, 1, 2].map((i) => (
@@ -228,7 +228,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
                 placeholder="Posez votre question…"
                 className={`flex-1 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-colors ${
                   isDark
-                    ? 'bg-night-900 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-400/50'
+                    ? 'bg-ink-950 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-400/50'
                     : 'bg-slate-100 text-night-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-400/40'
                 }`}
               />

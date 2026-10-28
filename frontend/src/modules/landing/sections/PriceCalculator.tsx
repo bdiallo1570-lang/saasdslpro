@@ -4,7 +4,6 @@ import { Package, ShieldAlert, MapPin } from 'lucide-react';
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
 import { StatCounter } from '@/ui';
 import { AuroraBackground } from './AuroraBackground';
-import { CursorSpotlight } from './CursorSpotlight';
 import { SectionHeading } from './SectionHeading';
 
 interface PriceCalculatorProps {
@@ -48,12 +47,11 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
     <section
       id="calculateur"
       ref={ref}
-      className={`relative overflow-hidden py-20 sm:py-28 transition-colors duration-300 ${
-        isDark ? 'bg-night-800' : 'bg-slate-50'
+      className={`relative overflow-hidden pt-20 pb-36 sm:py-28 transition-colors duration-300 ${
+        isDark ? 'bg-ink-900' : 'bg-slate-50'
       }`}
     >
       <AuroraBackground isDark={isDark} />
-      <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         <SectionHeading
@@ -70,7 +68,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className={`rounded-3xl border p-6 sm:p-10 shadow-xl ${
-            isDark ? 'bg-night-900 border-white/10' : 'bg-white border-slate-200'
+            isDark ? 'bg-ink-950 border-white/10' : 'bg-white border-slate-200'
           }`}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -163,7 +161,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 onChange={(e) => setPoidsKg(Number(e.target.value) || 0)}
                 className={`mt-4 w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50 ${
                   isDark
-                    ? 'bg-night-800 border-night-600 text-white'
+                    ? 'bg-ink-900 border-white/10 text-white'
                     : 'bg-white border-slate-200 text-night-900'
                 }`}
               />
@@ -203,10 +201,10 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setAddressModalOpen(true)}
-                className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-cargo-500 hover:bg-cargo-400 text-white font-semibold px-5 py-3.5 rounded-xl shadow-glow-cargo transition-colors"
+                className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-cargo-500 hover:bg-cargo-400 text-white text-sm sm:text-base font-semibold px-4 sm:px-5 py-3.5 rounded-xl shadow-glow-cargo transition-colors"
               >
                 <MapPin size={17} />
-                Obtenir les adresses d'expédition en Chine
+                Adresses d'expédition en Chine
               </motion.button>
             </div>
           </div>

@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { Star, BadgeCheck } from 'lucide-react';
 import { StatCounter } from '@/ui';
 import { AuroraBackground } from './AuroraBackground';
-import { CursorSpotlight } from './CursorSpotlight';
 import { SectionHeading } from './SectionHeading';
 
 interface TestimonialsProps {
@@ -39,12 +38,12 @@ const METRICS = [
 export function Testimonials({ isDark }: TestimonialsProps) {
   return (
     <section
+      id="avis"
       className={`relative overflow-hidden py-20 sm:py-28 transition-colors duration-300 ${
-        isDark ? 'bg-night-900' : 'bg-white'
+        isDark ? 'bg-ink-950' : 'bg-white'
       }`}
     >
       <AuroraBackground isDark={isDark} />
-      <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <SectionHeading
@@ -86,7 +85,7 @@ export function Testimonials({ isDark }: TestimonialsProps) {
               transition={{ duration: 0.4, delay: i * 0.1 }}
               whileHover={{ y: -4 }}
               className={`rounded-2xl border p-6 flex flex-col ${
-                isDark ? 'bg-night-800 border-white/10' : 'bg-slate-50 border-slate-200'
+                isDark ? 'bg-ink-900 border-white/10' : 'bg-slate-50 border-slate-200'
               }`}
             >
               <div className="flex items-center gap-1 mb-4">

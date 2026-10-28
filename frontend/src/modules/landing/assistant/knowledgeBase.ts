@@ -36,7 +36,7 @@ export const INTENTS: Intent[] = [
     id: 'suivi',
     keywords: ['suivre', 'suivi', 'tracking', 'où est', 'ou est', 'statut', 'localiser', 'trouver mon colis'],
     answer:
-      "Chaque colis a un numéro de suivi unique dès son enregistrement (genre DSL-2026-00042). Entrez-le dans la barre de suivi tout en haut de cette page pour voir son statut en direct. Vous recevez aussi des notifications automatiques par WhatsApp à chaque étape importante.",
+      "Chaque colis a un numéro de suivi unique dès son enregistrement (genre DSL-2026-00042). Vous recevez des notifications automatiques par WhatsApp à chaque étape importante. Le suivi en ligne sur le site arrive bientôt.",
     suggestions: ['Combien de temps pour le transport ?', "Comment vous contacter ?"],
   },
   {
@@ -101,14 +101,14 @@ export const INTENTS: Intent[] = [
     id: 'salutation',
     keywords: ['bonjour', 'salut', 'bonsoir', 'hello', 'coucou', 'yo'],
     answer:
-      "Bonjour ! Moi c'est Oury, l'assistant DSL Air Cargo. Je peux vous renseigner sur les tarifs, les délais, le suivi de colis, les produits interdits ou le paiement. Qu'est-ce qui vous intéresse ?",
+      "Bonjour ! Moi c'est Oury, l'assistant DSL Air Cargo. Je peux vous renseigner sur les tarifs, les délais, les produits interdits ou le paiement. Qu'est-ce qui vous intéresse ?",
     suggestions: ['Combien ça coûte ?', 'Comment je suis mon colis ?', "Qu'est-ce qui est interdit ?"],
   },
   {
     id: 'identite',
     keywords: ['ton nom', 'tu t\'appelles', 'qui es-tu', 'qui es tu', 'oury', 'c\'est qui', 'tu es qui'],
     answer:
-      "Je m'appelle Oury, l'assistant virtuel de DSL Air Cargo ! Je suis là pour répondre à vos questions sur les tarifs, les délais, le suivi de colis et tout ce qui concerne vos envois entre la Chine et la Guinée.",
+      "Je m'appelle Oury, l'assistant virtuel de DSL Air Cargo ! Je suis là pour répondre à vos questions sur les tarifs, les délais et tout ce qui concerne vos envois entre la Chine et la Guinée.",
     suggestions: ['Combien ça coûte ?', 'Comment je suis mon colis ?'],
   },
   {
@@ -123,7 +123,7 @@ export const FALLBACK_ANSWER =
   "Je n'ai pas de réponse toute prête pour cette question précise. Le plus sûr, c'est de nous écrire directement sur WhatsApp — on vous répond rapidement.";
 
 export const WELCOME_MESSAGE =
-  "Bonjour ! Moi c'est Oury 👋 l'assistant DSL Air Cargo. Posez-moi une question sur les tarifs, les délais, le suivi de colis ou les produits interdits.";
+  "Bonjour ! Moi c'est Oury 👋 l'assistant DSL Air Cargo. Posez-moi une question sur les tarifs, les délais ou les produits interdits.";
 
 export const STARTER_SUGGESTIONS = [
   'Combien ça coûte ?',

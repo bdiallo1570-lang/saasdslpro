@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Sun, Moon } from 'lucide-react';
 import { AuroraBackground } from './AuroraBackground';
-import { CursorSpotlight } from './CursorSpotlight';
+import { SplitLetters } from './motionKit';
 
 interface FooterProps {
   isDark: boolean;
@@ -10,7 +10,6 @@ interface FooterProps {
 
 const FOOTER_LINKS = [
   { label: 'Calculateur', href: '#calculateur' },
-  { label: 'Suivi de Colis', href: '#suivi' },
   { label: 'Espaces Entrepôts', href: '#entrepots' },
 ];
 
@@ -27,11 +26,10 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
   return (
     <footer
       className={`relative overflow-hidden border-t transition-colors duration-300 ${
-        isDark ? 'bg-night-900 border-white/10' : 'bg-white border-slate-200'
+        isDark ? 'bg-ink-950 border-white/10' : 'bg-white border-slate-200'
       }`}
     >
       <AuroraBackground isDark={isDark} />
-      <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <motion.div
@@ -107,7 +105,7 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className={`flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t ${
+          className={`flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-16 sm:pb-0 sm:pr-36 border-t ${
             isDark ? 'border-white/10' : 'border-slate-200'
           }`}
         >
@@ -140,6 +138,17 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
             Mode {isDark ? 'clair' : 'sombre'}
           </motion.button>
         </motion.div>
+
+        {/* Signature de clôture : le nom de la marque en très grand, lettre par lettre */}
+        <div aria-hidden="true" className="mt-12 select-none overflow-hidden text-center">
+          <p
+            className={`font-editorial font-normal leading-none tracking-tight text-[clamp(3rem,14vw,13rem)] ${
+              isDark ? 'text-cream/[0.09]' : 'text-slate-900/[0.06]'
+            }`}
+          >
+            <SplitLetters text="DSL Air Cargo" inView stagger={0.05} />
+          </p>
+        </div>
       </div>
     </footer>
   );

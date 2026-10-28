@@ -4,12 +4,21 @@ import { Building2, Phone, Copy, Check, MessageCircle } from 'lucide-react';
 import { listWarehouses } from '@/modules/warehouses/warehouses.api';
 import { WAREHOUSES_FALLBACK } from '@/modules/warehouses/warehousesFallback';
 import { notify } from '@/ui';
+import { copyToClipboard } from '@/lib/clipboard';
 import { AuroraBackground } from './AuroraBackground';
-import { CursorSpotlight } from './CursorSpotlight';
 import { SectionHeading } from './SectionHeading';
 
 interface WarehousesSectionProps {
   isDark: boolean;
+}
+
+// Texte prêt à envoyer à un fournisseur : nom de l'entrepôt, adresse en chinois (si elle existe),
+// adresse en français. Les numéros de contact ne sont pas inclus (certains sont vides).
+function fullAddress(
+  warehouse: { name?: string; addressZh?: string | null; addressFr?: string | null },
+  fallbackName: string,
+): string {
+  return [warehouse.name ?? fallbackName, warehouse.addressZh, warehouse.addressFr].filter(Boolean).join('\n');
 }
 
 export function WarehousesSection({ isDark }: WarehousesSectionProps) {
@@ -31,12 +40,11 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
   }, []);
 
   async function handleCopy(key: string, text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyToClipboard(text)) {
       setCopiedKey(key);
       notify.success('Adresse copiée dans le presse-papiers.');
       setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
-    } catch {
+    } else {
       notify.error('Impossible de copier — sélectionnez le texte manuellement.');
     }
   }
@@ -65,11 +73,10 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
     <section
       id="entrepots"
       className={`relative overflow-hidden py-20 sm:py-28 transition-colors duration-300 ${
-        isDark ? 'bg-night-800' : 'bg-slate-50'
+        isDark ? 'bg-ink-900' : 'bg-slate-50'
       }`}
     >
       <AuroraBackground isDark={isDark} />
-      <CursorSpotlight isDark={isDark} />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         <SectionHeading
@@ -81,12 +88,23 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {cards.map((card, i) => (
+            // Le déclencheur est le conteneur (visible), la carte porte le rideau (clip-path) : un
+            // élément entièrement masqué ne se déclencherait pas lui-même.
             <motion.div
               key={card.country}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.45, delay: i * 0.1 }}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-80px' }}
+              className="relative"
+            >
+            <motion.div
+              variants={{
+                hidden: { clipPath: 'inset(0 0 100% 0 round 1rem)' },
+                show: {
+                  clipPath: 'inset(0 0 0% 0 round 1rem)',
+                  transition: { duration: 1.2, delay: i * 0.18, ease: [0.76, 0, 0.24, 1] },
+                },
+              }}
               whileHover={{ y: -4 }}
               className="relative overflow-hidden rounded-2xl border border-white/10 min-h-[300px] sm:min-h-[420px] flex flex-col justify-end"
             >
@@ -94,10 +112,10 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
               <motion.img
                 src={card.photo}
                 alt=""
-                initial={{ scale: 1.1 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.4, ease: 'easeOut' }}
+                variants={{
+                  hidden: { scale: 1.3 },
+                  show: { scale: 1, transition: { duration: 2, delay: i * 0.18, ease: [0.16, 1, 0.3, 1] } },
+                }}
                 className="absolute inset-0 h-full w-full object-cover"
               />
               {/* Voile sombre pour la lisibilité du texte par-dessus la photo */}
@@ -126,7 +144,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       title="Copier l'adresse (中文)"
                     >
                       <Building2 size={15} className="mt-0.5 shrink-0 text-slate-300" />
-                      <p className="flex-1 min-w-0 break-words text-sm text-slate-100 drop-shadow">
+                      <p className="flex-1 min-w-0 select-text break-words text-sm text-slate-100 drop-shadow">
                         {card.warehouse.addressZh}
                       </p>
                       {copiedKey === `${card.country}-zh` ? (
@@ -134,7 +152,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       ) : (
                         <Copy
                           size={14}
-                          className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-300"
+                          className="shrink-0 mt-0.5 text-slate-300 opacity-70 transition-opacity group-hover:opacity-100"
                         />
                       )}
                     </motion.button>
@@ -149,7 +167,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       title="Copier l'adresse"
                     >
                       <Building2 size={15} className="opacity-0 shrink-0" />
-                      <p className="flex-1 min-w-0 break-words text-sm text-slate-200 drop-shadow">
+                      <p className="flex-1 min-w-0 select-text break-words text-sm text-slate-200 drop-shadow">
                         {card.warehouse.addressFr}
                       </p>
                       {copiedKey === `${card.country}-fr` ? (
@@ -157,9 +175,25 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       ) : (
                         <Copy
                           size={14}
-                          className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-300"
+                          className="shrink-0 mt-0.5 text-slate-300 opacity-70 transition-opacity group-hover:opacity-100"
                         />
                       )}
+                    </motion.button>
+                  )}
+
+                  {(card.warehouse?.addressZh || card.warehouse?.addressFr) && (
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleCopy(`${card.country}-all`, fullAddress(card.warehouse!, card.fallbackName))}
+                      className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                    >
+                      {copiedKey === `${card.country}-all` ? (
+                        <Check size={13} className="text-emerald-300" />
+                      ) : (
+                        <Copy size={13} />
+                      )}
+                      {copiedKey === `${card.country}-all` ? 'Adresse copiée' : "Copier l'adresse complète"}
                     </motion.button>
                   )}
 
@@ -197,6 +231,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                     )}
                 </div>
               </div>
+            </motion.div>
             </motion.div>
           ))}
         </div>

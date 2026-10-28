@@ -7,3 +7,6 @@ build/
 *.tsbuildinfo
 .DS_Store
 .claude/settings.local.json
+
+# Vidéo d'origine (lourde) — seule la version convertie dans frontend/public/video est publiée
+frontend/video-source/

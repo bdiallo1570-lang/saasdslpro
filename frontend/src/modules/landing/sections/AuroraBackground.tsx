@@ -2,26 +2,23 @@ interface AuroraBackgroundProps {
   isDark: boolean;
 }
 
-// Fond dynamique "aurora" — trois taches de couleur (émeraude/orange/bleu) qui dérivent
-// lentement en boucle, façon dégradés animés. Purement décoratif (pointer-events: none),
-// placé en absolute derrière le contenu de la section.
+// Décor de section volontairement sobre : un seul halo très doux en haut de la section et un
+// filet qui s'estompe sur les côtés. Purement décoratif (pointer-events: none), placé en
+// absolute derrière le contenu. Remplace l'ancien fond « aurora » (trois taches animées) qui
+// chargeait les sections sans rien dire.
 export function AuroraBackground({ isDark }: AuroraBackgroundProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div
-        className={`absolute -top-1/4 -left-1/4 h-[60%] w-[60%] rounded-full blur-3xl animate-aurora1 ${
-          isDark ? 'bg-sky-500/25' : 'bg-sky-300/40'
+        className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent ${
+          isDark ? 'via-white/15' : 'via-slate-300'
         }`}
       />
       <div
-        className={`absolute -bottom-1/4 -right-1/4 h-[65%] w-[65%] rounded-full blur-3xl animate-aurora2 ${
-          isDark ? 'bg-cargo-500/20' : 'bg-cargo-300/35'
+        className={`absolute left-1/2 top-0 h-72 w-[min(70rem,100%)] -translate-x-1/2 rounded-full blur-3xl ${
+          isDark ? 'bg-ember-400/[0.08]' : 'bg-emerald-300/[0.16]'
         }`}
-      />
-      <div
-        className={`absolute top-1/3 right-1/4 h-[45%] w-[45%] rounded-full blur-3xl animate-aurora3 ${
-          isDark ? 'bg-emerald-400/15' : 'bg-emerald-200/40'
-        }`}
+        style={{ transform: 'translate(-50%, -60%)' }}
       />
     </div>
   );
