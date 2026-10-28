@@ -4,12 +4,9 @@ import { resolveRateForFacture } from '@/lib/exchangeRate';
 import { sendRelanceImpaye } from '@/lib/whatsapp/notifications';
 import { ensureFactureForColis } from '@/modules/factures/factures.service';
 import { computePaiementColis } from '@/modules/colis/colis.presenter';
+import { AppError } from '@/lib/errors';
 
-export class PaiementError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class PaiementError extends AppError {}
 
 // Le timeout par défaut de Prisma (5s) est trop court pour cette transaction qui enchaîne
 // plusieurs requêtes séquentielles (facture, taux de change, caisse, paiement, facture, client)
@@ -24,6 +21,9 @@ interface CreatePaiementInput {
   currency: Currency;
   method: PaymentMethod;
   closureId?: string;
+  reference?: string;
+  datePaiement?: Date;
+  commentaire?: string;
 }
 
 // Enregistre un paiement (règle 3.6 : plusieurs paiements possibles, devises différentes,
@@ -32,6 +32,11 @@ interface CreatePaiementInput {
 // (comportement historique inchangé).
 export async function createPaiement(input: CreatePaiementInput, receivedByUserId: string) {
   return prisma.$transaction(async (tx) => {
+    // Verrou de ligne sur la facture jusqu'à la fin de la transaction : deux encaissements
+    // simultanés (double clic sur réseau lent, deux agents) passent sinon tous les deux le
+    // contrôle "déjà soldée" ci-dessous avant que l'un d'eux n'ait écrit.
+    await tx.$queryRaw`SELECT id FROM factures WHERE id = ${input.factureId} FOR UPDATE`;
+
     const facture = await tx.facture.findFirst({
       where: { id: input.factureId, deletedAt: null },
       include: { paiements: { where: { deletedAt: null } }, client: true, colis: true },
@@ -59,6 +64,11 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
         where: { id: input.closureId, status: 'OUVERTE' },
       });
       if (!closure) throw new PaiementError('Caisse du jour introuvable ou déjà clôturée.', 404);
+      if (closure.currency !== input.currency) {
+        throw new PaiementError(
+          `Cette caisse est en ${closure.currency} ; impossible d'y enregistrer un paiement en ${input.currency}.`,
+        );
+      }
 
       const cashTx = await tx.cashTransaction.create({
         data: {
@@ -81,6 +91,9 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
         currency: input.currency,
         tauxVersGnf,
         method: input.method,
+        reference: input.reference || null,
+        datePaiement: input.datePaiement ?? null,
+        commentaire: input.commentaire || null,
         cashTransactionId,
         receivedByUserId,
       },
@@ -102,7 +115,18 @@ export async function createPaiement(input: CreatePaiementInput, receivedByUserI
     const totalPayeGnf =
       facture.paiements.reduce((sum, p) => sum + Number(p.montant) * Number(p.tauxVersGnf), 0) +
       montantGnf;
-    const montantTotalGnf = Number(facture.montantTotal) * (facture.currency === 'GNF' ? 1 : tauxVersGnf);
+
+    // Détermination du montant total de la facture en GNF (taux de la devise de la facture)
+    let tauxFactureVersGnf = 1;
+    if (facture.currency !== 'GNF') {
+      const resTaux = await resolveRateForFacture(
+        facture.currency,
+        facture.colis.map((c) => c.lotId),
+        tx,
+      );
+      tauxFactureVersGnf = resTaux.rate;
+    }
+    const montantTotalGnf = Number(facture.montantTotal) * tauxFactureVersGnf;
 
     const newStatus =
       totalPayeGnf >= montantTotalGnf ? 'PAYE' : totalPayeGnf > 0 ? 'PARTIEL' : 'IMPAYE';
@@ -132,7 +156,6 @@ interface CreatePaiementForColisInput {
   colisId: string;
   montant: number;
   currency: Currency;
-  tauxVersGnf?: number;
   method: PaymentMethod;
   reference?: string;
   datePaiement?: Date;
@@ -166,14 +189,21 @@ export async function createPaiementForColis(
     include: { paiements: { where: { deletedAt: null } } },
   });
   const { resteAPayerGnf } = computePaiementColis(factureAvecPaiements);
-  const montantGnfEstime = input.currency === 'GNF' ? input.montant : input.montant * (input.tauxVersGnf ?? 1);
   const avertissement =
-    montantGnfEstime > resteAPayerGnf && resteAPayerGnf > 0
+    input.montant > resteAPayerGnf && resteAPayerGnf > 0
       ? `Le montant saisi dépasse le reste à payer (${Math.round(resteAPayerGnf).toLocaleString('fr-FR')} GNF) — l'excédent sera enregistré comme trop-perçu.`
       : undefined;
 
   const paiement = await createPaiement(
-    { factureId, montant: input.montant, currency: input.currency, method: input.method },
+    {
+      factureId,
+      montant: input.montant,
+      currency: input.currency,
+      method: input.method,
+      reference: input.reference,
+      datePaiement: input.datePaiement,
+      commentaire: input.commentaire,
+    },
     userId,
   );
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { env } from '@/config/env';
+import { AppError } from '@/lib/errors';
 import { authRouter } from '@/modules/auth/auth.routes';
 import { dashboardRouter } from '@/modules/users/dashboard.routes';
 import { clientsRouter } from '@/modules/clients/clients.routes';
@@ -35,10 +36,15 @@ const allowedOrigins = env.FRONTEND_URL.split(',').map((origin) => origin.trim()
 // stable — ex. saasdslpro-abc123-dsl-cargo.vercel.app. On autorise tout sous-domaine
 // *.vercel.app pour ne pas casser l'accès à chaque nouveau déploiement.
 const isVercelPreviewOrigin = (origin: string) => /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin);
+// En développement uniquement : accepte aussi les adresses du réseau local (192.168.x.x, 10.x.x.x,
+// 172.16-31.x.x) pour pouvoir tester le site depuis un téléphone sur le même Wi-Fi.
+const isLocalNetworkOrigin = (origin: string) =>
+  env.NODE_ENV === 'development' &&
+  /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || isVercelPreviewOrigin(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || isVercelPreviewOrigin(origin) || isLocalNetworkOrigin(origin)) {
         callback(null, true);
       } else {
         console.warn(`CORS refusé pour l'origine : ${origin}`);
@@ -81,8 +87,11 @@ app.use((_req, res) => {
 // données injoignable) ne fasse planter tout le process Node.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
   if (res.headersSent) return;
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ success: false, data: null, error: err.message });
+  }
+  console.error(err);
   res.status(500).json({
     success: false,
     data: null,

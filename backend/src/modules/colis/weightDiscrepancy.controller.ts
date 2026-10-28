@@ -2,14 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
 import * as weightDiscrepancyService from './weightDiscrepancy.service';
 import { reportWeightDiscrepancySchema, resolveDiscrepancySchema } from './colis.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof weightDiscrepancyService.WeightDiscrepancyError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function reportDiscrepancyHandler(req: Request, res: Response) {
   const parsed = reportWeightDiscrepancySchema.safeParse(req.body);

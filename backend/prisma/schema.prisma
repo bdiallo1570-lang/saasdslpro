@@ -61,6 +61,7 @@ enum SequenceType {
   LTA
   FACTURE
   DEVIS
+  COLIS
 }
 
 enum FactureStatus {
@@ -143,6 +144,8 @@ model User {
   // OTP pour connexion rapide WhatsApp/SMS
   otpCode      String?   @map("otp_code")
   otpExpiresAt DateTime? @map("otp_expires_at")
+  // Tentatives erronées sur le code en cours — le code est effacé au-delà de la limite
+  otpAttempts  Int       @default(0) @map("otp_attempts")
 
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
@@ -510,6 +513,12 @@ model Paiement {
   // Taux vers GNF utilisé au moment du paiement (règle 3.2 — jamais recalculé rétroactivement)
   tauxVersGnf Decimal       @map("taux_vers_gnf") @db.Decimal(18, 6)
   method      PaymentMethod
+
+  // Saisis par l'agent : référence Orange Money / virement, date réelle de l'encaissement
+  // (peut différer de createdAt en cas de saisie tardive) et commentaire libre.
+  reference    String?
+  datePaiement DateTime? @map("date_paiement")
+  commentaire  String?
 
   cashTransactionId String?          @unique @map("cash_transaction_id")
   cashTransaction   CashTransaction? @relation(fields: [cashTransactionId], references: [id])

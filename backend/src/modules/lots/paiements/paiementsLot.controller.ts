@@ -2,14 +2,7 @@ import { Request, Response } from 'express';
 import * as paiementsLotService from './paiementsLot.service';
 import * as paiementsService from '@/modules/paiements/paiements.service';
 import { createPaiementColisSchema } from '@/modules/paiements/paiements.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof paiementsService.PaiementError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function listPaiementsByLotHandler(req: Request, res: Response) {
   const paiements = await paiementsLotService.listPaiementsByLot(req.params.lotId);

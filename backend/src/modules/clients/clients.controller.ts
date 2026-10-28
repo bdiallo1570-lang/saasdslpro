@@ -1,13 +1,7 @@
 import { Request, Response } from 'express';
 import * as clientsService from './clients.service';
 import { createClientSchema, updateClientSchema } from './clients.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof clientsService.ClientError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  throw error;
-}
+import { handleError } from '@/lib/errors';
 
 export async function searchClientsHandler(req: Request, res: Response) {
   const query = typeof req.query.q === 'string' ? req.query.q : undefined;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { gnfOnly } from '@/lib/currency';
 
 const CATEGORIES = [
   'DEDOUANEMENT',
@@ -14,7 +15,7 @@ export const createDepenseSchema = z
     categorie: z.enum(CATEGORIES),
     libelle: z.string().trim().min(2, 'Le libellé est requis.'),
     montant: z.coerce.number().positive('Le montant doit être supérieur à 0.'),
-    currency: z.enum(['GNF', 'USD', 'EUR', 'CNY']).default('GNF'),
+    currency: gnfOnly.default('GNF'),
     // Requis uniquement si devise ≠ GNF — le backend calcule montantGnf, jamais le frontend.
     tauxVersGnf: z.coerce.number().positive().optional(),
     dateDepense: z.coerce.date(),

@@ -1,11 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { getSousTotauxParCategorie } from '../depenses/depenseLot.service';
+import { AppError } from '@/lib/errors';
 
-export class RentabiliteError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class RentabiliteError extends AppError {}
 
 // Compte de résultat d'un lot pris indépendamment (règle structurante du module Agent Guinée :
 // chaque lot est une unité économique autonome). Tous les montants sont convertis en GNF.

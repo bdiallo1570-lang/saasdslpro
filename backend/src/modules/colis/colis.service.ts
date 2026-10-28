@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { nextSequenceNumber } from '@/lib/sequence';
-import { getVolumetricDivisor } from '@/lib/settings';
+import { getVolumetricDivisor, getBillingMode } from '@/lib/settings';
 import { computeVolumetricWeightKg, computeTaxableWeightKg } from '@/lib/weight';
 import { getActivePricingRule, PricingError } from './pricing';
 import { CreateColisInput } from './colis.schema';
@@ -10,7 +10,10 @@ import { ensureFactureForColis } from '@/modules/factures/factures.service';
 export { PricingError };
 
 export async function createColis(input: CreateColisInput, createdByUserId: string) {
-  const divisor = await getVolumetricDivisor();
+  const [divisor, billingMode] = await Promise.all([
+    getVolumetricDivisor(),
+    getBillingMode(),
+  ]);
 
   const poidsVolumetriqueKg =
     input.longueurCm && input.largeurCm && input.hauteurCm
@@ -18,6 +21,7 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
       : 0;
 
   const poidsTaxableKg = computeTaxableWeightKg(input.poidsReelKg, poidsVolumetriqueKg);
+  const poidsFactureKg = billingMode === 'poids_taxable' ? poidsTaxableKg : input.poidsReelKg;
 
   const colis = await prisma.$transaction(async (tx) => {
     const client = await tx.client.findFirst({ where: { id: input.clientId, deletedAt: null } });
@@ -58,10 +62,10 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
       currency = rule.currency;
     }
 
-    // Règle 3.1 : facturation actuelle au POIDS RÉEL uniquement.
-    const montantEstime = input.poidsReelKg * pricePerKg;
+    // Règle 3.1 : facturation selon mode_facturation (par défaut POIDS RÉEL, ou POIDS TAXABLE)
+    const montantEstime = poidsFactureKg * pricePerKg;
 
-    const trackingId = await nextSequenceNumber(tx, 'LTA', 'DSL');
+    const trackingId = await nextSequenceNumber(tx, 'COLIS', 'DSL');
 
     const created = await tx.colis.create({
       data: {
@@ -128,7 +132,7 @@ export async function getColisByTrackingId(trackingId: string) {
   });
 }
 
-export async function listColis(params: { lotId?: string; status?: string | string[] }) {
+export async function listColis(params: { lotId?: string; clientId?: string; status?: string | string[] }) {
   const statusFilter = Array.isArray(params.status)
     ? { status: { in: params.status as never[] } }
     : params.status
@@ -139,6 +143,7 @@ export async function listColis(params: { lotId?: string; status?: string | stri
     where: {
       deletedAt: null,
       ...(params.lotId ? { lotId: params.lotId } : {}),
+      ...(params.clientId ? { clientId: params.clientId } : {}),
       ...statusFilter,
     },
     include: {

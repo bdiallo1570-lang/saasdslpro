@@ -1,12 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { nextSequenceNumber } from '@/lib/sequence';
+import { resolveRateForFacture } from '@/lib/exchangeRate';
+import { generateFacturePdf, FactureCompletePourPdf } from '@/lib/pdf/facturePdf';
+import { AppError } from '@/lib/errors';
 
-export class FactureError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class FactureError extends AppError {}
 
 // Génère une facture à partir de colis non encore facturés d'un même client.
 // Le montant total agrège montantEstime des colis sélectionnés (règle 3.1 : poids réel).
@@ -14,6 +13,9 @@ export async function createFacture(clientId: string, colisIds: string[]) {
   return prisma.$transaction(async (tx) => {
     const client = await tx.client.findFirst({ where: { id: clientId, deletedAt: null } });
     if (!client) throw new FactureError('Client introuvable.', 404);
+
+    // Même verrou que ensureFactureForColis : empêche deux factures simultanées sur un même colis.
+    await tx.$queryRaw`SELECT id FROM colis WHERE id = ANY(${colisIds}) FOR UPDATE`;
 
     const colis = await tx.colis.findMany({
       where: { id: { in: colisIds }, clientId, factureId: null, deletedAt: null },
@@ -48,9 +50,16 @@ export async function createFacture(clientId: string, colisIds: string[]) {
       data: { factureId: facture.id },
     });
 
+    const { rate: tauxVersGnf } = await resolveRateForFacture(
+      currency,
+      colis.map((c) => c.lotId),
+      tx,
+    );
+    const montantGnf = montantTotal * tauxVersGnf;
+
     await tx.client.update({
       where: { id: clientId },
-      data: { outstandingBalance: { increment: montantTotal } },
+      data: { outstandingBalance: { increment: montantGnf } },
     });
 
     return tx.facture.findUniqueOrThrow({
@@ -65,6 +74,10 @@ export async function createFacture(clientId: string, colisIds: string[]) {
 // puisse être suivi précisément par colis, sans dupliquer la logique de createFacture ci-dessus.
 // Idempotent : no-op si le colis a déjà une facture. Doit être appelée dans une transaction.
 export async function ensureFactureForColis(colisId: string, tx: Prisma.TransactionClient) {
+  // Verrou de ligne : deux appels simultanés (passage du lot en entrepôt + statut ARRIVE, ou
+  // deux agents) liraient sinon tous les deux factureId = null et créeraient deux factures.
+  await tx.$queryRaw`SELECT id FROM colis WHERE id = ${colisId} FOR UPDATE`;
+
   const colis = await tx.colis.findFirst({ where: { id: colisId, deletedAt: null } });
   if (!colis) throw new FactureError('Colis introuvable.', 404);
   if (colis.factureId) return tx.facture.findUniqueOrThrow({ where: { id: colis.factureId } });
@@ -82,9 +95,17 @@ export async function ensureFactureForColis(colisId: string, tx: Prisma.Transact
   });
 
   await tx.colis.update({ where: { id: colisId }, data: { factureId: facture.id } });
+
+  const { rate: tauxVersGnf } = await resolveRateForFacture(
+    colis.currency,
+    [colis.lotId],
+    tx,
+  );
+  const montantGnf = Number(colis.montantEstime) * tauxVersGnf;
+
   await tx.client.update({
     where: { id: colis.clientId },
-    data: { outstandingBalance: { increment: colis.montantEstime } },
+    data: { outstandingBalance: { increment: montantGnf } },
   });
 
   return facture;
@@ -93,8 +114,20 @@ export async function ensureFactureForColis(colisId: string, tx: Prisma.Transact
 export async function getFactureById(id: string) {
   return prisma.facture.findFirst({
     where: { id, deletedAt: null },
-    include: { colis: true, client: true, paiements: { where: { deletedAt: null } } },
+    include: {
+      colis: { include: { lot: true, pricingRule: true } },
+      client: true,
+      paiements: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
+    },
   });
+}
+
+export async function getFacturePdf(id: string): Promise<{ buffer: Buffer; factureNumber: string }> {
+  const facture = await getFactureById(id);
+  if (!facture) throw new FactureError('Facture introuvable.', 404);
+
+  const buffer = await generateFacturePdf(facture as FactureCompletePourPdf);
+  return { buffer, factureNumber: facture.factureNumber };
 }
 
 export async function listFacturesByClient(clientId: string) {

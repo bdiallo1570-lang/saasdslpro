@@ -1,12 +1,9 @@
 import { CategorieDepenseLot } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { CreateDepenseInput } from './depenseLot.schema';
+import { AppError } from '@/lib/errors';
 
-export class DepenseLotError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class DepenseLotError extends AppError {}
 
 const VINGT_QUATRE_HEURES_MS = 24 * 60 * 60 * 1000;
 

@@ -1,11 +1,8 @@
 import { Prisma, PricingCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '@/lib/errors';
 
-export class PricingError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class PricingError extends AppError {}
 
 // Retourne le tarif actif en vigueur pour une catégorie donnée.
 // Les tarifs sont historisés (règle 3.5) : on prend le plus récent avec isActive=true.

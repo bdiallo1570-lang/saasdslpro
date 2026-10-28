@@ -7,14 +7,7 @@ import {
   updateLotStatusSchema,
 } from './lots.schema';
 import { presentColis, canReadPricing } from '@/modules/colis/colis.presenter';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof lotsService.LotError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 // Le détail de lot embarque les colis (avec client) — l'Agent Chine a lots:read mais ne
 // doit pas voir les montants ; on remappe les colis imbriqués via le presenter colis, et

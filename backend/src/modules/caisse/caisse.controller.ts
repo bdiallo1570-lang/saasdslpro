@@ -2,14 +2,7 @@ import { Request, Response } from 'express';
 import * as caisseService from './caisse.service';
 import { openClosureSchema, createTransactionSchema, closeClosureSchema } from './caisse.schema';
 import { generateClosureReportPdf } from '@/lib/pdf/closureReport';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof caisseService.CaisseError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function openClosureHandler(req: Request, res: Response) {
   const parsed = openClosureSchema.safeParse(req.body);

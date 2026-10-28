@@ -7,9 +7,9 @@ function jsonRateLimitResponse(message: string) {
 }
 
 // OTP à 6 chiffres (~900 000 combinaisons), valide 5 minutes (OTP_EXPIRES_IN_MINUTES) — sans
-// limite, brute-forçable dans sa fenêtre de validité. 10 tentatives/15 min par IP+identifiant
-// laisse largement de la marge pour un vrai utilisateur qui se trompe, tout en rendant le
-// brute-force impraticable.
+// limite, brute-forçable dans sa fenêtre de validité. 10 tentatives/15 min par IP laisse de la
+// marge à un vrai utilisateur qui se trompe ; la limite par compte (5 essais par code, voir
+// auth.service.ts::consumeOtp) couvre l'attaquant qui répartit ses essais sur plusieurs IP.
 export const otpVerifyRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -51,4 +51,14 @@ export const refreshRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, data: null, error: 'Trop de requêtes. Réessayez dans quelques minutes.' },
   handler: jsonRateLimitResponse('Trop de requêtes. Réessayez dans quelques minutes.'),
+});
+
+// Suivi public de colis (landing, sans connexion) — les Tracking ID se suivent, cette limite
+// empêche un script de parcourir tous les numéros. Large pour un client qui suit ses colis.
+export const publicTrackingRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonRateLimitResponse('Trop de recherches. Réessayez dans quelques minutes.'),
 });

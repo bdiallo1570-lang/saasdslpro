@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
-import { canReadPricing } from './colis.presenter';
+import { canReadPricing, livraisonAutorisee } from './colis.presenter';
 
 // Scan QR à l'arrivée entrepôt Madina (Agent Guinée) : identifie le colis et vérifie
 // si sa facture est payée. Règle 3.4 GEMINI.md : un colis ne peut pas être livré tant
@@ -17,11 +17,8 @@ export async function scanColisHandler(req: Request, res: Response) {
     return res.status(404).json({ success: false, data: null, error: 'Colis introuvable — vérifiez le code scanné.' });
   }
 
-  // Pas encore facturé : on ne peut pas encore statuer sur le paiement.
-  const factureStatus = colis.facture?.status ?? null;
-  const estPaye = factureStatus === 'PAYE';
+  const estPaye = colis.facture?.status === 'PAYE';
   const livraisonDebloqueeManuel = colis.facture?.livraisonDebloqueeManuel ?? false;
-  const livraisonAutorisee = !colis.facture || estPaye || livraisonDebloqueeManuel;
 
   // Agent Guinée : ne voit ni montant/devise du colis, ni créance client, ni montant de
   // facture — seulement les booléens dérivés nécessaires au verrou de livraison (règle 3.4).
@@ -54,7 +51,7 @@ export async function scanColisHandler(req: Request, res: Response) {
           }
         : null,
       paymentStatus: !colis.facture ? 'NON_FACTURE' : estPaye ? 'PAYE' : 'IMPAYE_OU_PARTIEL',
-      livraisonAutorisee,
+      livraisonAutorisee: livraisonAutorisee(colis.facture),
     },
     error: null,
   });

@@ -4,12 +4,9 @@ import { nextSequenceNumber } from '@/lib/sequence';
 import { sendArriveeLotNotification } from '@/lib/whatsapp/notifications';
 import { getCurrentRateToGnf } from '@/lib/exchangeRate';
 import { ensureFactureForColis } from '@/modules/factures/factures.service';
+import { AppError } from '@/lib/errors';
 
-export class LotError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class LotError extends AppError {}
 
 export async function createLot(flightNumber?: string) {
   return prisma.$transaction(async (tx) => {

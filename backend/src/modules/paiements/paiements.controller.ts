@@ -2,14 +2,7 @@ import { Request, Response } from 'express';
 import * as paiementsService from './paiements.service';
 import { createPaiementSchema } from './paiements.schema';
 import { generatePaymentReceiptPdf } from '@/lib/pdf/paymentReceipt';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof paiementsService.PaiementError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function createPaiementHandler(req: Request, res: Response) {
   const parsed = createPaiementSchema.safeParse(req.body);

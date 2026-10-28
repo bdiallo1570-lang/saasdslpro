@@ -1,12 +1,9 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { CreateClientInput, UpdateClientInput } from './clients.schema';
+import { AppError } from '@/lib/errors';
 
-export class ClientError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class ClientError extends AppError {}
 
 // Génère le prochain code client (format DSL-102), sans trou, dans une transaction.
 async function nextClientCode(tx: Prisma.TransactionClient) {

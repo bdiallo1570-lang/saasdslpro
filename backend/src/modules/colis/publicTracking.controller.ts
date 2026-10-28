@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma';
 
 // Suivi de colis public (landing page, aucune authentification requise).
-// N'expose JAMAIS de données client (nom, téléphone, solde) — uniquement le statut
-// et le trajet du colis, à partir de son Tracking ID.
+// N'expose JAMAIS de données client (nom, téléphone, solde), ni le contenu ou le poids du
+// colis : les Tracking ID étant séquentiels, n'importe qui pourrait sinon lister le contenu de
+// tous les colis. Uniquement le statut et le trajet.
 export async function publicTrackColisHandler(req: Request, res: Response) {
   const trackingId = req.params.trackingId;
 
@@ -24,8 +25,6 @@ export async function publicTrackColisHandler(req: Request, res: Response) {
     success: true,
     data: {
       trackingId: colis.trackingId,
-      description: colis.description,
-      poidsReelKg: colis.poidsReelKg,
       status: colis.status,
       createdAt: colis.createdAt,
       lot: colis.lot

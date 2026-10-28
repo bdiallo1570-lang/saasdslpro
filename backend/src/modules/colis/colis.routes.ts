@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { requireAuth, requirePermission } from '@/middleware/auth';
 import { asyncHandler } from '@/lib/asyncHandler';
+import { publicTrackingRateLimiter } from '@/middleware/rateLimit';
 import * as colisController from './colis.controller';
 import { scanColisHandler } from './scan.controller';
-import { marquerLivreHandler } from './livraison.controller';
+import { marquerLivreHandler, bonDeSortiePdfHandler } from './livraison.controller';
 import { publicTrackColisHandler } from './publicTracking.controller';
 import * as weightDiscrepancyController from './weightDiscrepancy.controller';
 
@@ -11,7 +12,7 @@ export const colisRouter = Router();
 
 // Routes publiques (landing page, aucune authentification) — placées avant requireAuth.
 colisRouter.post('/simulate-price', asyncHandler(colisController.simulatePriceHandler));
-colisRouter.get('/track/:trackingId', asyncHandler(publicTrackColisHandler));
+colisRouter.get('/track/:trackingId', publicTrackingRateLimiter, asyncHandler(publicTrackColisHandler));
 
 colisRouter.use(requireAuth);
 colisRouter.get('/', requirePermission('colis:read'), asyncHandler(colisController.listColisHandler));
@@ -43,6 +44,11 @@ colisRouter.post(
   '/:trackingId/livrer',
   requirePermission('entrepot:write'),
   asyncHandler(marquerLivreHandler),
+);
+colisRouter.get(
+  '/:trackingId/bon-de-sortie-pdf',
+  requirePermission('entrepot:read'),
+  asyncHandler(bonDeSortiePdfHandler),
 );
 colisRouter.post(
   '/:trackingId/signaler-ecart-poids',

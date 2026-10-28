@@ -9,10 +9,11 @@ import {
 import { env } from '@/config/env';
 import { ROLE_DASHBOARD_ROUTE, RoleName } from '@/config/roles';
 import { getWhatsAppProvider } from '@/lib/whatsapp/provider';
+import { AppError } from '@/lib/errors';
 
-export class AuthError extends Error {
-  constructor(message: string, public statusCode = 401) {
-    super(message);
+export class AuthError extends AppError {
+  constructor(message: string, statusCode = 401) {
+    super(message, statusCode);
   }
 }
 
@@ -80,7 +81,8 @@ export async function requestOtp(identifier: string) {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { otpCode, otpExpiresAt },
+    // Stocké haché (comme les refresh tokens) : une lecture de la base ne livre pas le code.
+    data: { otpCode: hashToken(otpCode), otpExpiresAt, otpAttempts: 0 },
   });
 
   const message =
@@ -98,21 +100,42 @@ export async function requestOtp(identifier: string) {
   }
 }
 
-export async function verifyOtpAndLogin(identifier: string, otpCode: string) {
+// Au-delà, le code en cours est inutilisable : il faut en redemander un. La limite par IP
+// (rateLimit.ts) ne suffit pas seule — un attaquant disposant de plusieurs IP la contourne.
+const MAX_OTP_ATTEMPTS = 5;
+
+// Vérifie le code OTP d'un compte et le consomme en cas de succès. La tentative est
+// comptabilisée AVANT la comparaison, par une mise à jour conditionnelle atomique : même des
+// essais envoyés en rafale et en parallèle ne dépassent jamais MAX_OTP_ATTEMPTS par code.
+async function consumeOtp(identifier: string, otpCode: string) {
   const user = await findUserByIdentifier(identifier);
 
-  if (!user || !user.isActive || !user.otpCode || !user.otpExpiresAt) {
+  if (!user || !user.isActive || !user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
     throw new AuthError('Code OTP invalide ou expiré.');
   }
 
-  if (user.otpCode !== otpCode || user.otpExpiresAt < new Date()) {
+  const { count } = await prisma.user.updateMany({
+    where: { id: user.id, otpCode: user.otpCode, otpAttempts: { lt: MAX_OTP_ATTEMPTS } },
+    data: { otpAttempts: { increment: 1 } },
+  });
+  if (count === 0) {
+    throw new AuthError('Trop de tentatives sur ce code. Demandez un nouveau code.', 429);
+  }
+
+  if (user.otpCode !== hashToken(otpCode)) {
     throw new AuthError('Code OTP invalide ou expiré.');
   }
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { otpCode: null, otpExpiresAt: null },
+    data: { otpCode: null, otpExpiresAt: null, otpAttempts: 0 },
   });
+
+  return user;
+}
+
+export async function verifyOtpAndLogin(identifier: string, otpCode: string) {
+  const user = await consumeOtp(identifier, otpCode);
 
   const tokens = await issueTokenPair(user.id, user.role.roleName, user.location);
   const redirectTo = ROLE_DASHBOARD_ROUTE[user.role.roleName as RoleName] ?? '/';
@@ -159,21 +182,12 @@ export async function requestPasswordReset(identifier: string) {
 }
 
 export async function confirmPasswordReset(identifier: string, otpCode: string, newPassword: string) {
-  const user = await findUserByIdentifier(identifier);
-
-  if (!user || !user.isActive || !user.otpCode || !user.otpExpiresAt) {
-    throw new AuthError('Code OTP invalide ou expiré.');
-  }
-
-  if (user.otpCode !== otpCode || user.otpExpiresAt < new Date()) {
-    throw new AuthError('Code OTP invalide ou expiré.');
-  }
-
+  const user = await consumeOtp(identifier, otpCode);
   const passwordHash = await hashPassword(newPassword);
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash, otpCode: null, otpExpiresAt: null },
+    data: { passwordHash },
   });
 
   // Sécurité : on révoque tous les jetons existants après un changement de mot de passe.

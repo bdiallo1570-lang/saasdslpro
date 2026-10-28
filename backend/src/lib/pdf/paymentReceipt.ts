@@ -100,7 +100,7 @@ export function generatePaymentReceiptPdf({ paiement, facture, client, colis, ag
     // ─── Bloc N° reçu / date / facture ─────────────────────────────────────
     doc.fillColor(COLOR_SLATE).fontSize(8).font('Helvetica');
     doc.text(`Reçu N° ${paiement.id.slice(0, 8).toUpperCase()}`, marginX, y);
-    doc.text(paiement.createdAt.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' }), marginX, y, {
+    doc.text((paiement.datePaiement ?? paiement.createdAt).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' }), marginX, y, {
       width: contentWidth,
       align: 'right',
     });
@@ -208,6 +208,14 @@ export function generatePaymentReceiptPdf({ paiement, facture, client, colis, ag
     y += 13;
     if (paiement.currency !== 'GNF') {
       doc.text(`Taux appliqué (vers GNF) : ${formatMontant(Number(paiement.tauxVersGnf))}`, marginX, y);
+      y += 13;
+    }
+    if (paiement.reference) {
+      doc.text(`Référence du paiement : ${paiement.reference}`, marginX, y);
+      y += 13;
+    }
+    if (paiement.commentaire) {
+      doc.text(`Commentaire : ${paiement.commentaire}`, marginX, y, { width: contentWidth });
       y += 13;
     }
 

@@ -1,11 +1,8 @@
 import { Currency, CashTransactionType, PaymentMethod, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '@/lib/errors';
 
-export class CaisseError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class CaisseError extends AppError {}
 
 function startOfDay(date: Date) {
   const d = new Date(date);

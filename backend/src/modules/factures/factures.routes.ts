@@ -18,6 +18,11 @@ facturesRouter.get(
   asyncHandler(facturesController.getFactureHandler),
 );
 facturesRouter.get(
+  '/:id/pdf',
+  requirePermission('factures:read'),
+  asyncHandler(facturesController.downloadFacturePdfHandler),
+);
+facturesRouter.get(
   '/client/:clientId',
   requirePermission('factures:read'),
   asyncHandler(facturesController.listFacturesByClientHandler),

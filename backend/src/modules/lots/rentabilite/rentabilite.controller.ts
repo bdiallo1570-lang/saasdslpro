@@ -1,14 +1,7 @@
 import { Request, Response } from 'express';
 import * as rentabiliteService from './rentabilite.service';
 import { generateLotBalanceReportPdf } from '@/lib/pdf/lotBalanceReport';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof rentabiliteService.RentabiliteError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function getRentabiliteHandler(req: Request, res: Response) {
   try {

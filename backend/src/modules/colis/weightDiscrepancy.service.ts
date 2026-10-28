@@ -1,11 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { getWeightDiscrepancyThreshold } from '@/lib/settings';
+import { AppError } from '@/lib/errors';
 
-export class WeightDiscrepancyError extends Error {
-  constructor(message: string, public statusCode = 400) {
-    super(message);
-  }
-}
+export class WeightDiscrepancyError extends AppError {}
 
 // Signale un écart entre le poids saisi en Chine (Colis.poidsReelKg, jamais modifié) et le
 // poids constaté par l'Agent Guinée à l'arrivée. Journalisé systématiquement (même sous le

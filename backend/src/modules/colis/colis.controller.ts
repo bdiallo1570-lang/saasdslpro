@@ -10,14 +10,7 @@ import {
 import { getActivePricingRule } from './pricing';
 import { presentColis } from './colis.presenter';
 import { listPaiementsByFacture } from '@/modules/paiements/paiements.service';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof colisService.PricingError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function createColisHandler(req: Request, res: Response) {
   const parsed = createColisSchema.safeParse(req.body);
@@ -51,9 +44,10 @@ export async function getColisHandler(req: Request, res: Response) {
 
 export async function listColisHandler(req: Request, res: Response) {
   const lotId = typeof req.query.lotId === 'string' ? req.query.lotId : undefined;
+  const clientId = typeof req.query.clientId === 'string' ? req.query.clientId : undefined;
   const statusRaw = typeof req.query.status === 'string' ? req.query.status : undefined;
   const status = statusRaw?.includes(',') ? statusRaw.split(',') : statusRaw;
-  const colis = await colisService.listColis({ lotId, status });
+  const colis = await colisService.listColis({ lotId, clientId, status });
   return res.status(200).json({
     success: true,
     data: colis.map((c) => presentColis(c, req.user!.roleName)),

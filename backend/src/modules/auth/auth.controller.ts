@@ -8,14 +8,7 @@ import {
   resetPasswordRequestSchema,
   resetPasswordConfirmSchema,
 } from './auth.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof authService.AuthError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function loginHandler(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);

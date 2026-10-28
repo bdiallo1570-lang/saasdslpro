@@ -1,14 +1,7 @@
 import { Request, Response } from 'express';
 import * as facturesService from './factures.service';
 import { createFactureSchema, deblocageLivraisonSchema } from './factures.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof facturesService.FactureError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function createFactureHandler(req: Request, res: Response) {
   const parsed = createFactureSchema.safeParse(req.body);
@@ -29,6 +22,17 @@ export async function getFactureHandler(req: Request, res: Response) {
     return res.status(404).json({ success: false, data: null, error: 'Facture introuvable.' });
   }
   return res.status(200).json({ success: true, data: facture, error: null });
+}
+
+export async function downloadFacturePdfHandler(req: Request, res: Response) {
+  try {
+    const { buffer, factureNumber } = await facturesService.getFacturePdf(req.params.id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="facture-${factureNumber}.pdf"`);
+    return res.status(200).send(buffer);
+  } catch (error) {
+    return handleError(res, error);
+  }
 }
 
 export async function listFacturesByClientHandler(req: Request, res: Response) {

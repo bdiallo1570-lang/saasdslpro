@@ -17,6 +17,15 @@ type ColisWithClient = Record<string, unknown> & {
   facture?: FactureAvecPaiements | null;
 };
 
+// Règle 3.4 GEMINI.md : un colis ne sort de l'entrepôt que si sa facture est payée, ou
+// débloquée manuellement par un admin (tracé à l'audit). Sans facture, la sortie est bloquée.
+// Seule source de cette règle — utilisée par la livraison, le scan et le bon de sortie.
+export function livraisonAutorisee(
+  facture: { status: string; livraisonDebloqueeManuel: boolean } | null | undefined,
+): boolean {
+  return !!facture && (facture.status === 'PAYE' || facture.livraisonDebloqueeManuel);
+}
+
 export type StatutPaiementColis = 'IMPAYE' | 'PARTIEL' | 'SOLDE' | 'TROP_PERCU';
 
 // Calcule montant dû/payé/reste/trop-perçu en GNF pour un colis, à partir de sa facture
@@ -34,9 +43,27 @@ export function computePaiementColis(facture: FactureAvecPaiements | null | unde
   }
 
   // montantTotal est déjà dans la devise de la facture ; pour un colis en devise étrangère,
-  // le montantTotal reste dans cette devise — le montant dû "en GNF" utilise le premier
-  // paiement figé si disponible, sinon le montant brut (cas GNF natif = immédiat).
-  const referenceTaux = facture.paiements[0] ? Number(facture.paiements[0].tauxVersGnf) : 1;
+  // le montantTotal reste dans cette devise — le montant dû "en GNF" utilise le taux figé
+  // du premier paiement dans cette devise, ou le premier paiement avec taux > 1, ou le taux figé du lot.
+  let referenceTaux = 1;
+  if (facture.currency !== 'GNF') {
+    const pMemeDevise = facture.paiements.find((p) => p.currency === facture.currency);
+    if (pMemeDevise) {
+      referenceTaux = Number(pMemeDevise.tauxVersGnf);
+    } else {
+      const pAvecTaux = facture.paiements.find((p) => Number(p.tauxVersGnf) > 1);
+      if (pAvecTaux) {
+        referenceTaux = Number(pAvecTaux.tauxVersGnf);
+      } else {
+        const lotTaux = (facture as { colis?: { lot?: { tauxVersGnfFige?: unknown } | null }[] })
+          .colis?.find((c) => c.lot?.tauxVersGnfFige)?.lot?.tauxVersGnfFige;
+        if (lotTaux) {
+          referenceTaux = Number(lotTaux);
+        }
+      }
+    }
+  }
+
   const montantDuGnf =
     facture.currency === 'GNF' ? Number(facture.montantTotal) : Number(facture.montantTotal) * referenceTaux;
   const montantPayeGnf = facture.paiements.reduce(

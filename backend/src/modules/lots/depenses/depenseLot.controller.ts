@@ -1,14 +1,7 @@
 import { Request, Response } from 'express';
 import * as depenseLotService from './depenseLot.service';
 import { createDepenseSchema, depenseFiltersSchema } from './depenseLot.schema';
-
-function handleError(res: Response, error: unknown) {
-  if (error instanceof depenseLotService.DepenseLotError) {
-    return res.status(error.statusCode).json({ success: false, data: null, error: error.message });
-  }
-  console.error(error);
-  return res.status(500).json({ success: false, data: null, error: 'Erreur interne du serveur.' });
-}
+import { handleError } from '@/lib/errors';
 
 export async function createDepenseHandler(req: Request, res: Response) {
   const parsed = createDepenseSchema.safeParse(req.body);
