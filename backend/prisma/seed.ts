@@ -137,6 +137,22 @@ async function main() {
       roleName: ROLE_NAMES.AGENT_GUINEE,
       location: 'GUINEE' as const,
     },
+    {
+      fullName: 'Caissier Démo',
+      phoneNumber: '+224600000004',
+      email: 'caissier@dslaircargo.com',
+      password: 'ChangeMoi123!',
+      roleName: ROLE_NAMES.CAISSIER,
+      location: 'GUINEE' as const,
+    },
+    {
+      fullName: 'Client Démo',
+      phoneNumber: '+224600000005',
+      email: 'client@dslaircargo.com',
+      password: 'ChangeMoi123!',
+      roleName: ROLE_NAMES.CLIENT,
+      location: null,
+    },
   ];
 
   for (const demo of demoUsers) {
