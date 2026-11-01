@@ -27,11 +27,39 @@ function setState(next: PricingState) {
   listeners.forEach((l) => l());
 }
 
+async function fetchFromPricing(): Promise<Partial<Record<PublicCategory, number>>> {
+  const res = await apiClient.get<ApiResponse<PricingRow[]>>('/pricing');
+  const prices: Partial<Record<PublicCategory, number>> = {};
+  for (const row of res.data.data ?? []) prices[row.categoryName] = row.pricePerKg;
+  return prices;
+}
+
+// Secours : la simulation publique (POST /colis/simulate-price) applique le même tarif actif en
+// base. Elle couvre un serveur pas encore redéployé avec GET /pricing — sans elle, le calculateur
+// restait vide en production tant que le serveur n'était pas à jour.
+async function fetchFromSimulation(): Promise<Partial<Record<PublicCategory, number>>> {
+  const categories: PublicCategory[] = ['STANDARD', 'RISQUE'];
+  const rows = await Promise.all(
+    categories.map((categorieTarif) =>
+      apiClient.post<ApiResponse<{ pricePerKg: string | number }>>('/colis/simulate-price', { categorieTarif, poidsKg: 1 }),
+    ),
+  );
+  const prices: Partial<Record<PublicCategory, number>> = {};
+  rows.forEach((res, i) => {
+    const value = Number(res.data.data?.pricePerKg);
+    if (Number.isFinite(value) && value > 0) prices[categories[i]] = value;
+  });
+  return prices;
+}
+
 async function load(attempt = 0): Promise<void> {
   try {
-    const res = await apiClient.get<ApiResponse<PricingRow[]>>('/pricing');
-    const prices: Partial<Record<PublicCategory, number>> = {};
-    for (const row of res.data.data ?? []) prices[row.categoryName] = row.pricePerKg;
+    let prices: Partial<Record<PublicCategory, number>>;
+    try {
+      prices = await fetchFromPricing();
+    } catch {
+      prices = await fetchFromSimulation();
+    }
     setState({ status: 'ready', prices });
   } catch {
     // Le serveur gratuit peut mettre quelques secondes à se réveiller : deux nouvelles tentatives
