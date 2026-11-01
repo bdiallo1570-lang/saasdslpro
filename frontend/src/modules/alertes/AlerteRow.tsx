@@ -50,7 +50,7 @@ export function AlerteRow({ alerte }: AlerteRowProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <Badge tone={NIVEAU_TONE[alerte.niveau]}>{NIVEAU_LABELS[alerte.niveau]}</Badge>
-          <span className="text-xs text-slate-400 dark:text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             {new Date(alerte.createdAt).toLocaleDateString('fr-FR')}
           </span>
         </div>

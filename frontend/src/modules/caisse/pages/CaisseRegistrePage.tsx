@@ -11,6 +11,7 @@ import {
 } from '../caisse.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Button, Card, Input, Select, StatCard, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const DEPENSE_CATEGORIES = ['Douane', 'Manutention', 'Loyer', 'Carburant', 'Autre'];
 const CURRENCY = 'GNF';
@@ -264,7 +265,7 @@ export default function CaisseRegistrePage() {
                   }
                 >
                   {t.type === 'ENTREE' ? '+' : '-'}
-                  {Number(t.montant).toLocaleString('fr-FR')} {t.currency}
+                  {formatNumber(Number(t.montant))} {t.currency}
                 </span>
               </div>
             ))}
@@ -305,7 +306,7 @@ export default function CaisseRegistrePage() {
                             : 'text-red-600 dark:text-red-400'
                       }
                     >
-                      {(Number(comptagePhysique) - soldeTheorique).toLocaleString('fr-FR')} GNF
+                      {formatNumber((Number(comptagePhysique) - soldeTheorique))} GNF
                     </span>
                   </motion.p>
                 )}
@@ -326,7 +327,7 @@ export default function CaisseRegistrePage() {
         <Card className="p-5 space-y-2 text-center">
           <p className="font-semibold text-slate-800 dark:text-slate-200">Caisse clôturée</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Comptage physique : {Number(closure.comptagePhysique).toLocaleString('fr-FR')} GNF
+            Comptage physique : {formatNumber(Number(closure.comptagePhysique))} GNF
           </p>
           <p
             className={`text-sm font-medium ${
@@ -338,7 +339,7 @@ export default function CaisseRegistrePage() {
             }`}
           >
             Écart : {Number(closure.ecart) >= 0 ? '+' : ''}
-            {Number(closure.ecart).toLocaleString('fr-FR')} GNF
+            {formatNumber(Number(closure.ecart))} GNF
           </p>
           <Button variant="cargo" fullWidth className="mt-2" onClick={handleDownloadReport}>
             Télécharger le rapport de clôture (PDF)

@@ -74,7 +74,7 @@ const TABS: { key: Onglet; label: string; icon: typeof Ban; tone: 'red' | 'amber
 const TONE_CLASSES = {
   red: {
     activeLight: 'bg-red-600 text-white',
-    activeDark: 'bg-red-500 text-white',
+    activeDark: 'bg-red-600 text-white',
     cardLight: 'bg-red-50 border-red-100',
     cardDark: 'bg-red-500/5 border-red-500/20',
     textLight: 'text-red-700',
@@ -291,7 +291,7 @@ export function ForbiddenItems({ isDark }: ForbiddenItemsProps) {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className={`text-center text-xs mt-10 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+          className={`text-center text-xs mt-10 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
         >
           Un doute sur un article précis ? Contactez notre équipe avant l'envoi, on vous répond
           rapidement.

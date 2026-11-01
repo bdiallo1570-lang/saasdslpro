@@ -6,6 +6,7 @@ import { createColis, simulatePrice, Colis, PricingCategory } from '../colis.api
 import { extractErrorMessage } from '@/lib/apiClient';
 import { ColisLabel } from './ColisLabel';
 import { Card, Button, Input, Textarea, Select, StatCounter, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const DIVISEUR_VOLUMETRIQUE = 6000;
 
@@ -171,7 +172,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   dérivé de la même simulation que le montant estimé affiché plus bas. */}
               {pricePerKg && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
-                  Tarif en vigueur : {Number(pricePerKg).toLocaleString('fr-FR')} GNF/kg
+                  Tarif en vigueur : {formatNumber(Number(pricePerKg))} GNF/kg
                 </p>
               )}
 

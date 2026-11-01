@@ -12,6 +12,7 @@ import { relancerClient } from '@/modules/paiements/paiements.api';
 import { ClientActionsModal } from '@/modules/clients/components/ClientActionsModal';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Button, StatCard, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const RISK_LABELS: Record<RiskTier, string> = {
   FAIBLE: 'Récent',
@@ -135,8 +136,8 @@ export default function CreancesDashboardPage() {
             <h2 className="font-medium text-night-800 dark:text-slate-100">
               Clients débiteurs ({debiteurs.length})
             </h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              Total général : <span className="font-semibold tabular-nums">{Math.round(totalGeneralGnf).toLocaleString('fr-FR')} GNF</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Total général : <span className="font-semibold tabular-nums">{formatNumber(Math.round(totalGeneralGnf))} GNF</span>
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={handleExportExcel} disabled={debiteurs.length === 0}>
@@ -145,16 +146,16 @@ export default function CreancesDashboardPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : debiteurs.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
             Aucun client débiteur pour le moment.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-night-700">
+                <tr className="text-left text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-night-700">
                   <th className="px-5 py-3 font-medium">Client</th>
                   <th className="px-3 py-3 font-medium">Téléphone</th>
                   <th className="px-3 py-3 font-medium text-right">Colis en attente</th>
@@ -180,18 +181,18 @@ export default function CreancesDashboardPage() {
                     >
                       <td className="px-5 py-3">
                         <p className="font-medium text-night-800 dark:text-slate-100">{d.client.fullName}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">{d.client.clientCode}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{d.client.clientCode}</p>
                       </td>
                       <td className="px-3 py-3 text-slate-500 dark:text-slate-400">{d.client.telephone ?? '—'}</td>
                       <td className="px-3 py-3 text-right tabular-nums">{d.nombreColisEnAttente}</td>
                       <td className="px-3 py-3 text-right tabular-nums font-medium text-night-900 dark:text-slate-100">
-                        {Math.round(d.soldeDu + d.montantPayeTotal).toLocaleString('fr-FR')}
+                        {formatNumber(Math.round(d.soldeDu + d.montantPayeTotal))}
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums text-green-600 dark:text-emerald-400">
-                        {Math.round(d.montantPayeTotal).toLocaleString('fr-FR')}
+                        {formatNumber(Math.round(d.montantPayeTotal))}
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums font-semibold text-night-900 dark:text-slate-100">
-                        {Math.round(d.soldeDu).toLocaleString('fr-FR')}
+                        {formatNumber(Math.round(d.soldeDu))}
                       </td>
                       <td className="px-3 py-3 text-slate-500 dark:text-slate-400">{d.ancienneteJours} j</td>
                       <td className="px-3 py-3">
@@ -207,7 +208,7 @@ export default function CreancesDashboardPage() {
                           Relancer
                         </Button>
                         {messages[d.client.id] && (
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{messages[d.client.id]}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{messages[d.client.id]}</p>
                         )}
                       </td>
                     </motion.tr>

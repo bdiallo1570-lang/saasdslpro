@@ -10,6 +10,7 @@ import {
 } from '../../depenses.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Button, Input, Select, Modal, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 // Dédouanement et Transport aéroport→Madina en premier — postes prioritaires métier.
 const CATEGORIES_ORDONNEES: CategorieDepenseLot[] = [
@@ -153,7 +154,7 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
               {CATEGORIE_DEPENSE_LABELS[s.categorie]}
             </p>
             <p className="mt-1.5 text-lg font-bold tabular-nums text-night-900 dark:text-slate-100">
-              {Math.round(s.totalGnf).toLocaleString('fr-FR')}
+              {formatNumber(Math.round(s.totalGnf))}
               <span className="text-xs font-medium ml-1 opacity-70">GNF</span>
             </p>
           </Card>
@@ -165,14 +166,14 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
           <h2 className="font-medium text-night-800 dark:text-slate-100">Dépenses ({depenses.length})</h2>
         </div>
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : depenses.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Aucune dépense pour le moment.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Aucune dépense pour le moment.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-night-700">
+                <tr className="text-left text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-night-700">
                   <th className="px-5 py-3 font-medium">Date</th>
                   <th className="px-3 py-3 font-medium">Catégorie</th>
                   <th className="px-3 py-3 font-medium">Libellé</th>
@@ -193,10 +194,10 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
                     <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{d.libelle}</td>
                     <td className="px-3 py-3 text-slate-500 dark:text-slate-400">{d.beneficiaire ?? '—'}</td>
                     <td className="px-3 py-3 text-right tabular-nums">
-                      {Number(d.montant).toLocaleString('fr-FR')} {d.currency}
+                      {formatNumber(Number(d.montant))} {d.currency}
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums font-semibold text-night-900 dark:text-slate-100">
-                      {Math.round(Number(d.montantGnf)).toLocaleString('fr-FR')} GNF
+                      {formatNumber(Math.round(Number(d.montantGnf)))} GNF
                     </td>
                   </tr>
                 ))}
@@ -245,7 +246,7 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
               />
               {montantGnfPreview > 0 && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  ≈ {Math.round(montantGnfPreview).toLocaleString('fr-FR')} GNF
+                  ≈ {formatNumber(Math.round(montantGnfPreview))} GNF
                 </p>
               )}
             </div>

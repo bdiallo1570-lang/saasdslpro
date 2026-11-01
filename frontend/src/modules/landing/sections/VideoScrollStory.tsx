@@ -3,6 +3,7 @@ import { motion, MotionValue, useMotionValue, useMotionValueEvent, useScroll, us
 import { ArrowRight, MessageCircle } from 'lucide-react';
 import { TrackingPanel } from './TrackingPanel';
 import { Magnetic, SplitLetters } from './motionKit';
+import { formatPricePerKg, priceOf, usePublicPricing } from '../publicPricing';
 
 interface VideoScrollStoryProps {
   onSimulateClick: () => void;
@@ -108,6 +109,8 @@ function framingAxis(c: number, visible: number, manual: number, a: number) {
 export function VideoScrollStory({ onSimulateClick, ready }: VideoScrollStoryProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Prix d'appel de l'accroche : le tarif Standard en vigueur, lu en base
+  const startingPrice = priceOf(usePublicPricing(), 'STANDARD');
   const { scrollYProgress: p } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] });
 
   // Scrub lissé : chaque image, le temps courant rattrape la cible de 22 % de l'écart. On ne
@@ -252,7 +255,7 @@ export function VideoScrollStory({ onSimulateClick, ready }: VideoScrollStoryPro
               {/* Accueil : première image de la vidéo + les deux actions principales */}
               <Chapter p={p} index={0} big ready={ready} eyebrow="Fret aérien Chine → Guinée"
                 title="DSL Air Cargo"
-                body="Vous achetez en Chine, on s'occupe du reste. Suivi WhatsApp, tarification claire dès 160 000 GNF/kg et zéro frais cachés."
+                body={`Vous achetez en Chine, on s'occupe du reste. Suivi WhatsApp, tarification claire ${startingPrice !== null ? `dès ${formatPricePerKg(startingPrice)}` : 'au kilo'} et zéro frais cachés.`}
               >
                 <TrackingPanel onSimulateClick={onSimulateClick} />
               </Chapter>
@@ -345,6 +348,7 @@ function Chapter({
   // (« none » à pleine netteté : un filtre actif casserait le flou d'arrière-plan du panneau de suivi)
   const filter = useTransform(opacity, (o) => (o > 0.97 ? 'none' : `blur(${(1 - o) * 14}px)`));
   const stage = big ? ready : undefined;
+  const HeadingTag = big ? 'h1' : 'h2';
 
   return (
     <motion.div style={{ opacity, y, pointerEvents, filter }} className="absolute inset-0 text-center lg:text-left">
@@ -353,13 +357,14 @@ function Chapter({
           {eyebrow}
         </p>
       </Stage>
-      <h2
+      {/* Le grand titre du premier chapitre est le titre principal (h1) de la page */}
+      <HeadingTag
         className={`mt-4 font-editorial font-normal tracking-tight text-cream [text-shadow:0_2px_30px_rgba(0,0,0,0.55)] ${
           big ? 'text-7xl sm:text-8xl leading-[0.95]' : 'text-5xl sm:text-6xl leading-[1.02]'
         }`}
       >
         {big ? <SplitLetters text={title} play={!!ready} delay={0.25} stagger={0.05} /> : title}
-      </h2>
+      </HeadingTag>
       <Stage on={stage} delay={0.9}>
         <p className="mt-5 text-sm sm:text-base leading-relaxed text-cream/80 [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">
           {body}

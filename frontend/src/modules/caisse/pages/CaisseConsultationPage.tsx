@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { getOpenClosure, listClosures, CashRegisterClosure } from '../caisse.api';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, StatCard } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const listContainer = {
   hidden: { opacity: 0 },
@@ -100,7 +101,7 @@ export default function CaisseConsultationPage() {
                     }
                   >
                     {t.type === 'ENTREE' ? '+' : '-'}
-                    {Number(t.montant).toLocaleString('fr-FR')} {t.currency}
+                    {formatNumber(Number(t.montant))} {t.currency}
                   </span>
                 </div>
               ))}
@@ -142,7 +143,7 @@ export default function CaisseConsultationPage() {
                   {c.status === 'CLOTUREE' ? 'Clôturée' : 'Ouverte'}
                 </Badge>
                 <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
-                  {c.ecart !== null ? `Écart : ${Number(c.ecart).toLocaleString('fr-FR')} GNF` : '—'}
+                  {c.ecart !== null ? `Écart : ${formatNumber(Number(c.ecart))} GNF` : '—'}
                 </p>
               </motion.div>
             ))}

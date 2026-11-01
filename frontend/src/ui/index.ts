@@ -9,3 +9,5 @@ export * from './Modal';
 export * from './PageHeader';
 export * from './Tabs';
 export * from './toast';
+export * from './Spotlight';
+export * from './Tilt';

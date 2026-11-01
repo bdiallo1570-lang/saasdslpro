@@ -3,9 +3,12 @@
 // d'appel réseau, pas de dépendance externe : réponses instantanées, gratuites, illimitées.
 // Pour enrichir l'assistant, ajouter une entrée ici plutôt que dupliquer du contenu ailleurs.
 
+import { MARITIME } from '../maritime/maritimeConfig';
+
 export interface Intent {
   id: string;
   keywords: string[];
+  // Peut contenir le repère {{tarifs}}, remplacé par les tarifs à jour (voir publicPricing.ts)
   answer: string;
   suggestions?: string[]; // questions de relance proposées après cette réponse
 }
@@ -15,7 +18,7 @@ export const INTENTS: Intent[] = [
     id: 'tarifs',
     keywords: ['prix', 'tarif', 'coût', 'cout', 'combien', 'kg', 'kilo', 'gnf', 'cher'],
     answer:
-      "Ça dépend du type de marchandise et du poids réel. Pour du Cargo Standard (habits, chaussures, jouets, articles ménagers…), c'est 160 000 GNF/kg. Pour du Cargo Sensible (batteries, liquides, électronique, cosmétiques…), c'est 180 000 GNF/kg. Utilisez le calculateur plus haut sur cette page pour avoir le prix exact en quelques secondes.",
+      "Ça dépend du type de marchandise et du poids réel. {{tarifs}} Utilisez le calculateur plus haut sur cette page pour avoir le prix exact en quelques secondes.",
     suggestions: ['Combien de temps pour le transport ?', 'Comment vous calculez le poids ?'],
   },
   {
@@ -24,6 +27,12 @@ export const INTENTS: Intent[] = [
     answer:
       "Dès que votre colis est enregistré à notre entrepôt de Guangzhou et casé dans un vol, on vous donne une estimation d'arrivée (ETA) à Conakry. Et dès qu'il est disponible à l'entrepôt de Madina, vous recevez un message WhatsApp automatique — pas besoin de nous relancer.",
     suggestions: ['Comment je suis mon colis ?', 'Où sont vos entrepôts ?'],
+  },
+  {
+    id: 'maritime',
+    keywords: ['bateau', 'maritime', 'conteneur', 'container', 'cbm', 'm3', 'm³', 'mètre cube', 'metre cube', 'gros volume', 'meuble'],
+    answer: `Oui, on fait aussi le fret maritime pour les gros volumes (meubles, machines, stock…). C'est facturé ${MARITIME.pricePerCbmUsd ? `${MARITIME.pricePerCbmUsd} USD le m³` : 'au mètre cube (CBM)'}, avec un délai d'environ ${MARITIME.transitLabel} jusqu'à Conakry. Contrairement à l'aérien où tout est compris dans le prix au kilo, le dédouanement est facturé à part, en GNF. Utilisez le calculateur de volume dans la section Maritime : il calcule vos m³ et prépare la demande de devis sur WhatsApp.`,
+    suggestions: ['Combien ça coûte en avion ?', 'Où sont vos entrepôts ?'],
   },
   {
     id: 'poids',
@@ -80,7 +89,7 @@ export const INTENTS: Intent[] = [
     id: 'entrepots',
     keywords: ['entrepôt', 'entrepot', 'adresse', 'guangzhou', 'madina', 'conakry', 'où êtes', 'ou etes', 'localisation'],
     answer:
-      "Un entrepôt à Guangzhou (Chine) pour la réception et l'enregistrement de vos colis, et un à Madina, Conakry, pour la réception, le dédouanement et la remise de vos marchandises. Les adresses complètes sont dans la section « Entrepôts » plus haut sur cette page.",
+      "À Guangzhou (Chine), deux entrepôts : l'un pour le fret aérien, l'autre pour le fret maritime (district de Baiyun), où vos colis sont réceptionnés et enregistrés. Et un à Madina, Conakry, pour la réception, le dédouanement et la remise de vos marchandises. Les adresses complètes sont dans la section « Entrepôts » plus haut sur cette page.",
     suggestions: ['Comment je suis mon colis ?', "Comment vous contacter ?"],
   },
   {

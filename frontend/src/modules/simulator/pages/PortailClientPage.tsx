@@ -4,6 +4,7 @@ import { simulatePrice, PriceSimulationResult } from '@/modules/colis/colis.api'
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
 import { AppShell } from '@/layout/AppShell';
 import { Card, Button, Select, Input, PageHeader, StatCounter } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 export default function PortailClientPage() {
   const [categorie, setCategorie] = useState<'STANDARD' | 'RISQUE'>('STANDARD');
@@ -78,7 +79,7 @@ export default function PortailClientPage() {
                 <p className="text-sm text-cargo-700 dark:text-cargo-300">Total estimé</p>
                 {result && (
                   <p className="text-xs text-cargo-600/80 dark:text-cargo-400/80">
-                    {result.poidsKg} kg × {Number(result.pricePerKg).toLocaleString('fr-FR')}{' '}
+                    {result.poidsKg} kg × {formatNumber(Number(result.pricePerKg))}{' '}
                     {result.currency}/kg
                   </p>
                 )}
@@ -91,7 +92,7 @@ export default function PortailClientPage() {
                     <StatCounter
                       value={result.totalEstime}
                       duration={0.5}
-                      formatter={(v) => Math.round(v).toLocaleString('fr-FR')}
+                      formatter={(v) => formatNumber(Math.round(v))}
                     />{' '}
                     {result.currency}
                   </>
@@ -102,7 +103,8 @@ export default function PortailClientPage() {
             </div>
           </Card>
 
-          <Card className="p-6 flex items-center justify-between gap-4">
+          {/* Empilé sur mobile : le bouton (texte insécable) débordait de 44 px à 390 px de large */}
+          <Card className="p-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-night-800 dark:text-slate-100">
                 Envoyer un colis vers la Chine ?
@@ -111,7 +113,7 @@ export default function PortailClientPage() {
                 Récupérez l'adresse de notre entrepôt à Guangzhou.
               </p>
             </div>
-            <Button variant="cargo" onClick={() => setAddressModalOpen(true)} className="whitespace-nowrap">
+            <Button variant="cargo" onClick={() => setAddressModalOpen(true)} className="sm:whitespace-nowrap">
               Obtenir l'adresse de l'entrepôt en Chine
             </Button>
           </Card>

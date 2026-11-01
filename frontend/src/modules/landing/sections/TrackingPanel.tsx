@@ -40,7 +40,7 @@ export function TrackingPanel({ onSimulateClick }: { onSimulateClick: () => void
         <button
           type="button"
           onClick={onSimulateClick}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-cargo-500 px-7 py-3.5 text-sm font-semibold text-white shadow-glow-cargo transition-colors hover:bg-cargo-400"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-cargo-500 px-7 py-3.5 text-sm font-semibold text-ink-950 shadow-glow-cargo transition-colors hover:bg-cargo-400"
         >
           <Calculator size={16} />
           Simuler mon Tarif
@@ -67,7 +67,7 @@ export function TrackingPanel({ onSimulateClick }: { onSimulateClick: () => void
           <button
             type="submit"
             disabled={loading}
-            className="shrink-0 bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-white text-sm font-semibold px-4 sm:px-5 py-3 rounded-xl transition-colors inline-flex items-center gap-2"
+            className="shrink-0 bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-ink-950 text-sm font-semibold px-4 sm:px-5 py-3 rounded-xl transition-colors inline-flex items-center gap-2"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
             Suivre
@@ -78,7 +78,7 @@ export function TrackingPanel({ onSimulateClick }: { onSimulateClick: () => void
           <button
             type="button"
             onClick={onSimulateClick}
-            className="w-full bg-cargo-500 hover:bg-cargo-400 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-glow-cargo transition-colors inline-flex items-center justify-center gap-2"
+            className="w-full bg-cargo-500 hover:bg-cargo-400 text-ink-950 text-sm font-semibold px-5 py-3 rounded-xl shadow-glow-cargo transition-colors inline-flex items-center justify-center gap-2"
           >
             <Calculator size={16} />
             Simuler mon Tarif

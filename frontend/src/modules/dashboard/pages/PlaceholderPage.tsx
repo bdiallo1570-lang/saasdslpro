@@ -66,7 +66,7 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
             <Button variant="cargo">Voir le suivi des créances &amp; impayés</Button>
           </Link>
         )}
-        <p className="mt-8 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-8 text-xs text-slate-500 dark:text-slate-400">
           Module en cours de développement — voir GEMINI.md, phases de développement.
         </p>
       </motion.div>

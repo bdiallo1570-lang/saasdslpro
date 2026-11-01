@@ -107,7 +107,7 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
             transition={{ duration: 0.15 }}
             className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg dark:bg-night-800 dark:border-night-600 max-h-64 overflow-y-auto"
           >
-            {loading && <div className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">Recherche…</div>}
+            {loading && <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">Recherche…</div>}
 
             {!loading &&
               results.map((client) => (
@@ -122,7 +122,7 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-night-700 border-b border-slate-100 dark:border-night-700 last:border-0"
                 >
                   <p className="font-medium text-slate-800 dark:text-slate-200">{client.fullName}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {client.clientCode} {client.phoneGn ? `· ${client.phoneGn}` : ''}
                   </p>
                 </button>

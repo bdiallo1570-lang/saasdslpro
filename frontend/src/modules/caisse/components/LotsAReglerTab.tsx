@@ -11,6 +11,7 @@ import { getColisByTrackingId, Colis } from '@/modules/colis/colis.api';
 import { ColisActionsModal } from '@/modules/colis/components/ColisActionsModal';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Badge, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -64,9 +65,9 @@ export function LotsAReglerTab() {
         </h2>
       </div>
       {loading ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
       ) : groupes.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
           Aucun colis facturé pour le moment.
         </p>
       ) : (
@@ -88,10 +89,10 @@ export function LotsAReglerTab() {
                         {g.lot.lotNumber}
                         {g.lot.flightNumber ? ` · Vol ${g.lot.flightNumber}` : ''} — {g.colis.length} colis
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
-                        Dû : {Math.round(g.dûGnf).toLocaleString('fr-FR')} · Payé :{' '}
-                        {Math.round(g.payéGnf).toLocaleString('fr-FR')} · Reste :{' '}
-                        {Math.round(g.resteGnf).toLocaleString('fr-FR')} GNF
+                      <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                        Dû : {formatNumber(Math.round(g.dûGnf))} · Payé :{' '}
+                        {formatNumber(Math.round(g.payéGnf))} · Reste :{' '}
+                        {formatNumber(Math.round(g.resteGnf))} GNF
                       </p>
                     </div>
                   </div>
@@ -99,7 +100,7 @@ export function LotsAReglerTab() {
                     <Badge tone="green">Lot traité</Badge>
                   ) : (
                     <Badge tone="red">
-                      Reste {Math.round(g.resteGnf).toLocaleString('fr-FR')} GNF
+                      Reste {formatNumber(Math.round(g.resteGnf))} GNF
                     </Badge>
                   )}
                 </button>
@@ -124,9 +125,9 @@ export function LotsAReglerTab() {
                             {c.trackingId} — {c.client.fullName}
                           </span>
                           <span className="tabular-nums text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            {Math.round(c.dûGnf).toLocaleString('fr-FR')} /{' '}
-                            {Math.round(c.payéGnf).toLocaleString('fr-FR')} /{' '}
-                            {Math.round(c.resteGnf).toLocaleString('fr-FR')}
+                            {formatNumber(Math.round(c.dûGnf))} /{' '}
+                            {formatNumber(Math.round(c.payéGnf))} /{' '}
+                            {formatNumber(Math.round(c.resteGnf))}
                           </span>
                           <Badge tone={STATUT_TONE[c.statutPaiement]}>
                             {STATUT_PAIEMENT_LABELS[c.statutPaiement]}

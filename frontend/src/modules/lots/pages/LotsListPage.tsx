@@ -118,7 +118,7 @@ export default function LotsListPage() {
               >
                 <div>
                   <p className="font-medium text-night-800 dark:text-slate-100">{lot.lotNumber}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {lot.flightNumber ? `Vol ${lot.flightNumber}` : 'Vol non assigné'} ·{' '}
                     {lot._count?.colis ?? 0} colis
                   </p>

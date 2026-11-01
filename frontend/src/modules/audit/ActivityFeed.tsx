@@ -62,9 +62,9 @@ export function ActivityFeed() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
       ) : entries.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
           Aucune action récente pour le moment.
         </p>
       ) : (

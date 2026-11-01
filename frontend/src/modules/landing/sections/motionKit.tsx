@@ -28,22 +28,28 @@ export function SplitLetters({
 
   return (
     <motion.span
-      aria-label={text}
       className={`inline-block ${className}`}
       variants={{ show: { transition: { staggerChildren: stagger, delayChildren: delay } } }}
       {...trigger}
     >
-      {Array.from(text).map((char, i) => (
-        <span key={i} aria-hidden="true" className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em]">
-          <motion.span
-            className="inline-block"
-            variants={{
-              hidden: { y: '118%' },
-              show: { y: '0%', transition: { duration: 1, ease: EASE_OUT } },
-            }}
-          >
-            {char === ' ' ? ' ' : char}
-          </motion.span>
+      {/* Texte complet pour les lecteurs d'écran ; les lettres animées leur sont masquées */}
+      <span className="sr-only">{text}</span>
+      {/* Lettres regroupées par mot (insécables) : le retour à la ligne ne coupe jamais un mot */}
+      {text.split(' ').map((word, w, words) => (
+        <span key={w} aria-hidden="true" className="inline-block whitespace-nowrap">
+          {Array.from(w < words.length - 1 ? `${word} ` : word).map((char, i) => (
+            <span key={i} className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em]">
+              <motion.span
+                className="inline-block"
+                variants={{
+                  hidden: { y: '118%' },
+                  show: { y: '0%', transition: { duration: 1, ease: EASE_OUT } },
+                }}
+              >
+                {char === ' ' ? '\u00A0' : char}
+              </motion.span>
+            </span>
+          ))}
         </span>
       ))}
     </motion.span>

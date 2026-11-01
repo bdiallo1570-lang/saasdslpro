@@ -4,12 +4,13 @@ import { AlertTriangle } from 'lucide-react';
 import { getRentabiliteLot, downloadBilanPdf, RentabiliteLot } from '../../rentabilite.api';
 import { CATEGORIE_DEPENSE_LABELS } from '../../depenses.api';
 import { Card, Button } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 // Palette neutre cohérente avec le thème dark premium (navy/bleu ciel/orange cargo).
 const COULEURS_CATEGORIES = ['#F97316', '#38BDF8', '#22C55E', '#A78BFA', '#FBBF24', '#94A3B8'];
 
 function formatGnf(value: number) {
-  return `${Math.round(value).toLocaleString('fr-FR')} GNF`;
+  return `${formatNumber(Math.round(value))} GNF`;
 }
 
 interface RentabiliteTabProps {
@@ -47,7 +48,7 @@ export function RentabiliteTab({ lotId, lotNumber }: RentabiliteTabProps) {
   }
 
   if (loading || !rentabilite) {
-    return <p className="text-sm text-slate-400 dark:text-slate-500 py-6">Chargement…</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400 py-6">Chargement…</p>;
   }
 
   const { revenus, depenses, resultats } = rentabilite;
@@ -79,12 +80,12 @@ export function RentabiliteTab({ lotId, lotNumber }: RentabiliteTabProps) {
         <h2 className="font-medium text-night-800 dark:text-slate-100 mb-4">Compte de résultat</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Revenus</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Revenus</p>
             <div className="flex justify-between"><span>Chiffre d'affaires facturé</span><span className="tabular-nums font-medium">{formatGnf(revenus.caFactureGnf)}</span></div>
             <div className="flex justify-between"><span>Encaissements réels</span><span className="tabular-nums font-medium">{formatGnf(revenus.encaissementsGnf)}</span></div>
             <div className="flex justify-between"><span>Créances en cours</span><span className="tabular-nums font-medium">{formatGnf(revenus.creancesEnCoursGnf)}</span></div>
 
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mt-4">Dépenses</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mt-4">Dépenses</p>
             {depenses.parCategorie.map((d) => (
               <div key={d.categorie} className="flex justify-between">
                 <span>{CATEGORIE_DEPENSE_LABELS[d.categorie]}</span>
@@ -97,7 +98,7 @@ export function RentabiliteTab({ lotId, lotNumber }: RentabiliteTabProps) {
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Résultats</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Résultats</p>
             <div className="flex justify-between">
               <span>Marge brute théorique</span>
               <span className={`tabular-nums font-semibold ${margeBrutePositive ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -123,7 +124,7 @@ export function RentabiliteTab({ lotId, lotNumber }: RentabiliteTabProps) {
         <Card className="p-5">
           <h2 className="font-medium text-night-800 dark:text-slate-100 mb-3">Répartition des dépenses</h2>
           {dataAnneau.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">Aucune dépense saisie.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aucune dépense saisie.</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>

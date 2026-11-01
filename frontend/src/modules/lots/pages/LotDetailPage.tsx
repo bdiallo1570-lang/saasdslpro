@@ -72,7 +72,7 @@ export default function LotDetailPage() {
   if (!lot || !id) {
     return (
       <AppShell>
-        <div className="flex items-center justify-center py-24 text-slate-400 dark:text-slate-500">
+        <div className="flex items-center justify-center py-24 text-slate-500 dark:text-slate-400">
           Chargement…
         </div>
       </AppShell>

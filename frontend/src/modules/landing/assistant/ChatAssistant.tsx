@@ -7,6 +7,7 @@ import {
   WELCOME_MESSAGE,
   STARTER_SUGGESTIONS,
 } from './knowledgeBase';
+import { withPrices } from '../publicPricing';
 
 interface ChatAssistantProps {
   isDark: boolean;
@@ -66,7 +67,7 @@ export function ChatAssistant({ isDark }: ChatAssistantProps) {
       const botMessage: ChatMessage = {
         id: makeId(),
         role: 'bot',
-        text: intent?.answer ?? FALLBACK_ANSWER,
+        text: intent ? withPrices(intent.answer) : FALLBACK_ANSWER,
         suggestions: intent?.suggestions,
       };
       setMessages((prev) => [...prev, botMessage]);

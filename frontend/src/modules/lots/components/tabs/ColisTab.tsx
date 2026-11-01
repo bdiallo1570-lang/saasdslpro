@@ -5,6 +5,7 @@ import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { STATUT_PAIEMENT_LABELS } from '../../paiementsLot.api';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Badge } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_PAIEMENT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -32,12 +33,12 @@ export function ColisTab({ colis }: ColisTabProps) {
         <h2 className="font-medium text-night-800 dark:text-slate-100">Colis du lot ({colis.length})</h2>
       </div>
       {colis.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Aucun colis dans ce lot.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Aucun colis dans ce lot.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-night-700">
+              <tr className="text-left text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-night-700">
                 <th className="px-5 py-3 font-medium">Colis</th>
                 <th className="px-3 py-3 font-medium">Reçu le</th>
                 <th className="px-3 py-3 font-medium">Client</th>
@@ -72,13 +73,13 @@ export function ColisTab({ colis }: ColisTabProps) {
                     <Badge tone="slate">{COLIS_STATUS_LABELS[c.status] ?? c.status}</Badge>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
-                    {c.montantDuGnf !== undefined ? Math.round(c.montantDuGnf).toLocaleString('fr-FR') : '—'}
+                    {c.montantDuGnf !== undefined ? formatNumber(Math.round(c.montantDuGnf)) : '—'}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums text-green-600 dark:text-emerald-400">
-                    {c.montantPayeGnf !== undefined ? Math.round(c.montantPayeGnf).toLocaleString('fr-FR') : '—'}
+                    {c.montantPayeGnf !== undefined ? formatNumber(Math.round(c.montantPayeGnf)) : '—'}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums font-semibold text-night-900 dark:text-slate-100">
-                    {c.resteAPayerGnf !== undefined ? Math.round(c.resteAPayerGnf).toLocaleString('fr-FR') : '—'}
+                    {c.resteAPayerGnf !== undefined ? formatNumber(Math.round(c.resteAPayerGnf)) : '—'}
                   </td>
                   <td className="px-5 py-3">
                     {c.statutPaiement && (

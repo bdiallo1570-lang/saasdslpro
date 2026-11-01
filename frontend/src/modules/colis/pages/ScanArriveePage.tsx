@@ -15,6 +15,7 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { Button, Card, Input, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 // Progression de statut côté Guinée : arrivée → dédouanement → disponible entrepôt (Conakry).
 // Chaque étape n'affiche que le passage suivant, jamais de retour en arrière ni de saut.
@@ -316,7 +317,7 @@ export default function ScanArriveePage() {
                   </p>
                   {result.client.outstandingBalance !== undefined && (
                     <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                      Solde restant : {Number(result.client.outstandingBalance).toLocaleString('fr-FR')} GNF
+                      Solde restant : {formatNumber(Number(result.client.outstandingBalance))} GNF
                     </p>
                   )}
                   {result.facture && (

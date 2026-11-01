@@ -9,6 +9,7 @@ import {
 import { extractErrorMessage } from '@/lib/apiClient';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Button, Input, Select, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const listContainer = {
   hidden: { opacity: 0 },
@@ -108,9 +109,9 @@ export default function ExchangeRatesPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : rates.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
             Aucun taux de change configuré pour le moment.
           </p>
         ) : (
@@ -127,9 +128,9 @@ export default function ExchangeRatesPage() {
                 className="px-5 py-3 flex items-center justify-between gap-4"
               >
                 <p className="font-medium text-night-800 dark:text-slate-100">
-                  1 {r.fromCurrency} = {Number(r.rate).toLocaleString('fr-FR')} GNF
+                  1 {r.fromCurrency} = {formatNumber(Number(r.rate))} GNF
                 </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Effectif depuis le {new Date(r.effectiveFrom).toLocaleDateString('fr-FR')}
                 </p>
               </motion.div>

@@ -8,6 +8,7 @@ import { Magnetic, SplitLetters } from './motionKit';
 // Un lien = une section distincte (l'ancien menu pointait deux fois vers le calculateur).
 const NAV_LINKS = [
   { label: 'Tarifs', id: 'calculateur' },
+  { label: 'Maritime', id: 'maritime' },
   { label: 'Entrepôts', id: 'entrepots' },
   { label: 'Produits interdits', id: 'produits-interdits' },
   { label: 'FAQ', id: 'faq' },
@@ -204,7 +205,7 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
               transition={{ duration: 0.6, ease: EASE_OUT, delay: ready ? 0.95 : 0 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => navigate('/connexion')}
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-sky-500 pl-4 pr-3 py-2 font-display text-[13px] font-bold tracking-wide text-white shadow-glow-sky transition-colors hover:bg-sky-400"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-sky-500 pl-4 pr-3 py-2 font-display text-[13px] font-bold tracking-wide text-ink-950 shadow-glow-sky transition-colors hover:bg-sky-400"
             >
               {/* Reflet qui traverse le bouton au survol */}
               <span
@@ -293,7 +294,7 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
                 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => navigate('/connexion')}
-                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-5 py-3 font-display text-sm font-bold tracking-wide text-white"
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-5 py-3 font-display text-sm font-bold tracking-wide text-ink-950"
               >
                 Espace SaaS <ArrowUpRight size={16} />
               </motion.button>

@@ -14,9 +14,9 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary:
-    'bg-sky-500 text-white hover:bg-sky-400 focus-visible:ring-sky-400 disabled:bg-sky-500/50',
+    'bg-sky-500 text-ink-950 hover:bg-sky-400 focus-visible:ring-sky-400 disabled:bg-sky-500/50',
   cargo:
-    'bg-cargo-500 text-white hover:bg-cargo-400 focus-visible:ring-cargo-400 disabled:bg-cargo-500/50 shadow-glow-cargo',
+    'bg-cargo-500 text-ink-950 hover:bg-cargo-400 focus-visible:ring-cargo-400 disabled:bg-cargo-500/50 shadow-glow-cargo',
   secondary:
     'bg-slate-100 text-night-800 hover:bg-slate-200 dark:bg-night-700 dark:text-slate-100 dark:hover:bg-night-600 focus-visible:ring-slate-400',
   ghost:

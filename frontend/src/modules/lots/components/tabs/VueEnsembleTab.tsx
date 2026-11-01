@@ -6,6 +6,7 @@ import { RentabiliteLot, downloadBilanPdf } from '../../rentabilite.api';
 import { Colis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Button, Badge, Input, StatCard, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUS_ORDER: LotStatus[] = [
   'EN_RECEPTION',
@@ -18,7 +19,7 @@ const STATUS_ORDER: LotStatus[] = [
 ];
 
 function formatGnf(value: number) {
-  return `${Math.round(value).toLocaleString('fr-FR')} GNF`;
+  return `${formatNumber(Math.round(value))} GNF`;
 }
 
 interface VueEnsembleTabProps {
@@ -182,7 +183,7 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Taux figé de ce lot :{' '}
             <span className="font-medium text-night-700 dark:text-slate-200">
-              1 {lot.tauxDeviseOrigine} = {Number(lot.tauxVersGnfFige).toLocaleString('fr-FR')} GNF
+              1 {lot.tauxDeviseOrigine} = {formatNumber(Number(lot.tauxVersGnfFige))} GNF
             </span>
           </p>
         )}
@@ -221,7 +222,7 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
                 <span className="text-night-800 dark:text-slate-200">
                   {c.trackingId} — {c.client.fullName}
                 </span>
-                <span className="text-slate-400 dark:text-slate-500">
+                <span className="text-slate-500 dark:text-slate-400">
                   {c.poidsReelKg} kg ·{' '}
                   {new Date(dateReceptionEffective(c)).toLocaleDateString('fr-FR', {
                     day: '2-digit',
@@ -233,14 +234,14 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-400 dark:text-slate-500">Aucun colis assigné à ce lot.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun colis assigné à ce lot.</p>
         )}
       </Card>
 
       <Card className="p-5">
         <h2 className="font-medium text-night-800 dark:text-slate-100 mb-3">Assigner des colis en attente</h2>
         {unassignedColis.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500">Aucun colis en attente d'assignation.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun colis en attente d'assignation.</p>
         ) : (
           <>
             <div className="divide-y divide-slate-100 dark:divide-night-700 max-h-64 overflow-y-auto mb-3">

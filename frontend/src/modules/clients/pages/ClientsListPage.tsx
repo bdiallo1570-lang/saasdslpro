@@ -85,9 +85,9 @@ export default function ClientsListPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : filteredClients.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
             {query.trim() || corridorFiltre !== CORRIDOR_TOUS
               ? 'Aucun client ne correspond à ces critères.'
               : 'Aucun client enregistré pour le moment.'}
@@ -96,7 +96,7 @@ export default function ClientsListPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-night-700">
+                <tr className="text-left text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-night-700">
                   <th className="px-5 py-3 font-medium">Client</th>
                   <th className="px-3 py-3 font-medium">Téléphone</th>
                   <th className="px-3 py-3 font-medium">Corridor</th>
@@ -113,7 +113,7 @@ export default function ClientsListPage() {
                   >
                     <td className="px-5 py-3">
                       <p className="font-medium text-night-800 dark:text-slate-100">{c.fullName}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{c.clientCode}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{c.clientCode}</p>
                     </td>
                     <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
                       {c.phoneWhatsapp || c.phoneGn || c.phoneCn || '—'}

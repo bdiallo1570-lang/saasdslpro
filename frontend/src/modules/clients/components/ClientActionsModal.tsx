@@ -11,6 +11,7 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { Modal, Tabs, Button, Badge, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_PAIEMENT_TONE: Record<string, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -110,20 +111,20 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
     <>
       <Modal open={!!clientId} onClose={onClose} title={client?.fullName ?? '…'} maxWidthClassName="max-w-lg">
         {loadingClient && !client ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
         ) : !client ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500">Client introuvable.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Client introuvable.</p>
         ) : (
           <>
             <div className="mb-4">
-              <p className="text-xs text-slate-400 dark:text-slate-500">{client.clientCode}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{client.clientCode}</p>
               {peutLireFinances && (
                 <div className="flex items-center gap-2 mt-2 text-sm tabular-nums">
                   <span className="text-slate-500 dark:text-slate-400">
-                    Total dépensé : {Number(client.totalSpent).toLocaleString('fr-FR')} GNF
+                    Total dépensé : {formatNumber(Number(client.totalSpent))} GNF
                   </span>
                   {Number(client.outstandingBalance) > 0 && (
-                    <Badge tone="red">Doit {Number(client.outstandingBalance).toLocaleString('fr-FR')} GNF</Badge>
+                    <Badge tone="red">Doit {formatNumber(Number(client.outstandingBalance))} GNF</Badge>
                   )}
                 </div>
               )}
@@ -135,19 +136,19 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
               <div className="space-y-3 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Téléphone Guinée</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Téléphone Guinée</p>
                     <p className="font-medium text-night-900 dark:text-slate-100">{client.phoneGn || '—'}</p>
                   </div>
                   <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Téléphone Chine</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Téléphone Chine</p>
                     <p className="font-medium text-night-900 dark:text-slate-100">{client.phoneCn || '—'}</p>
                   </div>
                   <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-                    <p className="text-xs text-slate-400 dark:text-slate-500">WhatsApp</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">WhatsApp</p>
                     <p className="font-medium text-night-900 dark:text-slate-100">{client.phoneWhatsapp || '—'}</p>
                   </div>
                   <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Adresse</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Adresse</p>
                     <p className="font-medium text-night-900 dark:text-slate-100">{client.address || '—'}</p>
                   </div>
                 </div>
@@ -170,9 +171,9 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
             {tab === 'colis' && (
               <div className="space-y-2">
                 {loadingColis ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500">Chargement…</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
                 ) : colisDuClient.length === 0 ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500">Aucun colis pour ce client.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Aucun colis pour ce client.</p>
                 ) : (
                   <div className="divide-y divide-slate-100 dark:divide-night-700 max-h-96 overflow-y-auto">
                     {colisDuClient.map((c) => (
@@ -183,7 +184,7 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
                       >
                         <div className="min-w-0">
                           <p className="font-medium text-night-800 dark:text-slate-100 truncate">{c.trackingId}</p>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                             {c.description} · Reçu le {new Date(dateReceptionEffective(c)).toLocaleDateString('fr-FR')}
                           </p>
                         </div>

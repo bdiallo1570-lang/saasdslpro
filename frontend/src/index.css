@@ -66,14 +66,14 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2), 0 2px 6px rgba(0, 0, 0, 0.25);
+  background: var(--thumb, #10b981);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--thumb, #10b981) 22%, transparent), 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.4s ease;
 }
 .calculator-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--thumb, #10b981) 28%, transparent), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 .calculator-slider::-webkit-slider-thumb:active {
   transform: scale(1.05);
@@ -83,10 +83,10 @@ body {
   height: 18px;
   border: none;
   border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2), 0 2px 6px rgba(0, 0, 0, 0.25);
+  background: var(--thumb, #10b981);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--thumb, #10b981) 22%, transparent), 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.4s ease;
 }
 .calculator-slider::-moz-range-thumb:hover {
   transform: scale(1.15);
@@ -117,6 +117,82 @@ body {
   }
 }
 
+/* Fret maritime (landing) — houle qui dérive, bordure lumineuse tournante, conteneur 3D */
+@keyframes sea-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@property --spin-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes spin-angle {
+  to {
+    --spin-angle: 360deg;
+  }
+}
+.spin-border {
+  background: conic-gradient(
+    from var(--spin-angle),
+    rgba(103, 232, 249, 0.08) 0deg,
+    rgba(103, 232, 249, 0.9) 70deg,
+    rgba(255, 179, 92, 0.7) 120deg,
+    rgba(103, 232, 249, 0.08) 180deg,
+    rgba(103, 232, 249, 0.08) 360deg
+  );
+  animation: spin-angle 6s linear infinite;
+}
+
+.container-steel {
+  background-color: #c2560c;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.22) 0 2px,
+    rgba(255, 255, 255, 0.06) 2px 4px,
+    transparent 4px 11px
+  );
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+.container-doors {
+  background-color: #b14f0b;
+  background-image: linear-gradient(90deg, transparent 49%, rgba(0, 0, 0, 0.45) 49% 51%, transparent 51%),
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(0, 0, 0, 0.3) 14px 16px, transparent 16px 27px);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.3);
+}
+.cargo-kraft {
+  background-color: #c8955a;
+  background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.18) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.18) 1px, transparent 1px),
+    linear-gradient(0deg, transparent 46%, rgba(255, 236, 200, 0.35) 46% 54%, transparent 54%);
+  background-size: 34px 35px, 34px 35px, 34px 35px;
+}
+.cargo-kraft-top {
+  background-color: #dcae74;
+  background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+  background-size: 34px 33px;
+}
+
+/* Paroi avant vitrée : reflet en biais + montants verticaux, pour lire « paroi » sans masquer
+   le chargement */
+.container-glass {
+  background-image: linear-gradient(115deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 38%, transparent 60%, rgba(255, 255, 255, 0.08) 100%),
+    repeating-linear-gradient(90deg, transparent 0 74px, rgba(255, 179, 92, 0.35) 74px 75px);
+  box-shadow: inset 0 0 24px rgba(103, 232, 249, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin-border {
+    animation: none;
+  }
+}
+
 /* Lenis (défilement à inertie de la landing) — feuille de base du paquet, recopiée ici car le
    paquet ne l'expose pas dans ses « exports ». */
 html.lenis,
@@ -131,4 +207,19 @@ html.lenis body {
 }
 .lenis.lenis-smooth iframe {
   pointer-events: none;
+}
+
+/* Repère de chargement entre deux pages (voir RouteFallback dans App.tsx) */
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes routeBar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
 }

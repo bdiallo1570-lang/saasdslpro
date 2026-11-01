@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Colis, updateColisPrice } from '../colis.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Modal, Button, Input, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 interface ModifierPrixModalProps {
   colis: Colis | null;
@@ -46,7 +47,7 @@ export function ModifierPrixModal({ colis, onClose, onUpdated }: ModifierPrixMod
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Prix actuel :{' '}
             <span className="font-semibold text-night-900 dark:text-slate-100">
-              {colis.montantEstime ? Number(colis.montantEstime).toLocaleString('fr-FR') : '—'}{' '}
+              {colis.montantEstime ? formatNumber(Number(colis.montantEstime)) : '—'}{' '}
               {colis.currency}
             </span>
           </p>

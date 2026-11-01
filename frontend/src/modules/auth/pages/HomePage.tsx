@@ -8,6 +8,8 @@ import { ScrollMarquee } from '@/modules/landing/sections/ScrollMarquee';
 import { startSmoothScroll, setScrollLocked, scrollToId } from '@/lib/smoothScroll';
 import { VideoScrollStory } from '@/modules/landing/sections/VideoScrollStory';
 import { PriceCalculator } from '@/modules/landing/sections/PriceCalculator';
+import { MaritimeSection } from '@/modules/landing/maritime/MaritimeSection';
+import { FreightReveal } from '@/modules/landing/sections/FreightReveal';
 import { Testimonials } from '@/modules/landing/sections/Testimonials';
 import { WarehousesSection } from '@/modules/landing/sections/WarehousesSection';
 import { ForbiddenItems } from '@/modules/landing/sections/ForbiddenItems';
@@ -46,24 +48,29 @@ export default function HomePage() {
           <CinematicIntro onOpen={() => setHeroReady(true)} onDone={() => setIntroPlaying(false)} />
         )}
         <Navbar isDark={isDark} onToggleTheme={toggle} ready={heroReady} />
+        {/* Contenu principal (repère pour les lecteurs d'écran et les moteurs de recherche) */}
+        <main>
         <VideoScrollStory onSimulateClick={scrollToCalculator} ready={heroReady} />
         <SectionRail isDark={isDark} />
 
         {/* Le reste de la page glisse par-dessus la vidéo comme une feuille : la sortie de la
             vidéo devient un geste, pas une coupure. */}
         <div
-          className={`relative z-10 -mt-10 overflow-hidden rounded-t-[2.5rem] shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.5)] transition-colors duration-300 ${
+          className={`relative z-10 -mt-10 overflow-clip rounded-t-[2.5rem] shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.5)] transition-colors duration-300 ${
             isDark ? 'border-t border-white/10 bg-ink-950' : 'bg-white'
           }`}
         >
           <ScrollMarquee isDark={isDark} />
           <PriceCalculator isDark={isDark} ref={calculatorRef} />
+          <FreightReveal />
+          <MaritimeSection isDark={isDark} />
           <Testimonials isDark={isDark} />
           <WarehousesSection isDark={isDark} />
           <ForbiddenItems isDark={isDark} />
           <FAQ isDark={isDark} />
           <Footer isDark={isDark} onToggleTheme={toggle} />
         </div>
+        </main>
 
         <ChatAssistant isDark={isDark} />
         <WhatsAppFab />

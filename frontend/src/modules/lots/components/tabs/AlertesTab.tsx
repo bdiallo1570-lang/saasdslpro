@@ -41,9 +41,9 @@ export function AlertesTab({ lotId }: AlertesTabProps) {
         <h2 className="font-medium text-night-800 dark:text-slate-100">Alertes du lot ({alertes.length})</h2>
       </div>
       {loading ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
       ) : alertes.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Aucune alerte active sur ce lot.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Aucune alerte active sur ce lot.</p>
       ) : (
         <motion.div
           variants={listContainer}

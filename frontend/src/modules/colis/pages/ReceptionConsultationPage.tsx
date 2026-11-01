@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ROLE_NAMES } from '@/lib/roles';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Input, Button } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUS_TONE: Record<string, 'sky' | 'cargo' | 'green' | 'amber' | 'red' | 'slate'> = {
   ENREGISTRE: 'slate',
@@ -99,9 +100,9 @@ export default function ReceptionConsultationPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : filteredColis.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
             {query.trim() ? 'Aucun colis ne correspond à cette recherche.' : 'Aucun colis enregistré pour le moment.'}
           </p>
         ) : (
@@ -121,7 +122,7 @@ export default function ReceptionConsultationPage() {
                   <p className="font-medium text-night-800 dark:text-slate-100 truncate">
                     {c.trackingId} · {c.client.fullName}
                   </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     {c.description} · {c.poidsReelKg} kg · Reçu le{' '}
                     {new Date(dateReceptionEffective(c)).toLocaleString('fr-FR', {
                       day: '2-digit',
@@ -137,7 +138,7 @@ export default function ReceptionConsultationPage() {
                 </Badge>
                 {c.montantEstime !== undefined && (
                   <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
-                    {Number(c.montantEstime).toLocaleString('fr-FR')} {c.currency}
+                    {formatNumber(Number(c.montantEstime))} {c.currency}
                   </p>
                 )}
                 {canEditPrice && c.statutPaiement !== 'PARTIEL' && c.statutPaiement !== 'SOLDE' && (

@@ -27,6 +27,7 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { Modal, Tabs, Button, Input, Select, Badge, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_TONE: Record<string, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -324,7 +325,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
     <Modal open={!!colis} onClose={onClose} title={colis.trackingId} maxWidthClassName="max-w-lg">
       <div className="mb-4">
         <p className="font-medium text-night-800 dark:text-slate-100">{colis.client.fullName}</p>
-        <p className="text-xs text-slate-400 dark:text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {colis.description} · {colis.poidsReelKg} kg · Reçu le{' '}
           {new Date(dateReceptionEffective(colis)).toLocaleDateString('fr-FR')}
         </p>
@@ -342,20 +343,20 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-              <p className="text-xs text-slate-400 dark:text-slate-500">Client</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Client</p>
               <p className="font-medium text-night-900 dark:text-slate-100">{colis.client.fullName}</p>
-              {colis.client.clientCode && <p className="text-xs text-slate-400 dark:text-slate-500">{colis.client.clientCode}</p>}
+              {colis.client.clientCode && <p className="text-xs text-slate-500 dark:text-slate-400">{colis.client.clientCode}</p>}
             </div>
             <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-              <p className="text-xs text-slate-400 dark:text-slate-500">Poids réel</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Poids réel</p>
               <p className="font-medium text-night-900 dark:text-slate-100">{colis.poidsReelKg} kg</p>
             </div>
           </div>
           {peutLirePrix && colis.montantEstime !== undefined && (
             <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-              <p className="text-xs text-slate-400 dark:text-slate-500">Montant estimé</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Montant estimé</p>
               <p className="font-semibold text-night-900 dark:text-slate-100">
-                {Number(colis.montantEstime).toLocaleString('fr-FR')} {colis.currency}
+                {formatNumber(Number(colis.montantEstime))} {colis.currency}
               </p>
             </div>
           )}
@@ -364,7 +365,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
               Voir le lot de ce colis →
             </a>
           ) : (
-            <p className="text-xs text-slate-400 dark:text-slate-500">Ce colis n'est pas encore assigné à un lot.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Ce colis n'est pas encore assigné à un lot.</p>
           )}
         </div>
       )}
@@ -374,7 +375,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Prix actuel :{' '}
             <span className="font-semibold text-night-900 dark:text-slate-100">
-              {colis.montantEstime ? Number(colis.montantEstime).toLocaleString('fr-FR') : '—'} {colis.currency}
+              {colis.montantEstime ? formatNumber(Number(colis.montantEstime)) : '—'} {colis.currency}
             </span>
           </p>
           {prixVerrouille ? (
@@ -416,13 +417,13 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
       {tab === 'paiement' && (
         <div className="space-y-4">
           <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3 text-sm tabular-nums">
-            Dû : {colis.montantDuGnf !== undefined ? Math.round(colis.montantDuGnf).toLocaleString('fr-FR') : '—'} ·{' '}
-            Payé : {colis.montantPayeGnf !== undefined ? Math.round(colis.montantPayeGnf).toLocaleString('fr-FR') : '—'} ·{' '}
-            Reste : {colis.resteAPayerGnf !== undefined ? Math.round(colis.resteAPayerGnf).toLocaleString('fr-FR') : '—'}
+            Dû : {colis.montantDuGnf !== undefined ? formatNumber(Math.round(colis.montantDuGnf)) : '—'} ·{' '}
+            Payé : {colis.montantPayeGnf !== undefined ? formatNumber(Math.round(colis.montantPayeGnf)) : '—'} ·{' '}
+            Reste : {colis.resteAPayerGnf !== undefined ? formatNumber(Math.round(colis.resteAPayerGnf)) : '—'}
           </div>
 
           {!colis.lotId ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Ce colis n'est pas encore assigné à un lot — aucun paiement possible pour le moment.
             </p>
           ) : colis.statutPaiement === 'SOLDE' || colis.statutPaiement === 'TROP_PERCU' ? (
@@ -497,9 +498,9 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
       {tab === 'recu' && (
         <div className="space-y-3">
           {loadingHistorique ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">Chargement…</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
           ) : historique.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Aucun paiement enregistré pour ce colis — le reçu sera disponible ici après le premier encaissement.
             </p>
           ) : (
@@ -511,7 +512,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                       {new Date(p.createdAt).toLocaleDateString('fr-FR')} · {MODE_PAIEMENT_LABELS[p.method]}
                     </p>
                     <p className="tabular-nums font-medium text-night-900 dark:text-slate-100">
-                      {Number(p.montant).toLocaleString('fr-FR')} {p.currency}
+                      {formatNumber(Number(p.montant))} {p.currency}
                     </p>
                   </div>
                   <Button variant="secondary" size="sm" onClick={() => downloadRecuPaiement(p.id, p.factureId)}>
@@ -528,7 +529,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
       {tab === 'ecart' && (
         <div className="space-y-4">
           <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3">
-            <p className="text-xs text-slate-400 dark:text-slate-500">Poids saisi en Chine (lecture seule)</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Poids saisi en Chine (lecture seule)</p>
             <p className="font-medium text-night-900 dark:text-slate-100">{colis.poidsReelKg} kg</p>
           </div>
           <div className="flex gap-2">
@@ -552,7 +553,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
       {tab === 'statut' && (
         <div className="space-y-4">
           <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-4">
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Statut actuel</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Statut actuel</p>
             <p className="font-medium text-night-800 dark:text-slate-100">
               {COLIS_STATUS_LABELS[colis.status] ?? colis.status}
             </p>
@@ -560,9 +561,9 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
 
           {colis.status === 'DISPONIBLE_ENTREPOT' || colis.status === 'LIVRE' ? (
             loadingScan ? (
-              <p className="text-sm text-slate-400 dark:text-slate-500">Chargement…</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
             ) : !scanResult ? (
-              <p className="text-sm text-slate-400 dark:text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Impossible de vérifier l'état de livraison pour le moment.
               </p>
             ) : !scanResult.livraisonAutorisee ? (
@@ -573,7 +574,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 </p>
                 {scanResult.client.outstandingBalance !== undefined && (
                   <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    Solde restant : {Number(scanResult.client.outstandingBalance).toLocaleString('fr-FR')} GNF
+                    Solde restant : {formatNumber(Number(scanResult.client.outstandingBalance))} GNF
                   </p>
                 )}
                 <div className="flex gap-2 mt-3">
@@ -617,7 +618,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-slate-400 dark:text-slate-500 text-center">Colis livré.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center">Colis livré.</p>
             )
           ) : suivant ? (
             <Button variant="cargo" fullWidth size="lg" loading={updatingStatus} onClick={() => handleAvancerStatut(suivant)}>
@@ -625,7 +626,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
               Passer à « {COLIS_STATUS_LABELS[suivant]} »
             </Button>
           ) : (
-            <p className="text-sm text-slate-400 dark:text-slate-500">Aucune avancée de statut disponible pour le moment.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aucune avancée de statut disponible pour le moment.</p>
           )}
         </div>
       )}
@@ -645,8 +646,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-night-800 dark:text-slate-100">{colis.facture.factureNumber}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
-                    Facture · {Number(colis.facture.montantTotal ?? 0).toLocaleString('fr-FR')} {colis.facture.currency ?? 'GNF'}
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Facture · {formatNumber(Number(colis.facture.montantTotal ?? 0))} {colis.facture.currency ?? 'GNF'}
                   </p>
                 </div>
               </div>
@@ -673,7 +674,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
           ) : (
             <div className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 p-4 text-center">
               <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">Aucune facture générée pour ce colis</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">La facture sera disponible dès que le caissier l'émettra.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">La facture sera disponible dès que le caissier l'émettra.</p>
             </div>
           )}
 
@@ -686,7 +687,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-night-800 dark:text-slate-100">Bon de sortie d'entrepôt</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Document de livraison officiel signé</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Document de livraison officiel signé</p>
                 </div>
               </div>
               <Button

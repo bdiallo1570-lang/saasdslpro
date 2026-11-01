@@ -5,11 +5,17 @@ import { scrollToId } from '@/lib/smoothScroll';
 const SECTIONS = [
   { id: 'suivi', label: 'Accueil' },
   { id: 'calculateur', label: 'Tarifs' },
+  { id: 'maritime', label: 'Maritime' },
   { id: 'avis', label: 'Avis' },
   { id: 'entrepots', label: 'Entrepôts' },
   { id: 'produits-interdits', label: 'À savoir' },
   { id: 'faq', label: 'FAQ' },
 ];
+
+// Blocs sans point sur la ligne mais qui comptent comme une section existante (même point
+// allumé) tout en gardant le thème de la page — ex. le bas de la section Maritime, qui n'est
+// plus sombre comme la traversée.
+const ALIASES: Record<string, string> = { voies: 'maritime', 'comparatif-maritime': 'maritime' };
 
 interface SectionRailProps {
   isDark: boolean;
@@ -58,17 +64,19 @@ export function SectionRail({ isDark }: SectionRailProps) {
       // Une section est « active » quand elle traverse la ligne médiane de l'écran
       { rootMargin: '-50% 0px -50% 0px' },
     );
-    for (const { id } of SECTIONS) {
+    for (const id of [...SECTIONS.map((s) => s.id), ...Object.keys(ALIASES)]) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
   }, []);
 
-  const light = isDark || active === 'suivi';
+  // La vidéo d'accueil et la traversée maritime sont toujours sombres, quel que soit le thème
+  const light = isDark || active === 'suivi' || active === 'maritime';
+  const railId = ALIASES[active] ?? active;
   const track = light ? 'bg-white/15' : 'bg-slate-300';
   const stroke = light ? 'bg-cream' : 'bg-night-900';
-  const reached = SECTIONS.findIndex((s) => s.id === active);
+  const reached = SECTIONS.findIndex((s) => s.id === railId);
 
   return (
     <nav
@@ -87,7 +95,7 @@ export function SectionRail({ isDark }: SectionRailProps) {
       </div>
 
       {SECTIONS.map(({ id, label }, i) => {
-        const isActive = id === active;
+        const isActive = id === railId;
         const lit = i <= reached;
         return (
           <button

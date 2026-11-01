@@ -9,6 +9,7 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { ActivityFeed } from '@/modules/audit/ActivityFeed';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, StatCard, Button, Badge, Modal, Select, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const container = {
   hidden: { opacity: 0 },
@@ -20,7 +21,7 @@ const item = {
 };
 
 function formatGnf(value: number) {
-  return `${Math.round(value).toLocaleString('fr-FR')} GNF`;
+  return `${formatNumber(Math.round(value))} GNF`;
 }
 
 type PillKey = 'ATTENTE' | 'VOL' | 'DOUANE' | 'LIVRE';
@@ -35,10 +36,17 @@ const PILL_STATUSES: Record<PillKey, string[]> = {
 };
 
 const PILL_LABELS: Record<PillKey, string> = {
-  ATTENTE: '🔵 En attente',
-  VOL: '🟡 En vol',
-  DOUANE: '🟠 En douane',
-  LIVRE: '🟢 Livré',
+  ATTENTE: 'En attente',
+  VOL: 'En vol',
+  DOUANE: 'En douane',
+  LIVRE: 'Livré',
+};
+
+const PILL_DOTS: Record<PillKey, string> = {
+  ATTENTE: 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]',
+  VOL: 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',
+  DOUANE: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]',
+  LIVRE: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]',
 };
 
 // Statuts vers lesquels un colis peut être manuellement avancé — LIVRE exclu (verrou entrepôt
@@ -232,13 +240,22 @@ export default function DashboardFinancierPage() {
                 <button
                   key={pill}
                   onClick={() => handlePillClick(pill)}
-                  className={`inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-full border transition-colors ${
+                  className={`relative inline-flex items-center gap-2 text-sm font-medium px-3.5 py-2 rounded-full border transition-colors ${
                     selectedPill === pill
-                      ? 'bg-night-800 text-white border-night-800 dark:bg-sky-500 dark:border-sky-500'
-                      : 'bg-white text-night-700 border-slate-200 hover:border-slate-300 dark:bg-night-800 dark:text-slate-200 dark:border-night-600'
+                      ? 'text-white border-transparent'
+                      : 'bg-white text-night-700 border-slate-200 hover:border-slate-300 dark:bg-night-800 dark:text-slate-200 dark:border-night-600 dark:hover:border-night-500'
                   }`}
                 >
-                  {PILL_LABELS[pill]} ({pillCounts[pill]})
+                  {selectedPill === pill && (
+                    <motion.span
+                      layoutId="dashboard-pill"
+                      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                      className="absolute inset-0 rounded-full bg-night-800 dark:bg-sky-600"
+                    />
+                  )}
+                  <span className={`relative h-2 w-2 rounded-full ${PILL_DOTS[pill]}`} />
+                  <span className="relative">{PILL_LABELS[pill]}</span>
+                  <span className="relative tabular-nums opacity-60">{pillCounts[pill]}</span>
                 </button>
               ))}
             </div>
@@ -251,9 +268,9 @@ export default function DashboardFinancierPage() {
                   </h2>
                 </div>
                 {loadingPillColis ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
                 ) : pillColis.length === 0 ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
                     Aucun colis dans cette catégorie.
                   </p>
                 ) : (

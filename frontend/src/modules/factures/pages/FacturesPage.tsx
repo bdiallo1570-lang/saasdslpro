@@ -16,6 +16,7 @@ import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Button, Input, Select, Modal, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_LABELS: Record<string, string> = {
   IMPAYE: 'Impayée',
@@ -262,7 +263,7 @@ export default function FacturesPage() {
                           )}
                         </div>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                          {Number(facture.montantTotal).toLocaleString('fr-FR')} {facture.currency}
+                          {formatNumber(Number(facture.montantTotal))} {facture.currency}
                           {totalColis > 0 && ` · ${totalColis} colis`}
                         </p>
                       </div>
@@ -341,7 +342,7 @@ export default function FacturesPage() {
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">
                     {c.description} · {c.poidsReelKg} kg ·{' '}
-                    {Number(c.montantEstime ?? 0).toLocaleString('fr-FR')} {c.currency ?? 'GNF'}
+                    {formatNumber(Number(c.montantEstime ?? 0))} {c.currency ?? 'GNF'}
                   </p>
                 </div>
               </label>

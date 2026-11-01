@@ -16,6 +16,7 @@ import {
 import { Colis, StatutPaiementColis } from '@/modules/colis/colis.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Button, Input, Select, Badge, Modal, notify } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -147,9 +148,9 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
           <h2 className="font-medium text-night-800 dark:text-slate-100">Paiements par client ({groupes.length})</h2>
         </div>
         {loading ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Chargement…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : groupes.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 px-5 py-6">Aucun colis facturé pour ce lot.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Aucun colis facturé pour ce lot.</p>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-night-700">
             {groupes.map((g) => {
@@ -162,16 +163,16 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                        <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                        <ChevronDown size={16} className="text-slate-500 shrink-0" />
                       </motion.div>
                       <div className="min-w-0">
                         <p className="font-medium text-night-800 dark:text-slate-100 truncate">
                           {g.client.fullName} — {g.colis.length} colis
                         </p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
-                          Dû : {Math.round(g.dûGnf).toLocaleString('fr-FR')} · Payé :{' '}
-                          {Math.round(g.payéGnf).toLocaleString('fr-FR')} · Reste :{' '}
-                          {Math.round(g.resteGnf).toLocaleString('fr-FR')}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                          Dû : {formatNumber(Math.round(g.dûGnf))} · Payé :{' '}
+                          {formatNumber(Math.round(g.payéGnf))} · Reste :{' '}
+                          {formatNumber(Math.round(g.resteGnf))}
                         </p>
                       </div>
                     </div>
@@ -206,14 +207,14 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                             >
                               <span className="text-night-700 dark:text-slate-200">{c.trackingId}</span>
                               <span className="tabular-nums text-slate-500 dark:text-slate-400">
-                                {Math.round(c.dûGnf).toLocaleString('fr-FR')} / {Math.round(c.payéGnf).toLocaleString('fr-FR')} / {Math.round(c.resteGnf).toLocaleString('fr-FR')}
+                                {formatNumber(Math.round(c.dûGnf))} / {formatNumber(Math.round(c.payéGnf))} / {formatNumber(Math.round(c.resteGnf))}
                               </span>
                               <Badge tone={STATUT_TONE[c.statutPaiement]}>{STATUT_PAIEMENT_LABELS[c.statutPaiement]}</Badge>
                             </button>
                             {expandedColisId === c.colisId && (
                               <div className="mt-2 pl-3 border-l-2 border-slate-200 dark:border-night-600 space-y-1">
                                 {(historiqueParColis[c.colisId] ?? []).length === 0 ? (
-                                  <p className="text-xs text-slate-400 dark:text-slate-500">Aucun paiement enregistré.</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">Aucun paiement enregistré.</p>
                                 ) : (
                                   historiqueParColis[c.colisId].map((p) => (
                                     <div key={p.id} className="flex items-center justify-between text-xs gap-2">
@@ -221,7 +222,7 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                                         {new Date(p.createdAt).toLocaleDateString('fr-FR')} · {MODE_PAIEMENT_LABELS[p.method]}
                                       </span>
                                       <span className="tabular-nums font-medium text-night-700 dark:text-slate-200">
-                                        {Number(p.montant).toLocaleString('fr-FR')} {p.currency}
+                                        {formatNumber(Number(p.montant))} {p.currency}
                                       </span>
                                       <button
                                         onClick={() => downloadRecuPaiement(p.id, p.factureId)}
@@ -266,8 +267,8 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                     {c.trackingId} — {c.client.fullName}
                   </p>
                   {c.resteAPayerGnf !== undefined && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                      Reste à payer : {Math.round(c.resteAPayerGnf).toLocaleString('fr-FR')} GNF
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Reste à payer : {formatNumber(Math.round(c.resteAPayerGnf))} GNF
                     </p>
                   )}
                 </button>
@@ -281,9 +282,9 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                 {selectedColis.trackingId} — {selectedColis.client.fullName}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 tabular-nums">
-                Dû : {selectedColis.montantDuGnf !== undefined ? Math.round(selectedColis.montantDuGnf).toLocaleString('fr-FR') : '—'} ·
-                {' '}Déjà payé : {selectedColis.montantPayeGnf !== undefined ? Math.round(selectedColis.montantPayeGnf).toLocaleString('fr-FR') : '—'} ·
-                {' '}Reste : {selectedColis.resteAPayerGnf !== undefined ? Math.round(selectedColis.resteAPayerGnf).toLocaleString('fr-FR') : '—'}
+                Dû : {selectedColis.montantDuGnf !== undefined ? formatNumber(Math.round(selectedColis.montantDuGnf)) : '—'} ·
+                {' '}Déjà payé : {selectedColis.montantPayeGnf !== undefined ? formatNumber(Math.round(selectedColis.montantPayeGnf)) : '—'} ·
+                {' '}Reste : {selectedColis.resteAPayerGnf !== undefined ? formatNumber(Math.round(selectedColis.resteAPayerGnf)) : '—'}
               </p>
               <button
                 type="button"

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Phone, Copy, Check, MessageCircle } from 'lucide-react';
-import { listWarehouses } from '@/modules/warehouses/warehouses.api';
+import { Building2, Phone, Copy, Check, MessageCircle, Plane, Ship } from 'lucide-react';
+import { listWarehouses, WarehouseLocation } from '@/modules/warehouses/warehouses.api';
+import { MARITIME } from '../maritime/maritimeConfig';
 import { WAREHOUSES_FALLBACK } from '@/modules/warehouses/warehousesFallback';
-import { notify } from '@/ui';
+import { notify, Tilt } from '@/ui';
 import { copyToClipboard } from '@/lib/clipboard';
 import { AuroraBackground } from './AuroraBackground';
 import { SectionHeading } from './SectionHeading';
@@ -51,21 +52,44 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
 
   const guangzhou = warehouses.find((w) => w.location === 'CHINE');
   const conakry = warehouses.find((w) => w.location === 'GUINEE');
+  // L'entrepôt maritime n'est pas en base : il vient de la config maritime (voir maritimeConfig.ts)
+  const sea = MARITIME.seaWarehouse;
+  const seaWarehouse: WarehouseLocation = {
+    id: 'sea-guangzhou',
+    name: sea.name,
+    addressZh: sea.addressZh,
+    addressFr: sea.addressFr,
+    contactNumbersJson: sea.contacts,
+    location: 'CHINE',
+  };
 
   const cards = [
     {
+      key: 'air-cn',
       warehouse: guangzhou,
       flag: '🇨🇳',
       country: 'Chine',
+      mode: { label: 'Fret aérien', icon: Plane },
       fallbackName: 'Entrepôt Guangzhou',
-      photo: '/images/backgrounds/chargement-cargo-1.webp',
+      photo: '/images/backgrounds/chargement-cargo-1.jpg',
     },
     {
+      key: 'sea-cn',
+      warehouse: seaWarehouse,
+      flag: '🇨🇳',
+      country: 'Chine',
+      mode: { label: 'Fret maritime', icon: Ship },
+      fallbackName: sea.name,
+      photo: '/images/freight/port.jpg',
+    },
+    {
+      key: 'gn',
       warehouse: conakry,
       flag: '🇬🇳',
       country: 'Guinée',
+      mode: null,
       fallbackName: 'Entrepôt Conakry',
-      photo: '/images/backgrounds/chargement-cargo-2.webp',
+      photo: '/images/backgrounds/chargement-cargo-2.jpg',
     },
   ];
 
@@ -78,7 +102,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
     >
       <AuroraBackground isDark={isDark} />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <SectionHeading
           isDark={isDark}
           eyebrow="Nos entrepôts"
@@ -86,17 +110,18 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
           className="mb-14"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((card, i) => (
             // Le déclencheur est le conteneur (visible), la carte porte le rideau (clip-path) : un
             // élément entièrement masqué ne se déclencherait pas lui-même.
             <motion.div
-              key={card.country}
+              key={card.key}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
               className="relative"
             >
+            <Tilt max={6} className="h-full rounded-2xl">
             <motion.div
               variants={{
                 hidden: { clipPath: 'inset(0 0 100% 0 round 1rem)' },
@@ -106,26 +131,35 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                 },
               }}
               whileHover={{ y: -4 }}
-              className="relative overflow-hidden rounded-2xl border border-white/10 min-h-[300px] sm:min-h-[420px] flex flex-col justify-end"
+              className="relative h-full overflow-hidden rounded-2xl border border-white/10 min-h-[300px] sm:min-h-[420px] flex flex-col justify-end"
             >
               {/* Photo en fond plein cadre */}
               <motion.img
                 src={card.photo}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 variants={{
                   hidden: { scale: 1.3 },
-                  show: { scale: 1, transition: { duration: 2, delay: i * 0.18, ease: [0.16, 1, 0.3, 1] } },
+                  show: { scale: 1.08, transition: { duration: 2, delay: i * 0.18, ease: [0.16, 1, 0.3, 1] } },
                 }}
-                className="absolute inset-0 h-full w-full object-cover"
+                // Profondeur : la photo glisse en sens inverse de l'inclinaison de la carte
+                className="absolute inset-0 h-full w-full object-cover [translate:calc(var(--tilt-x,0)*-16px)_calc(var(--tilt-y,0)*-16px)]"
               />
               {/* Voile sombre pour la lisibilité du texte par-dessus la photo */}
               <div className="absolute inset-0 bg-gradient-to-t from-night-950 via-night-950/75 to-night-950/25" />
 
               <div className="absolute top-4 left-4 flex items-center gap-2">
                 <span className="text-xl drop-shadow">{card.flag}</span>
-                <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/10 text-white backdrop-blur-sm">
+                <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/10 text-white">
                   {card.country}
                 </span>
+                {card.mode && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-ember-400/20 text-ember-300">
+                    <card.mode.icon size={12} />
+                    {card.mode.label}
+                  </span>
+                )}
               </div>
 
               <div className="relative p-6 pt-10">
@@ -139,7 +173,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       type="button"
                       whileHover={{ x: 2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleCopy(`${card.country}-zh`, card.warehouse!.addressZh!)}
+                      onClick={() => handleCopy(`${card.key}-zh`, card.warehouse!.addressZh!)}
                       className="group w-full flex items-start gap-2 mb-2 text-left rounded-lg -mx-2 px-2 py-1.5 transition-colors hover:bg-white/10"
                       title="Copier l'adresse (中文)"
                     >
@@ -147,7 +181,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       <p className="flex-1 min-w-0 select-text break-words text-sm text-slate-100 drop-shadow">
                         {card.warehouse.addressZh}
                       </p>
-                      {copiedKey === `${card.country}-zh` ? (
+                      {copiedKey === `${card.key}-zh` ? (
                         <Check size={14} className="shrink-0 mt-0.5 text-emerald-400" />
                       ) : (
                         <Copy
@@ -162,7 +196,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       type="button"
                       whileHover={{ x: 2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleCopy(`${card.country}-fr`, card.warehouse!.addressFr!)}
+                      onClick={() => handleCopy(`${card.key}-fr`, card.warehouse!.addressFr!)}
                       className="group w-full flex items-start gap-2 mb-3 text-left rounded-lg -mx-2 px-2 py-1.5 transition-colors hover:bg-white/10"
                       title="Copier l'adresse"
                     >
@@ -170,7 +204,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                       <p className="flex-1 min-w-0 select-text break-words text-sm text-slate-200 drop-shadow">
                         {card.warehouse.addressFr}
                       </p>
-                      {copiedKey === `${card.country}-fr` ? (
+                      {copiedKey === `${card.key}-fr` ? (
                         <Check size={14} className="shrink-0 mt-0.5 text-emerald-400" />
                       ) : (
                         <Copy
@@ -185,15 +219,15 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                     <motion.button
                       type="button"
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => handleCopy(`${card.country}-all`, fullAddress(card.warehouse!, card.fallbackName))}
-                      className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                      onClick={() => handleCopy(`${card.key}-all`, fullAddress(card.warehouse!, card.fallbackName))}
+                      className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
                     >
-                      {copiedKey === `${card.country}-all` ? (
+                      {copiedKey === `${card.key}-all` ? (
                         <Check size={13} className="text-emerald-300" />
                       ) : (
                         <Copy size={13} />
                       )}
-                      {copiedKey === `${card.country}-all` ? 'Adresse copiée' : "Copier l'adresse complète"}
+                      {copiedKey === `${card.key}-all` ? 'Adresse copiée' : "Copier l'adresse complète"}
                     </motion.button>
                   )}
 
@@ -212,7 +246,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                               target="_blank"
                               rel="noopener noreferrer"
                               title={`Écrire à ${name} sur WhatsApp`}
-                              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border bg-emerald-500/15 text-emerald-100 border-emerald-400/30 backdrop-blur-sm transition-colors hover:bg-emerald-500/30 hover:border-emerald-400/50"
+                              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border bg-emerald-500/15 text-emerald-100 border-emerald-400/30 transition-colors hover:bg-emerald-500/30 hover:border-emerald-400/50"
                             >
                               <MessageCircle size={11} />
                               {name} — {phone}
@@ -220,7 +254,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                           ) : (
                             <span
                               key={name}
-                              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border bg-white/10 text-slate-100 border-white/20 backdrop-blur-sm"
+                              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border bg-white/10 text-slate-100 border-white/20"
                             >
                               <Phone size={11} />
                               {name}
@@ -232,6 +266,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                 </div>
               </div>
             </motion.div>
+            </Tilt>
             </motion.div>
           ))}
         </div>

@@ -1,7 +1,7 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, AnimatePresence, MotionValue, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { MessageCircle, Sun, Moon } from 'lucide-react';
 import { AuroraBackground } from './AuroraBackground';
-import { SplitLetters } from './motionKit';
 
 interface FooterProps {
   isDark: boolean;
@@ -51,7 +51,7 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
               </span>
             </div>
             <p className={`text-sm max-w-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Fret aérien Chine → Guinée. Réception, groupage, dédouanement, facturation et
+              Fret aérien et maritime Chine → Guinée. Réception, groupage, dédouanement, facturation et
               livraison, centralisés dans une seule plateforme.
             </p>
           </motion.div>
@@ -68,7 +68,7 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => scrollTo(link.href)}
                     className={`text-sm transition-colors ${
-                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-night-900'
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-night-900'
                     }`}
                   >
                     {link.label}
@@ -109,7 +109,7 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
             isDark ? 'border-white/10' : 'border-slate-200'
           }`}
         >
-          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             © {new Date().getFullYear()} DSL Air Cargo — Conakry, Guinée. Tous droits réservés.
           </p>
 
@@ -139,17 +139,88 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
           </motion.button>
         </motion.div>
 
-        {/* Signature de clôture : le nom de la marque en très grand, lettre par lettre */}
-        <div aria-hidden="true" className="mt-12 select-none overflow-hidden text-center">
-          <p
-            className={`font-editorial font-normal leading-none tracking-tight text-[clamp(3rem,14vw,13rem)] ${
-              isDark ? 'text-cream/[0.09]' : 'text-slate-900/[0.06]'
-            }`}
-          >
-            <SplitLetters text="DSL Air Cargo" inView stagger={0.05} />
-          </p>
-        </div>
+        {/* Signature de clôture : le nom de la marque en très grand. Les lettres proches du
+            pointeur se soulèvent et s'illuminent en or, comme une vague qui suit la souris. */}
+        <ProximityWordmark text="DSL Air Cargo" isDark={isDark} />
       </div>
     </footer>
+  );
+}
+
+// Rayon d'influence du pointeur autour de chaque lettre, en pixels
+const REACH = 240;
+
+function ProximityWordmark({ text, isDark }: { text: string; isDark: boolean }) {
+  // Position du pointeur (coordonnées écran) ; hors de la zone, on l'envoie très loin
+  const px = useMotionValue(-9999);
+  const py = useMotionValue(-9999);
+
+  return (
+    <div
+      aria-hidden="true"
+      onPointerMove={(e) => {
+        if (e.pointerType !== 'mouse') return;
+        px.set(e.clientX);
+        py.set(e.clientY);
+      }}
+      onPointerLeave={() => {
+        px.set(-9999);
+        py.set(-9999);
+      }}
+      className="mt-8 select-none overflow-hidden pt-12 text-center"
+    >
+      <motion.p
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-10%' }}
+        variants={{ show: { transition: { staggerChildren: 0.05 } } }}
+        className="font-editorial font-normal leading-none tracking-tight text-[clamp(3rem,14vw,13rem)]"
+      >
+        {Array.from(text).map((char, i) =>
+          char === ' ' ? (
+            <span key={i} className="inline-block w-[0.25em]" />
+          ) : (
+            <Letter key={i} char={char} px={px} py={py} isDark={isDark} />
+          ),
+        )}
+      </motion.p>
+    </div>
+  );
+}
+
+function Letter({ char, px, py, isDark }: { char: string; px: MotionValue<number>; py: MotionValue<number>; isDark: boolean }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  // Influence de 0 (loin) à 1 (pointeur sur la lettre), lissée par un ressort
+  const raw = useTransform([px, py], ([x, y]: number[]) => {
+    const el = ref.current;
+    if (!el || x < -9000) return 0;
+    const r = el.getBoundingClientRect();
+    const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
+    return Math.max(0, 1 - d / REACH);
+  });
+  const influence = useSpring(raw, { stiffness: 260, damping: 22, mass: 0.5 });
+  const y = useTransform(influence, [0, 1], ['0%', '-16%']);
+  const scale = useTransform(influence, [0, 1], [1, 1.08]);
+  const glow = useTransform(influence, (v) => Math.pow(v, 1.4));
+
+  return (
+    <motion.span
+      variants={{
+        hidden: { opacity: 0, y: 60, filter: 'blur(10px)' },
+        show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } },
+      }}
+      className="inline-block"
+    >
+      <motion.span ref={ref} style={{ y, scale }} className="relative inline-block origin-bottom">
+        <span className={isDark ? 'text-cream/[0.09]' : 'text-slate-900/[0.06]'}>{char}</span>
+        {/* Copie dorée par-dessus, révélée par la proximité du pointeur */}
+        <motion.span
+          style={{ opacity: glow }}
+          className="absolute inset-0 bg-gradient-to-b from-ember-300 via-ember-400 to-ember-500/40 bg-clip-text text-transparent [filter:drop-shadow(0_0_24px_rgba(245,158,11,0.35))]"
+        >
+          {char}
+        </motion.span>
+      </motion.span>
+    </motion.span>
   );
 }

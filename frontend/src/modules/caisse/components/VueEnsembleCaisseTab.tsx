@@ -5,6 +5,7 @@ import { getOpenClosure, CashRegisterClosure } from '../caisse.api';
 import { getCreancesKpis, CreancesKpis } from '@/modules/creances/creances.api';
 import { getPaiementsParLot, LotPaiementsGroupe } from '@/modules/lots/paiementsLot.api';
 import { Card, StatCard } from '@/ui';
+import { formatNumber } from '@/lib/format';
 
 const CURRENCY = 'GNF';
 
@@ -95,13 +96,13 @@ export function VueEnsembleCaisseTab() {
               <p className="font-medium text-night-800 dark:text-slate-100">
                 {lotsAFinir.length} lot{lotsAFinir.length !== 1 ? 's' : ''} restant{lotsAFinir.length !== 1 ? 's' : ''} à régler
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Voir l'onglet « Lots à régler » pour le détail par colis
               </p>
             </div>
           </div>
           <p className="text-lg font-semibold text-cargo-600 dark:text-cargo-400 tabular-nums whitespace-nowrap">
-            {Math.round(resteAPercevoirLots).toLocaleString('fr-FR')} GNF
+            {formatNumber(Math.round(resteAPercevoirLots))} GNF
           </p>
         </Card>
       </motion.div>
