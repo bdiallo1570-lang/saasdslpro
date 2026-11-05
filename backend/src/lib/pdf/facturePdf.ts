@@ -1,26 +1,17 @@
 import PDFDocument from 'pdfkit';
-import { join } from 'node:path';
 import { Facture, Client, Colis, Paiement, PricingRule, Lot } from '@prisma/client';
-
-// Libellé lisible d'un mode de paiement (jamais le code interne de l'énumération)
-function formatMethod(method: string): string {
-  switch (method) {
-    case 'ESPECES':
-      return 'Espèces';
-    case 'ORANGE_MONEY':
-      return 'Orange Money';
-    case 'MTN_MOMO':
-      return 'MTN MoMo';
-    case 'VIREMENT':
-      return 'Virement';
-    default:
-      return 'Autre';
-  }
-}
-
-function formatMontant(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/ /g, ' ');
-}
+import {
+  COLORS,
+  COMPANY,
+  drawFooters,
+  drawHeader,
+  drawPill,
+  drawQr,
+  formatDate,
+  formatKg,
+  formatMethod,
+  formatMontant,
+} from './brand';
 
 export type FactureCompletePourPdf = Facture & {
   client: Client;
@@ -28,380 +19,272 @@ export type FactureCompletePourPdf = Facture & {
   paiements: Paiement[];
 };
 
-const LOGO_PATH = join(__dirname, '..', '..', 'assets', 'dsl-logo.png');
+const MARGIN_X = 40;
+// Bas utile d'une page : au-delà, la ligne suivante passe sur une nouvelle page (pied réservé)
+const BOTTOM_LIMIT = 841.89 - 78;
 
-const COLOR_NIGHT = '#0f172a';
-const COLOR_SKY = '#0ea5e9';
-const COLOR_CARGO = '#f97316';
-const COLOR_SLATE = '#64748b';
-const COLOR_SLATE_LIGHT = '#94a3b8';
-const COLOR_BORDER = '#e2e8f0';
-const COLOR_BG_SOFT = '#f8fafc';
-const COLOR_WHITE = '#ffffff';
-const COLOR_GREEN = '#059669';
-const COLOR_RED = '#dc2626';
-const COLOR_AMBER = '#d97706';
-
-const COMPANY = {
-  name: 'DSL Air Cargo',
-  tagline: 'Fret aérien Chine - Guinée (Guangzhou - Conakry)',
-  addressConakry: 'Madina, Gare voitures Liberia, en face du Centre Ariboyah, Centre Sidy, 2ème étage, Boutique C6, Conakry',
-  addressChine: '705, Bloc C, Hengsten Bldg, 207 Huanshi Middle Rd, Yuexiu, Guangzhou',
-  whatsapp: '+224 628 67 48 95',
-  email: 'contact@dslcargo.com',
-  website: 'www.dslcargo.com',
-};
-
-export function generateFacturePdf(facture: FactureCompletePourPdf): Promise<Buffer> {
+// Facture A4 remise au client : en-tête, destinataire, détail des colis (sur plusieurs pages si
+// besoin, en-tête du tableau répété), synthèse dû / payé / reste, historique des règlements, QR
+// code vers le lien de téléchargement personnel du client.
+export function generateFacturePdf(
+  facture: FactureCompletePourPdf,
+  opts: { documentUrl?: string } = {},
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 0 });
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 0,
+      bufferPages: true,
+      info: { Title: `Facture ${facture.factureNumber}`, Author: COMPANY.name },
+    });
     const chunks: Buffer[] = [];
     doc.on('data', (chunk) => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
     const pageWidth = doc.page.width;
-    const marginX = 40;
-    const contentWidth = pageWidth - marginX * 2;
+    const contentWidth = pageWidth - MARGIN_X * 2;
+    const dateEmission = formatDate(new Date(facture.createdAt));
 
-    // ─── En-tête officiel ───────────────────────────────────────────────────
-    const headerHeight = 100;
-    doc.rect(0, 0, pageWidth, headerHeight).fill(COLOR_NIGHT);
+    const montantTotal = Number(facture.montantTotal);
+    const totalPaye = facture.paiements.reduce((sum, p) => sum + Number(p.montant) * Number(p.tauxVersGnf), 0);
+    const reste = Math.max(0, montantTotal - totalPaye);
 
-    try {
-      doc.image(LOGO_PATH, marginX, 22, { width: 56, height: 56 });
-    } catch {
-      // Logo absent, dégradation gracieuse
-    }
-
-    doc
-      .fillColor(COLOR_WHITE)
-      .fontSize(22)
-      .font('Helvetica-Bold')
-      .text(COMPANY.name, marginX + 68, 26);
-
-    doc
-      .fillColor(COLOR_SKY)
-      .fontSize(9.5)
-      .font('Helvetica')
-      .text(COMPANY.tagline.toUpperCase(), marginX + 68, 52, { characterSpacing: 0.6 });
-
-    doc
-      .fillColor(COLOR_SLATE_LIGHT)
-      .fontSize(7.5)
-      .font('Helvetica')
-      .text(`Guinée : ${COMPANY.addressConakry}`, marginX + 68, 66, { width: 300 });
-    // L'adresse de Conakry passe sur deux lignes : on place celle de Chine juste en dessous
-    // (une position fixe la faisait chevaucher).
-    const guineeHeight = doc.heightOfString(`Guinée : ${COMPANY.addressConakry}`, { width: 300 });
-    doc.text(`Chine : ${COMPANY.addressChine}`, marginX + 68, 66 + guineeHeight + 2, { width: 300 });
-
-    doc
-      .fillColor(COLOR_WHITE)
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .text(`WhatsApp : ${COMPANY.whatsapp}`, pageWidth - marginX - 140, 68, { width: 140, align: 'right' })
-      .text(COMPANY.website, pageWidth - marginX - 140, 80, { width: 140, align: 'right' });
-
-    let y = headerHeight + 20;
-
-    // ─── Titre Facture & Date ───────────────────────────────────────────────
-    doc
-      .fillColor(COLOR_NIGHT)
-      .fontSize(16)
-      .font('Helvetica-Bold')
-      .text(`FACTURE N° ${facture.factureNumber}`, marginX, y);
-
-    const dateCreationStr = new Date(facture.createdAt).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
+    drawHeader(doc, {
+      marginX: MARGIN_X,
+      height: 96,
+      kind: 'Facture',
+      number: facture.factureNumber,
+      date: `Émise le ${dateEmission}`,
     });
 
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(9)
-      .font('Helvetica')
-      .text(`Date d'émission : ${dateCreationStr}`, marginX, y + 20);
-
-    // Badge statut de paiement
-    const badgeWidth = 140;
-    const badgeHeight = 26;
-    const badgeX = pageWidth - marginX - badgeWidth;
-    let badgeColor = COLOR_RED;
-    let badgeLabel = 'IMPAYÉE';
-
-    if (facture.status === 'PAYE') {
-      badgeColor = COLOR_GREEN;
-      badgeLabel = 'PAYÉE INTÉGRALEMENT';
-    } else if (facture.status === 'PARTIEL') {
-      badgeColor = COLOR_AMBER;
-      badgeLabel = 'PAIEMENT PARTIEL';
-    }
-
-    doc.roundedRect(badgeX, y, badgeWidth, badgeHeight, 4).fill(badgeColor);
-    doc
-      .fillColor(COLOR_WHITE)
-      .fontSize(8.5)
-      .font('Helvetica-Bold')
-      .text(badgeLabel, badgeX, y + 8, { width: badgeWidth, align: 'center' });
-
-    if (facture.livraisonDebloqueeManuel) {
+    // Nouvelle page : petit bandeau de rappel, puis on reprend sous celui-ci
+    const newPage = (): number => {
+      doc.addPage({ size: 'A4', margin: 0 });
+      doc.rect(0, 0, pageWidth, 34).fill(COLORS.ink);
+      doc.rect(0, 34, pageWidth, 2).fill(COLORS.ember);
       doc
-        .fillColor(COLOR_CARGO)
-        .fontSize(7.5)
+        .fillColor(COLORS.white)
         .font('Helvetica-Bold')
-        .text('Déblocage manuel Admin autorisé', badgeX - 40, y + 29, { width: badgeWidth + 40, align: 'right' });
+        .fontSize(9)
+        .text(`${COMPANY.name}  ·  Facture ${facture.factureNumber} (suite)`, MARGIN_X, 13, { lineBreak: false });
+      return 56;
+    };
+
+    let y = 96 + 26;
+
+    // ─── Destinataire + résumé ──────────────────────────────────────────────
+    const cardW = (contentWidth - 14) / 2;
+    const cardH = 104;
+    const client = facture.client;
+
+    doc.roundedRect(MARGIN_X, y, cardW, cardH, 8).fill(COLORS.soft);
+    label(doc, 'Facturé à', MARGIN_X + 14, y + 12);
+    doc
+      .fillColor(COLORS.text)
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .text(client.fullName, MARGIN_X + 14, y + 26, { width: cardW - 28, lineBreak: false, ellipsis: true });
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8.5).text(`Code client : ${client.clientCode}`, MARGIN_X + 14, y + 43);
+    const phones = [
+      client.phoneWhatsapp ? `WhatsApp : ${client.phoneWhatsapp}` : null,
+      client.phoneGn && client.phoneGn !== client.phoneWhatsapp ? `Tél. : ${client.phoneGn}` : null,
+      client.phoneCn ? `Chine : ${client.phoneCn}` : null,
+    ].filter(Boolean) as string[];
+    doc.text(phones.join('   ') || 'Aucun numéro renseigné', MARGIN_X + 14, y + 57, { width: cardW - 28 });
+    if (client.address) {
+      doc.text(client.address, MARGIN_X + 14, y + 71, { width: cardW - 28, height: 26, ellipsis: true });
     }
 
-    y += 50;
-
-    // ─── Cadre Informations Client ──────────────────────────────────────────
-    const clientBoxHeight = 65;
-    doc.roundedRect(marginX, y, contentWidth, clientBoxHeight, 6).fillAndStroke(COLOR_BG_SOFT, COLOR_BORDER);
-
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .text('FACTURÉ À (DESTINATAIRE) :', marginX + 14, y + 10);
-
-    doc
-      .fillColor(COLOR_NIGHT)
-      .fontSize(11)
-      .font('Helvetica-Bold')
-      .text(`${facture.client.fullName}  (${facture.client.clientCode})`, marginX + 14, y + 22);
-
-    const contactParts = [
-      facture.client.phoneGn ? `Tél Guinée : ${facture.client.phoneGn}` : null,
-      facture.client.phoneWhatsapp ? `WhatsApp : ${facture.client.phoneWhatsapp}` : null,
-      facture.client.phoneCn ? `Chine : ${facture.client.phoneCn}` : null,
-    ].filter(Boolean);
-
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(8.5)
-      .font('Helvetica')
-      .text(contactParts.join('  •  ') || 'Aucun numéro renseigné', marginX + 14, y + 37);
-
-    if (facture.client.address) {
+    const rx = MARGIN_X + cardW + 14;
+    doc.roundedRect(rx, y, cardW, cardH, 8).lineWidth(0.8).stroke(COLORS.border);
+    label(doc, 'Résumé', rx + 14, y + 12);
+    const poidsTotal = facture.colis.reduce((s, c) => s + Number(c.poidsReelKg), 0);
+    const lots = [
+      ...new Set(
+        facture.colis
+          .map((c) => (c.lot ? [c.lot.lotNumber, c.lot.flightNumber].filter(Boolean).join(' · ') : null))
+          .filter(Boolean),
+      ),
+    ];
+    const rows: [string, string][] = [
+      ["Date d'émission", dateEmission],
+      ['Colis', `${facture.colis.length}  (${formatKg(poidsTotal)})`],
+      ['Lot / vol', lots.join(', ') || '-'],
+    ];
+    rows.forEach(([k, v], i) => {
+      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8.5).text(k, rx + 14, y + 28 + i * 16);
       doc
-        .fillColor(COLOR_SLATE)
-        .fontSize(8)
-        .font('Helvetica')
-        .text(`Adresse : ${facture.client.address}`, marginX + 14, y + 49, { width: contentWidth - 28 });
-    }
+        .fillColor(COLORS.text)
+        .font('Helvetica-Bold')
+        .text(v, rx + 100, y + 28 + i * 16, { width: cardW - 114, align: 'right', lineBreak: false, ellipsis: true });
+    });
+    const status =
+      reste <= 0
+        ? { text: 'PAYÉE', color: COLORS.green, bg: COLORS.greenSoft }
+        : totalPaye > 0
+          ? { text: 'PAIEMENT PARTIEL', color: COLORS.emberDark, bg: COLORS.amberSoft }
+          : { text: 'À PAYER', color: COLORS.red, bg: COLORS.redSoft };
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8.5).text('Statut', rx + 14, y + 80);
+    drawPill(doc, rx + cardW - 14, y + 76, status.text, status.color, status.bg, true);
 
-    y += clientBoxHeight + 20;
+    y += cardH + 26;
 
-    // ─── Tableau des Colis ──────────────────────────────────────────────────
-    doc
-      .fillColor(COLOR_NIGHT)
-      .fontSize(11)
-      .font('Helvetica-Bold')
-      .text('DÉTAIL DES COLIS EXPÉDIÉS', marginX, y);
+    // ─── Détail des colis ───────────────────────────────────────────────────
+    // La colonne « Poids vol. » n'apparaît que si au moins un colis a été mesuré
+    const avecVolumetrique = facture.colis.some((c) => Number(c.poidsVolumetriqueKg) > 0);
+    const cols = [
+      { key: 'tracking', title: 'N° de suivi', width: 92, align: 'left' as const },
+      { key: 'desc', title: 'Description', width: 0, align: 'left' as const },
+      ...(avecVolumetrique ? [{ key: 'vol', title: 'Poids vol.', width: 62, align: 'right' as const }] : []),
+      { key: 'poids', title: 'Poids', width: 62, align: 'right' as const },
+      { key: 'pu', title: 'Tarif / kg', width: 72, align: 'right' as const },
+      { key: 'total', title: 'Montant', width: 88, align: 'right' as const },
+    ];
+    cols[1].width = contentWidth - cols.reduce((s, c) => s + c.width, 0) - 20;
 
-    y += 16;
-
-    // Colonnes du tableau
-    const colX = {
-      tracking: marginX,
-      desc: marginX + 95,
-      poidsReel: marginX + 250,
-      poidsVol: marginX + 315,
-      pu: marginX + 380,
-      total: marginX + 440,
+    const drawTableHead = (top: number) => {
+      doc.roundedRect(MARGIN_X, top, contentWidth, 24, 4).fill(COLORS.ink);
+      let x = MARGIN_X + 10;
+      doc.fillColor(COLORS.white).font('Helvetica-Bold').fontSize(7.5);
+      cols.forEach((c) => {
+        doc.text(c.title.toUpperCase(), x, top + 8.5, {
+          width: c.width - (c.align === 'right' ? 0 : 6),
+          align: c.align,
+          characterSpacing: 0.5,
+          lineBreak: false,
+        });
+        x += c.width;
+      });
+      return top + 24;
     };
-    const colW = {
-      tracking: 90,
-      desc: 150,
-      poidsReel: 60,
-      poidsVol: 60,
-      pu: 55,
-      total: contentWidth - 440,
-    };
 
-    // Entête du tableau
-    const tableHeaderHeight = 22;
-    doc.rect(marginX, y, contentWidth, tableHeaderHeight).fill(COLOR_NIGHT);
-
-    doc.fillColor(COLOR_WHITE).fontSize(8).font('Helvetica-Bold');
-    doc.text('N° SUIVI / LTA', colX.tracking + 6, y + 7, { width: colW.tracking });
-    doc.text('DESCRIPTION', colX.desc, y + 7, { width: colW.desc });
-    doc.text('POIDS RÉEL', colX.poidsReel, y + 7, { width: colW.poidsReel, align: 'right' });
-    doc.text('POIDS VOL.', colX.poidsVol, y + 7, { width: colW.poidsVol, align: 'right' });
-    doc.text('P.U. / KG', colX.pu, y + 7, { width: colW.pu, align: 'right' });
-    doc.text('MONTANT', colX.total - 6, y + 7, { width: colW.total, align: 'right' });
-
-    y += tableHeaderHeight;
-
-    let totalPoidsReel = 0;
-    let totalPoidsTaxable = 0;
+    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Détail des colis', MARGIN_X, y);
+    y = drawTableHead(y + 18);
 
     facture.colis.forEach((c, idx) => {
-      const rowBg = idx % 2 === 0 ? COLOR_WHITE : COLOR_BG_SOFT;
-      const rowHeight = 24;
-      doc.rect(marginX, y, contentWidth, rowHeight).fillAndStroke(rowBg, COLOR_BORDER);
+      const poids = Number(c.poidsReelKg);
+      const montant = Number(c.montantEstime);
+      const pu = c.pricingRule ? Number(c.pricingRule.pricePerKg) : Math.round(montant / (poids || 1));
+      doc.font('Helvetica').fontSize(8.5);
+      const descH = doc.heightOfString(c.description || '-', { width: cols[1].width - 8 });
+      const rowH = Math.max(26, descH + 14);
 
-      const poidsR = Number(c.poidsReelKg);
-      const poidsV = Number(c.poidsVolumetriqueKg);
-      totalPoidsReel += poidsR;
-      totalPoidsTaxable += Number(c.poidsTaxableKg);
+      if (y + rowH > BOTTOM_LIMIT) y = drawTableHead(newPage());
 
-      const pu = Math.round(Number(c.montantEstime) / (poidsR || 1));
-
-      doc.fillColor(COLOR_NIGHT).fontSize(8).font('Helvetica-Bold');
-      doc.text(c.trackingId, colX.tracking + 6, y + 7, { width: colW.tracking });
-
-      doc.fillColor(COLOR_SLATE).font('Helvetica');
-      doc.text(c.description, colX.desc, y + 7, { width: colW.desc, ellipsis: true });
-
-      doc.fillColor(COLOR_NIGHT);
-      doc.text(`${poidsR.toFixed(2)} kg`, colX.poidsReel, y + 7, { width: colW.poidsReel, align: 'right' });
-      doc.fillColor(COLOR_SLATE);
-      doc.text(`${poidsV.toFixed(2)} kg`, colX.poidsVol, y + 7, { width: colW.poidsVol, align: 'right' });
-
-      doc.text(`${formatMontant(pu)} GNF`, colX.pu, y + 7, { width: colW.pu, align: 'right' });
-
-      doc.fillColor(COLOR_NIGHT).font('Helvetica-Bold');
-      doc.text(`${formatMontant(Number(c.montantEstime))} GNF`, colX.total - 6, y + 7, {
-        width: colW.total,
-        align: 'right',
-      });
-
-      y += rowHeight;
-    });
-
-    // Ligne des totaux du tableau
-    const totalRowHeight = 26;
-    doc.rect(marginX, y, contentWidth, totalRowHeight).fillAndStroke(COLOR_BG_SOFT, COLOR_BORDER);
-
-    doc
-      .fillColor(COLOR_NIGHT)
-      .fontSize(8.5)
-      .font('Helvetica-Bold')
-      .text('TOTAL POIDS & FACTURATION (FACTURÉ AU POIDS RÉEL) :', marginX + 8, y + 8);
-
-    doc.text(`${totalPoidsReel.toFixed(2)} kg`, colX.poidsReel, y + 8, {
-      width: colW.poidsReel,
-      align: 'right',
-    });
-
-    const montantTotalNum = Number(facture.montantTotal);
-    doc.fillColor(COLOR_CARGO).fontSize(10);
-    doc.text(`${formatMontant(montantTotalNum)} ${facture.currency}`, colX.total - 6, y + 7, {
-      width: colW.total,
-      align: 'right',
-    });
-
-    y += totalRowHeight + 20;
-
-    // ─── Règlements & Synthèse Financière ────────────────────────────────────
-    const boxWidth = (contentWidth - 14) / 2;
-    const boxHeight = 110;
-
-    // Cadre Gauche : Historique des encaissements
-    doc.roundedRect(marginX, y, boxWidth, boxHeight, 6).fillAndStroke(COLOR_WHITE, COLOR_BORDER);
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .text('RÈGLEMENTS REÇUS :', marginX + 12, y + 10);
-
-    let payY = y + 26;
-    if (facture.paiements.length === 0) {
-      doc
-        .fillColor(COLOR_SLATE_LIGHT)
-        .fontSize(8)
-        .font('Helvetica-Oblique')
-        .text('Aucun paiement enregistré pour cette facture.', marginX + 12, payY);
-    } else {
-      facture.paiements.forEach((p) => {
-        const dateP = new Date(p.createdAt).toLocaleDateString('fr-FR');
-        const pGnf = Math.round(Number(p.montant) * Number(p.tauxVersGnf));
+      if (idx % 2 === 1) doc.rect(MARGIN_X, y, contentWidth, rowH).fill(COLORS.soft);
+      const cells: Record<string, string> = {
+        tracking: c.trackingId,
+        desc: c.description || '-',
+        vol: Number(c.poidsVolumetriqueKg) > 0 ? formatKg(Number(c.poidsVolumetriqueKg)) : '-',
+        poids: formatKg(poids),
+        pu: formatMontant(pu),
+        total: `${formatMontant(montant)} GNF`,
+      };
+      let x = MARGIN_X + 10;
+      cols.forEach((col) => {
+        const bold = col.key === 'tracking' || col.key === 'total';
         doc
-          .fillColor(COLOR_NIGHT)
-          .fontSize(7.5)
-          .font('Helvetica')
-          .text(`• ${dateP}  ${formatMethod(p.method)}`, marginX + 12, payY, { width: 120 })
-          .text(`${formatMontant(pGnf)} GNF`, marginX + boxWidth - 95, payY, { width: 85, align: 'right' });
-        payY += 14;
+          .fillColor(col.key === 'desc' || col.key === 'vol' || col.key === 'pu' ? COLORS.muted : COLORS.text)
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .fontSize(8.5)
+          .text(cells[col.key], x, y + 8.5, { width: col.width - (col.align === 'right' ? 0 : 8), align: col.align });
+        x += col.width;
       });
+      doc.rect(MARGIN_X, y + rowH, contentWidth, 0.5).fill(COLORS.border);
+      y += rowH;
+    });
+
+    // ─── Synthèse (+ QR code à gauche) ──────────────────────────────────────
+    if (y + 150 > BOTTOM_LIMIT) y = newPage();
+    y += 20;
+    const sumW = 236;
+    const sumX = MARGIN_X + contentWidth - sumW;
+    const sumH = 116;
+    doc.roundedRect(sumX, y, sumW, sumH, 8).fill(COLORS.soft);
+    const line = (k: string, v: string, top: number, color = COLORS.text) => {
+      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text(k, sumX + 16, top);
+      doc.fillColor(color).font('Helvetica-Bold').text(v, sumX + 16, top, { width: sumW - 32, align: 'right' });
+    };
+    line('Total facturé', `${formatMontant(montantTotal)} GNF`, y + 16);
+    line('Déjà payé', `${formatMontant(totalPaye)} GNF`, y + 34, COLORS.green);
+    doc.rect(sumX + 16, y + 56, sumW - 32, 0.6).fill(COLORS.border);
+    doc
+      .fillColor(COLORS.muted)
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .text('RESTE À PAYER', sumX + 16, y + 68, { characterSpacing: 0.8 });
+    doc
+      .fillColor(reste > 0 ? COLORS.red : COLORS.green)
+      .font('Helvetica-Bold')
+      .fontSize(18)
+      .text(reste > 0 ? `${formatMontant(reste)} GNF` : 'Soldée', sumX + 16, y + 82, { width: sumW - 32, align: 'right' });
+
+    if (opts.documentUrl) {
+      drawQr(doc, opts.documentUrl, MARGIN_X + 4, y + 4, 92);
+      doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(9).text('Votre facture en ligne', MARGIN_X + 112, y + 18);
+      doc
+        .fillColor(COLORS.muted)
+        .font('Helvetica')
+        .fontSize(8)
+        .text(
+          'Scannez ce code avec votre téléphone pour retrouver et télécharger cette facture à tout moment. Lien personnel et sécurisé.',
+          MARGIN_X + 112,
+          y + 32,
+          { width: sumX - (MARGIN_X + 112) - 18 },
+        );
+    }
+    y += sumH + 26;
+
+    // ─── Historique des règlements ──────────────────────────────────────────
+    if (facture.paiements.length > 0) {
+      if (y + 70 > BOTTOM_LIMIT) y = newPage();
+      doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Règlements reçus', MARGIN_X, y);
+      y += 20;
+      facture.paiements.forEach((p) => {
+        if (y + 22 > BOTTOM_LIMIT) y = newPage();
+        const date = formatDate(new Date(p.datePaiement ?? p.createdAt));
+        const gnf = Number(p.montant) * Number(p.tauxVersGnf);
+        const detail = [formatMethod(p.method), p.reference ? `Réf. ${p.reference}` : null].filter(Boolean).join('  ·  ');
+        doc.fillColor(COLORS.text).font('Helvetica').fontSize(8.5).text(date, MARGIN_X, y + 6, { width: 130 });
+        doc
+          .fillColor(COLORS.muted)
+          .text(detail, MARGIN_X + 130, y + 6, { width: contentWidth - 130 - 140, lineBreak: false, ellipsis: true });
+        doc
+          .fillColor(COLORS.green)
+          .font('Helvetica-Bold')
+          .text(`${formatMontant(gnf)} GNF`, MARGIN_X, y + 6, { width: contentWidth, align: 'right' });
+        doc.rect(MARGIN_X, y + 22, contentWidth, 0.5).fill(COLORS.border);
+        y += 22;
+      });
+      y += 20;
     }
 
-    // Cadre Droit : Synthèse Dû / Réglé / Reste
-    const totalPayeGnf = facture.paiements.reduce(
-      (sum, p) => sum + Number(p.montant) * Number(p.tauxVersGnf),
-      0,
-    );
-    const resteAPayerGnf = Math.max(0, montantTotalNum - totalPayeGnf);
+    // ─── Conditions ─────────────────────────────────────────────────────────
+    const conditions = [
+      `Règlements acceptés en espèces à l'entrepôt de Madina, par Orange Money (${COMPANY.whatsapp}) ou par virement bancaire.`,
+      'Les colis sont remis après règlement intégral du montant dû. Présentez cette facture ou votre code client au retrait.',
+      `Une question ? Écrivez-nous sur WhatsApp au ${COMPANY.whatsapp}.`,
+    ];
+    doc.font('Helvetica').fontSize(8);
+    const condH = conditions.reduce((h, t) => h + doc.heightOfString(t, { width: contentWidth - 28 }) + 3, 0) + 30;
+    if (y + condH > BOTTOM_LIMIT) y = newPage();
+    doc.roundedRect(MARGIN_X, y, contentWidth, condH, 8).lineWidth(0.8).stroke(COLORS.border);
+    label(doc, 'Conditions', MARGIN_X + 14, y + 12);
+    let cy = y + 26;
+    conditions.forEach((t) => {
+      doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8).text(t, MARGIN_X + 14, cy, { width: contentWidth - 28 });
+      cy += doc.heightOfString(t, { width: contentWidth - 28 }) + 3;
+    });
 
-    const rightBoxX = marginX + boxWidth + 14;
-    doc.roundedRect(rightBoxX, y, boxWidth, boxHeight, 6).fillAndStroke(COLOR_BG_SOFT, COLOR_BORDER);
-
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .text('SYNTHÈSE DU COMPTE :', rightBoxX + 12, y + 10);
-
-    doc
-      .fillColor(COLOR_NIGHT)
-      .fontSize(8.5)
-      .font('Helvetica')
-      .text('Montant total facturé :', rightBoxX + 12, y + 28)
-      .font('Helvetica-Bold')
-      .text(`${formatMontant(montantTotalNum)} GNF`, rightBoxX + boxWidth - 120, y + 28, {
-        width: 108,
-        align: 'right',
-      });
-
-    doc
-      .fillColor(COLOR_GREEN)
-      .font('Helvetica')
-      .text('Total payé :', rightBoxX + 12, y + 46)
-      .font('Helvetica-Bold')
-      .text(`${formatMontant(totalPayeGnf)} GNF`, rightBoxX + boxWidth - 120, y + 46, {
-        width: 108,
-        align: 'right',
-      });
-
-    doc.rect(rightBoxX + 12, y + 64, boxWidth - 24, 0.5).fill(COLOR_BORDER);
-
-    const resteColor = resteAPayerGnf > 0 ? COLOR_RED : COLOR_GREEN;
-    doc
-      .fillColor(resteColor)
-      .fontSize(10)
-      .font('Helvetica-Bold')
-      .text('Solde restant dû :', rightBoxX + 12, y + 76)
-      .text(`${formatMontant(resteAPayerGnf)} GNF`, rightBoxX + boxWidth - 140, y + 76, {
-        width: 128,
-        align: 'right',
-      });
-
-    // ─── Pied de page & Conditions ──────────────────────────────────────────
-    const footerY = doc.page.height - 75;
-    doc.rect(marginX, footerY, contentWidth, 0.5).fill(COLOR_BORDER);
-
-    doc
-      .fillColor(COLOR_SLATE)
-      .fontSize(7)
-      .font('Helvetica-Bold')
-      .text('CONDITIONS DE LIVRAISON & RÈGLEMENTS :', marginX, footerY + 8);
-
-    doc
-      .fillColor(COLOR_SLATE_LIGHT)
-      .fontSize(6.5)
-      .font('Helvetica')
-      .text(
-        "Règlements acceptés en espèces à l'entrepôt de Madina, par Orange Money (+224 628 67 48 95) ou par virement bancaire.\n" +
-          "Conformément à la politique de DSL Air Cargo, les colis ne sont délivrés qu'après acquittement intégral du montant dû.\n" +
-          'DSL Air Cargo — SARL au capital de 50 000 000 GNF — Centre Sidy, Madina, Conakry, République de Guinée.',
-        marginX,
-        footerY + 20,
-        { width: contentWidth, lineGap: 2 },
-      );
-
+    drawFooters(doc, MARGIN_X, [
+      `${COMPANY.name}  ·  ${COMPANY.addressGuinee}`,
+      `WhatsApp ${COMPANY.whatsapp}  ·  ${COMPANY.website}  ·  Facture ${facture.factureNumber} du ${dateEmission}`,
+    ]);
     doc.end();
   });
+}
+
+function label(doc: PDFKit.PDFDocument, text: string, x: number, y: number) {
+  doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(7.5).text(text.toUpperCase(), x, y, { characterSpacing: 1 });
 }

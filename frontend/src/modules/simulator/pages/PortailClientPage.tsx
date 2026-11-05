@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { simulatePrice, PriceSimulationResult } from '@/modules/colis/colis.api';
 import { WarehouseAddressModal } from '@/modules/warehouses/WarehouseAddressModal';
 import { AppShell } from '@/layout/AppShell';
+import { MesDocuments } from '@/modules/documents/MesDocuments';
 import { Card, Button, Select, Input, PageHeader, StatCounter } from '@/ui';
 import { formatNumber } from '@/lib/format';
 
@@ -36,7 +37,7 @@ export default function PortailClientPage() {
       <div className="max-w-2xl mx-auto">
         <PageHeader
           title="Espace Client"
-          description="Estimez le prix de votre envoi et récupérez l'adresse de notre entrepôt en Chine."
+          description="Vos factures et reçus, l'estimation du prix de vos envois et l'adresse de notre entrepôt en Chine."
         />
 
         <motion.div
@@ -45,6 +46,8 @@ export default function PortailClientPage() {
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="space-y-6"
         >
+          <MesDocuments />
+
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-night-900 dark:text-slate-100 mb-1">
               Simuler le prix de mon envoi

@@ -27,6 +27,7 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { Modal, Tabs, Button, Input, Select, Badge, notify } from '@/ui';
+import { SendToClientButton } from '@/modules/documents/SendToClientButton';
 import { formatNumber } from '@/lib/format';
 
 const STATUT_TONE: Record<string, 'red' | 'amber' | 'green' | 'sky'> = {
@@ -515,10 +516,13 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                       {formatNumber(Number(p.montant))} {p.currency}
                     </p>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => downloadRecuPaiement(p.id, p.factureId)}>
-                    <Receipt size={14} className="mr-1.5" />
-                    Télécharger le reçu
-                  </Button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => downloadRecuPaiement(p.id)}>
+                      <Receipt size={14} className="mr-1.5" />
+                      Télécharger le reçu
+                    </Button>
+                    <SendToClientButton type="recu" id={p.id} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -670,6 +674,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
                 <Download size={14} className="mr-1.5" />
                 PDF
               </Button>
+              {colis.facture && <SendToClientButton type="facture" id={colis.facture.id} />}
             </div>
           ) : (
             <div className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 p-4 text-center">

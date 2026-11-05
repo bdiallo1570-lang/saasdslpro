@@ -16,6 +16,7 @@ import {
 import { Colis, StatutPaiementColis } from '@/modules/colis/colis.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Button, Input, Select, Badge, Modal, notify } from '@/ui';
+import { SendToClientButton } from '@/modules/documents/SendToClientButton';
 import { formatNumber } from '@/lib/format';
 
 const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
@@ -224,12 +225,15 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                                       <span className="tabular-nums font-medium text-night-700 dark:text-slate-200">
                                         {formatNumber(Number(p.montant))} {p.currency}
                                       </span>
-                                      <button
-                                        onClick={() => downloadRecuPaiement(p.id, p.factureId)}
-                                        className="text-sky-600 dark:text-sky-400 hover:underline"
-                                      >
-                                        Reçu
-                                      </button>
+                                      <span className="flex items-center gap-3">
+                                        <button
+                                          onClick={() => downloadRecuPaiement(p.id)}
+                                          className="text-sky-600 dark:text-sky-400 hover:underline"
+                                        >
+                                          Reçu
+                                        </button>
+                                        <SendToClientButton type="recu" id={p.id} appearance="link" />
+                                      </span>
                                     </div>
                                   ))
                                 )}

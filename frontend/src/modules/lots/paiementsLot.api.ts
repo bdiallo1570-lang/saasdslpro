@@ -108,12 +108,14 @@ export async function listPaiementsForColis(colisId: string): Promise<Paiement[]
   return res.data.data ?? [];
 }
 
-export async function downloadRecuPaiement(paiementId: string, factureNumber: string): Promise<void> {
+export async function downloadRecuPaiement(paiementId: string): Promise<void> {
   const res = await apiClient.get(`/paiements/${paiementId}/recu-pdf`, { responseType: 'blob' });
-  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = `recu-${factureNumber}.pdf`;
+  // Même numéro que celui imprimé sur le reçu
+  link.download = `recu-R-${paiementId.slice(0, 8).toUpperCase()}.pdf`;
   link.click();
-  window.URL.revokeObjectURL(url);
+  // Libéré après coup : certains navigateurs lisent l'URL après le clic
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 }

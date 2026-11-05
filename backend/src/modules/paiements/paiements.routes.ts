@@ -22,6 +22,11 @@ paiementsRouter.get(
   requirePermission('factures:read'),
   asyncHandler(paiementsController.downloadReceiptHandler),
 );
+paiementsRouter.get(
+  '/:id/lien-client',
+  requirePermission('factures:read'),
+  asyncHandler(paiementsController.lienClientRecuHandler),
+);
 paiementsRouter.post(
   '/relancer/:clientId',
   requirePermission('whatsapp:send'),

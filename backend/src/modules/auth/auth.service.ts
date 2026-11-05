@@ -17,12 +17,22 @@ export class AuthError extends AppError {
   }
 }
 
+// « +224 622 22 22 22 », « 00224622222222 », « 622-22-22-22 » → « +224622222222 » (format stocké).
+// Un numéro guinéen à 9 chiffres sans indicatif reçoit +224 : c'est l'usage des clients.
+export function normalizePhone(raw: string): string {
+  let n = raw.trim().replace(/[\s.\-()]/g, '');
+  if (n.startsWith('00')) n = `+${n.slice(2)}`;
+  if (/^6\d{8}$/.test(n)) n = `+224${n}`;
+  return n;
+}
+
 function findUserByIdentifier(identifier: string) {
   const isEmail = identifier.includes('@');
+  const phones = [...new Set([identifier.trim(), normalizePhone(identifier)])];
   return prisma.user.findFirst({
     where: {
       deletedAt: null,
-      ...(isEmail ? { email: identifier } : { phoneNumber: identifier }),
+      ...(isEmail ? { email: identifier.trim() } : { phoneNumber: { in: phones } }),
     },
     include: { role: true },
   });

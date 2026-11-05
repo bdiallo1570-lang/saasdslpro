@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as paiementsService from './paiements.service';
 import { createPaiementSchema } from './paiements.schema';
-import { generatePaymentReceiptPdf } from '@/lib/pdf/paymentReceipt';
+import { getClientLink, getDocument } from '@/modules/documents/documents.service';
 import { handleError } from '@/lib/errors';
 
 export async function createPaiementHandler(req: Request, res: Response) {
@@ -24,18 +24,20 @@ export async function listPaiementsHandler(req: Request, res: Response) {
 
 export async function downloadReceiptHandler(req: Request, res: Response) {
   try {
-    const { paiement, agent } = await paiementsService.getPaiementForReceipt(req.params.id);
-    const pdfBuffer = await generatePaymentReceiptPdf({
-      paiement,
-      facture: paiement.facture,
-      client: paiement.facture.client,
-      colis: paiement.facture.colis,
-      agent,
-    });
-
+    const { buffer, filename } = await getDocument('recu', req.params.id);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="recu-${paiement.facture.factureNumber}.pdf"`);
-    return res.send(pdfBuffer);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(buffer);
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+// Lien de téléchargement à envoyer au client (WhatsApp)
+export async function lienClientRecuHandler(req: Request, res: Response) {
+  try {
+    const data = await getClientLink('recu', req.params.id);
+    return res.status(200).json({ success: true, data, error: null });
   } catch (error) {
     return handleError(res, error);
   }

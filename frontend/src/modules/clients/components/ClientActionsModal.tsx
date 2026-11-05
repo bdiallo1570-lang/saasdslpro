@@ -4,6 +4,7 @@ import { Client, getClientById, deleteClient } from '../clients.api';
 import { Colis, listColis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { ColisActionsModal } from '@/modules/colis/components/ColisActionsModal';
 import { ClientEditModal } from './ClientEditModal';
+import { EspaceClientPanel } from './EspaceClientPanel';
 import { RelancerWhatsAppButton } from '@/modules/paiements/components/RelancerWhatsAppButton';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { STATUT_PAIEMENT_LABELS } from '@/modules/lots/paiementsLot.api';
@@ -105,6 +106,7 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
     { key: 'infos', label: 'Infos' },
     { key: 'colis', label: `Colis (${colisDuClient.length})` },
     ...(peutMessager ? [{ key: 'message', label: 'Message client' }] : []),
+    ...(peutModifier ? [{ key: 'espace', label: 'Espace client' }] : []),
   ];
 
   return (
@@ -167,6 +169,8 @@ export function ClientActionsModal({ clientId, onClose, onUpdated }: ClientActio
                 )}
               </div>
             )}
+
+            {tab === 'espace' && <EspaceClientPanel clientId={client.id} clientNom={client.fullName} />}
 
             {tab === 'colis' && (
               <div className="space-y-2">

@@ -147,6 +147,11 @@ model User {
   // Tentatives erronées sur le code en cours — le code est effacé au-delà de la limite
   otpAttempts  Int       @default(0) @map("otp_attempts")
 
+  // Compte du portail client (rôle Client) : relié à sa fiche client pour retrouver ses
+  // factures et reçus. Vide pour les comptes du personnel.
+  clientId String? @unique @map("client_id")
+  client   Client? @relation(fields: [clientId], references: [id])
+
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
 
@@ -190,6 +195,8 @@ model Client {
   colis            Colis[]
   factures         Facture[]
   whatsAppMessages WhatsAppMessageLog[]
+  // Compte de l'espace client, s'il a été activé
+  user             User?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

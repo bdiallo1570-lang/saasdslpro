@@ -29,6 +29,7 @@ const CreancesDashboardPage = lazy(() => import('@/modules/creances/pages/Creanc
 const AlertesPage = lazy(() => import('@/modules/alertes/pages/AlertesPage'));
 const ClientsListPage = lazy(() => import('@/modules/clients/pages/ClientsListPage'));
 const FacturesPage = lazy(() => import('@/modules/factures/pages/FacturesPage'));
+const DocumentPage = lazy(() => import('@/modules/documents/pages/DocumentPage'));
 
 export default function App() {
   return (
@@ -43,6 +44,8 @@ export default function App() {
             <Route path="/connexion" element={<LoginPage />} />
             <Route path="/mot-de-passe-oublie" element={<ResetPasswordPage />} />
             <Route path="/acces-refuse" element={<AccessDeniedPage />} />
+            {/* Public : facture ou reçu partagé au client par un lien signé */}
+            <Route path="/document/:token" element={<DocumentPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN]} />}>
               <Route path="/dashboard/financier" element={<DashboardFinancierPage />} />

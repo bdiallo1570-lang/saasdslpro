@@ -10,6 +10,11 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
+  // Adresse publique du site, utilisée dans les liens et QR codes des factures/reçus envoyés aux
+  // clients. Par défaut : la première origine de FRONTEND_URL.
+  PUBLIC_SITE_URL: z.string().url().optional(),
+  // Secret des liens de documents ; par défaut dérivé de JWT_ACCESS_SECRET (voir documentLinks.ts)
+  DOCUMENT_LINK_SECRET: z.string().min(16).optional(),
   OTP_EXPIRES_IN_MINUTES: z.coerce.number().default(5),
   // Optionnelles — tant qu'absentes, getWhatsAppProvider() retombe sur le stub (log console).
   GREEN_API_INSTANCE_ID: z.string().optional(),

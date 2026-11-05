@@ -2,7 +2,6 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { nextSequenceNumber } from '@/lib/sequence';
 import { resolveRateForFacture } from '@/lib/exchangeRate';
-import { generateFacturePdf, FactureCompletePourPdf } from '@/lib/pdf/facturePdf';
 import { AppError } from '@/lib/errors';
 
 export class FactureError extends AppError {}
@@ -120,14 +119,6 @@ export async function getFactureById(id: string) {
       paiements: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
     },
   });
-}
-
-export async function getFacturePdf(id: string): Promise<{ buffer: Buffer; factureNumber: string }> {
-  const facture = await getFactureById(id);
-  if (!facture) throw new FactureError('Facture introuvable.', 404);
-
-  const buffer = await generateFacturePdf(facture as FactureCompletePourPdf);
-  return { buffer, factureNumber: facture.factureNumber };
 }
 
 export async function listFacturesByClient(clientId: string) {

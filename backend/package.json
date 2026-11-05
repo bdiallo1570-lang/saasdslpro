@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pdfkit": "^0.15.1",
+    "qrcode": "1.5.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.5",
     "@types/pdfkit": "^0.13.9",
+    "@types/qrcode": "1.5.5",
     "prisma": "^6.1.0",
     "tsc-alias": "^1.9.1",
     "tsx": "^4.19.2",

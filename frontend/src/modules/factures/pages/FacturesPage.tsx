@@ -16,6 +16,7 @@ import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Badge, Button, Input, Select, Modal, notify } from '@/ui';
+import { SendToClientButton } from '@/modules/documents/SendToClientButton';
 import { formatNumber } from '@/lib/format';
 
 const STATUT_LABELS: Record<string, string> = {
@@ -293,6 +294,7 @@ export default function FacturesPage() {
                         <Download size={14} className="mr-1.5" />
                         PDF
                       </Button>
+                      <SendToClientButton type="facture" id={facture.id} />
                     </div>
                   </Card>
                 </motion.div>

@@ -213,7 +213,15 @@ export async function createPaiementForColis(
 export async function getPaiementForReceipt(paiementId: string) {
   const paiement = await prisma.paiement.findFirst({
     where: { id: paiementId, deletedAt: null },
-    include: { facture: { include: { client: true, colis: true } } },
+    include: {
+      facture: {
+        include: {
+          client: true,
+          colis: true,
+          paiements: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
+        },
+      },
+    },
   });
   if (!paiement) throw new PaiementError('Paiement introuvable.', 404);
 

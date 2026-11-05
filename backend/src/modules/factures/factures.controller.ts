@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { getClientLink, getDocument } from '@/modules/documents/documents.service';
 import * as facturesService from './factures.service';
 import { createFactureSchema, deblocageLivraisonSchema } from './factures.schema';
 import { handleError } from '@/lib/errors';
@@ -26,10 +27,20 @@ export async function getFactureHandler(req: Request, res: Response) {
 
 export async function downloadFacturePdfHandler(req: Request, res: Response) {
   try {
-    const { buffer, factureNumber } = await facturesService.getFacturePdf(req.params.id);
+    const { buffer, filename } = await getDocument('facture', req.params.id);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="facture-${factureNumber}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     return res.status(200).send(buffer);
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+// Lien de téléchargement à envoyer au client (WhatsApp)
+export async function lienClientFactureHandler(req: Request, res: Response) {
+  try {
+    const data = await getClientLink('facture', req.params.id);
+    return res.status(200).json({ success: true, data, error: null });
   } catch (error) {
     return handleError(res, error);
   }
