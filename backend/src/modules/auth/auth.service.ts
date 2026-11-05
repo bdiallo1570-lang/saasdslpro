@@ -207,6 +207,25 @@ export async function confirmPasswordReset(identifier: string, otpCode: string, 
   });
 }
 
+// Changement de mot de passe par l'utilisateur connecté (ancien mot de passe exigé). Toutes les
+// sessions sont fermées — y compris sur un autre appareil qui connaîtrait l'ancien mot de passe —
+// puis une nouvelle session est ouverte pour l'appareil courant.
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null }, include: { role: true } });
+  if (!user || !user.isActive) throw new AuthError('Compte introuvable.');
+
+  if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+    throw new AuthError('Mot de passe actuel incorrect.', 400);
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(newPassword) } }),
+    prisma.refreshToken.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+
+  return issueTokenPair(user.id, user.role.roleName, user.location);
+}
+
 function toSafeUser(user: {
   id: string;
   fullName: string;

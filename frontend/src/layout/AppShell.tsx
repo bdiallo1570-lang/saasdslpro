@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileTopbar } from './MobileTopbar';
 import { CommandPalette } from './CommandPalette';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import { GlobalFab } from '@/components/GlobalFab';
 
 interface AppShellProps {
@@ -39,6 +40,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
       <GlobalFab />
       <CommandPalette />
+      <ChangePasswordModal />
     </div>
   );
 }

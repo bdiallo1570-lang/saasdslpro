@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Sun, Moon, Menu, X, LogOut } from 'lucide-react';
+import { Search, Sun, Moon, Menu, X, LogOut, KeyRound } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { NAV_ITEMS } from './navConfig';
 import { NavIcon } from './NavIcon';
-import { openCommandPalette } from './commandEvents';
+import { openCommandPalette, openChangePassword } from './commandEvents';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
@@ -77,6 +77,17 @@ export function MobileTopbar() {
                   </NavLink>
                 </motion.div>
               ))}
+              <motion.button
+                variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
+                onClick={() => {
+                  setOpen(false);
+                  openChangePassword();
+                }}
+                className="w-full text-left flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 dark:text-slate-300"
+              >
+                <KeyRound className="h-[18px] w-[18px]" />
+                Changer mon mot de passe
+              </motion.button>
               <motion.button
                 variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                 onClick={async () => {

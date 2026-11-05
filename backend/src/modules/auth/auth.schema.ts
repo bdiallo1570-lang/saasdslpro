@@ -29,6 +29,24 @@ export const resetPasswordConfirmSchema = z.object({
   newPassword: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères.'),
 });
 
+// Mots de passe connus publiquement (comptes de démonstration du README) : jamais acceptés
+const MOTS_DE_PASSE_INTERDITS = ['changemoi123!'];
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Mot de passe actuel requis.'),
+    newPassword: z
+      .string()
+      .min(10, 'Le nouveau mot de passe doit contenir au moins 10 caractères.')
+      .regex(/[A-Za-z]/, 'Le nouveau mot de passe doit contenir au moins une lettre.')
+      .regex(/\d/, 'Le nouveau mot de passe doit contenir au moins un chiffre.')
+      .refine((v) => !MOTS_DE_PASSE_INTERDITS.includes(v.toLowerCase()), 'Ce mot de passe est public : choisissez-en un autre.'),
+  })
+  .refine((d) => d.newPassword !== d.currentPassword, {
+    message: "Le nouveau mot de passe doit être différent de l'actuel.",
+    path: ['newPassword'],
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RequestOtpInput = z.infer<typeof requestOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;

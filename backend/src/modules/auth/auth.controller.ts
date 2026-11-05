@@ -7,6 +7,7 @@ import {
   refreshSchema,
   resetPasswordRequestSchema,
   resetPasswordConfirmSchema,
+  changePasswordSchema,
 } from './auth.schema';
 import { handleError } from '@/lib/errors';
 
@@ -108,6 +109,19 @@ export async function confirmPasswordResetHandler(req: Request, res: Response) {
       data: { message: 'Mot de passe réinitialisé avec succès.' },
       error: null,
     });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function changePasswordHandler(req: Request, res: Response) {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, data: null, error: parsed.error.issues[0].message });
+  }
+  try {
+    const tokens = await authService.changePassword(req.user!.sub, parsed.data.currentPassword, parsed.data.newPassword);
+    return res.status(200).json({ success: true, data: tokens, error: null });
   } catch (error) {
     return handleError(res, error);
   }

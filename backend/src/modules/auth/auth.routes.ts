@@ -28,6 +28,15 @@ authRouter.post(
   asyncHandler(authController.confirmPasswordResetHandler),
 );
 
+// Changement de mot de passe par l'utilisateur connecté (même limite d'essais que la connexion,
+// l'ancien mot de passe étant vérifié)
+authRouter.post(
+  '/password/change',
+  requireAuth,
+  loginRateLimiter,
+  asyncHandler(authController.changePasswordHandler),
+);
+
 // Retourne le profil de l'utilisateur connecté (utile pour la redirection côté frontend au reload).
 authRouter.get(
   '/me',

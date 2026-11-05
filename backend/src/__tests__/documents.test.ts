@@ -3,6 +3,7 @@ import { nombreEnLettres, montantEnLettres } from '../lib/montantEnLettres';
 import { signDocumentToken, verifyDocumentToken } from '../lib/documentLinks';
 import { regleAvant } from '../lib/pdf/paymentReceipt';
 import { normalizePhone } from '../modules/auth/auth.service';
+import { changePasswordSchema } from '../modules/auth/auth.schema';
 import type { Paiement } from '@prisma/client';
 
 describe('Montant en toutes lettres (reçus)', () => {
@@ -90,5 +91,29 @@ describe('Connexion : numéro saisi librement', () => {
     ['+86 138 0000 0002', '+8613800000002'],
   ])('%s → %s', (saisi, attendu) => {
     expect(normalizePhone(saisi)).toBe(attendu);
+  });
+});
+
+describe('Changement de mot de passe : règles', () => {
+  const essai = (currentPassword: string, newPassword: string) =>
+    changePasswordSchema.safeParse({ currentPassword, newPassword }).success;
+
+  it('accepte un mot de passe solide', () => {
+    expect(essai('ancien', 'Caisse2026Test')).toBe(true);
+  });
+
+  it('refuse un mot de passe trop court, sans chiffre ou sans lettre', () => {
+    expect(essai('ancien', 'Court1')).toBe(false);
+    expect(essai('ancien', 'SansAucunChiffre')).toBe(false);
+    expect(essai('ancien', '12345678901')).toBe(false);
+  });
+
+  it('refuse le mot de passe public des comptes de démonstration, quelle que soit la casse', () => {
+    expect(essai('ancien', 'ChangeMoi123!')).toBe(false);
+    expect(essai('ancien', 'changemoi123!')).toBe(false);
+  });
+
+  it("refuse un nouveau mot de passe identique à l'actuel", () => {
+    expect(essai('Caisse2026Test', 'Caisse2026Test')).toBe(false);
   });
 });

@@ -1,14 +1,14 @@
 import { useState, useEffect, useLayoutEffect, useRef, ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Sun, Moon, PanelLeftClose, LogOut } from 'lucide-react';
+import { Search, Sun, Moon, PanelLeftClose, LogOut, KeyRound } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { NAV_GROUPS, NAV_ITEMS } from './navConfig';
 import { NavIcon } from './NavIcon';
 import { getAlertesCritiquesCount } from './alertesCriticalCount';
 import { ROLE_NAMES } from '@/lib/roles';
-import { IS_MAC, openCommandPalette } from './commandEvents';
+import { IS_MAC, openCommandPalette, openChangePassword } from './commandEvents';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const COLLAPSE_KEY = 'dsl_sidebar_collapsed';
@@ -226,6 +226,15 @@ export function Sidebar() {
                 <p className="truncate text-xs font-semibold text-night-800 dark:text-slate-200">{user?.fullName}</p>
                 <p className="truncate text-[11px] text-slate-400">En ligne</p>
               </div>
+              <button
+                type="button"
+                onClick={openChangePassword}
+                title="Changer mon mot de passe"
+                aria-label="Changer mon mot de passe"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-night-900 dark:hover:bg-night-800 dark:hover:text-slate-100"
+              >
+                <KeyRound className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={async () => {

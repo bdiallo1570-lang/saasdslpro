@@ -30,15 +30,20 @@ npm run seed               # rôles, tarifs par défaut, entrepôts, utilisateur
 npm run dev                 # démarre l'API sur http://localhost:4000
 ```
 
-### Comptes de démonstration (créés par le seed)
+### Comptes de démonstration (développement local uniquement)
 
 | Rôle          | Identifiant           | Mot de passe    |
 |---------------|------------------------|-----------------|
 | Admin         | `+224600000001` ou `admin@dslaircargo.com` | `ChangeMoi123!` |
 | Agent Chine   | `+8613800000002` ou `agent.chine@dslaircargo.com` | `ChangeMoi123!` |
 | Agent Guinée  | `+224600000003` ou `agent.guinee@dslaircargo.com` | `ChangeMoi123!` |
+| Caissier      | `+224600000004` ou `caissier@dslaircargo.com` | `ChangeMoi123!` |
+| Client        | `+224600000005` ou `client@dslaircargo.com` | `ChangeMoi123!` |
 
-⚠️ À changer immédiatement en environnement réel.
+⚠️ Ce mot de passe est public. Le seed ne crée pas ces comptes quand `NODE_ENV=production`
+(sauf `ALLOW_DEMO_SEED=true`), et l'application refuse `ChangeMoi123!` comme nouveau mot de passe.
+Si un de ces comptes existe en production, changez son mot de passe tout de suite : menu
+utilisateur → icône clé « Changer mon mot de passe ».
 
 ### Endpoints d'authentification (`/api/v1/auth`)
 

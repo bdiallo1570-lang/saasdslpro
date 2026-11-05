@@ -111,6 +111,13 @@ async function main() {
     create: { key: 'mode_facturation', value: 'poids_reel' },
   });
 
+  // Les comptes de démonstration ont un mot de passe public (README) : jamais créés en production,
+  // sauf demande explicite. Rôles, tarifs, entrepôts et paramètres ci-dessus restent appliqués.
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== 'true') {
+    console.log('Production : comptes et données de démonstration ignorés (ALLOW_DEMO_SEED=true pour les forcer).');
+    return;
+  }
+
   console.log('Seed : utilisateurs de démonstration...');
   const demoUsers = [
     {
