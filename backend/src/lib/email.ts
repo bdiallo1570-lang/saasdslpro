@@ -1,9 +1,23 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { env } from '@/config/env';
 
-// Envoi d'e-mails par SMTP (Gmail avec un mot de passe d'application, Brevo, Resend…). Tant que
-// SMTP_HOST, SMTP_USER et SMTP_PASS ne sont pas renseignés, aucun e-mail ne part : l'envoi est
-// simplement ignoré, l'application continue de fonctionner.
+// Envoi d'e-mails, par ordre de préférence :
+//  1. API HTTP de Brevo (BREVO_API_KEY) — passe par le port 443, le seul ouvert vers l'extérieur
+//     sur les serveurs gratuits de Render, qui bloquent les ports SMTP 25, 465 et 587 ;
+//  2. SMTP (Gmail avec mot de passe d'application…) — hébergement payant ou autre hébergeur.
+// Sans configuration, aucun e-mail ne part : l'envoi est ignoré, l'application fonctionne.
+// Les délais sont courts : un fournisseur injoignable ne doit jamais faire attendre l'appelant.
+
+const TIMEOUT_MS = 10_000;
+
+type EmailParams = { to: string; subject: string; text: string; html: string };
+
+// « DSL Air Cargo <contact@exemple.com> » → nom + adresse
+export function parseSender(from: string | undefined, fallbackEmail: string | undefined) {
+  const m = from?.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (m) return { name: m[1].replace(/^"|"$/g, '') || 'DSL Air Cargo', email: m[2].trim() };
+  return { name: 'DSL Air Cargo', email: (from?.includes('@') ? from.trim() : fallbackEmail) ?? '' };
+}
 
 let transporter: Transporter | null | undefined;
 
@@ -19,18 +33,43 @@ function getTransporter(): Transporter | null {
     // 465 : TLS direct ; 587 : STARTTLS
     secure: env.SMTP_PORT === 465,
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+    connectionTimeout: TIMEOUT_MS,
+    greetingTimeout: TIMEOUT_MS,
+    socketTimeout: TIMEOUT_MS,
   });
   return transporter;
 }
 
 export function isEmailConfigured(): boolean {
-  return getTransporter() !== null;
+  return !!env.BREVO_API_KEY || getTransporter() !== null;
 }
 
-export async function sendEmail(params: { to: string; subject: string; text: string; html: string }): Promise<boolean> {
-  const t = getTransporter();
-  if (!t) return false;
+async function sendWithBrevo(params: EmailParams): Promise<void> {
+  const sender = parseSender(env.MAIL_FROM, env.SMTP_USER);
+  if (!sender.email) throw new Error("MAIL_FROM manquant : l'expéditeur doit être une adresse validée dans Brevo.");
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': env.BREVO_API_KEY!, 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: params.to }],
+      subject: params.subject,
+      textContent: params.text,
+      htmlContent: params.html,
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Brevo a répondu ${res.status} : ${(await res.text()).slice(0, 200)}`);
+}
+
+export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
+    if (env.BREVO_API_KEY) {
+      await sendWithBrevo(params);
+      return true;
+    }
+    const t = getTransporter();
+    if (!t) return false;
     await t.sendMail({ from: env.MAIL_FROM ?? `DSL Air Cargo <${env.SMTP_USER}>`, ...params });
     return true;
   } catch (error) {

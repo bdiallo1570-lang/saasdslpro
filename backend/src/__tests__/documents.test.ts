@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { nombreEnLettres, montantEnLettres } from '../lib/montantEnLettres';
 import { signDocumentToken, verifyDocumentToken } from '../lib/documentLinks';
 import { regleAvant } from '../lib/pdf/paymentReceipt';
 import { normalizePhone } from '../modules/auth/auth.service';
 import { changePasswordSchema } from '../modules/auth/auth.schema';
+import { parseSender, sendEmail } from '../lib/email';
+import { env } from '../config/env';
 import type { Paiement } from '@prisma/client';
 
 describe('Montant en toutes lettres (reçus)', () => {
@@ -115,5 +117,45 @@ describe('Changement de mot de passe : règles', () => {
 
   it("refuse un nouveau mot de passe identique à l'actuel", () => {
     expect(essai('Caisse2026Test', 'Caisse2026Test')).toBe(false);
+  });
+});
+
+describe('E-mail : expéditeur et envoi par Brevo', () => {
+  it('lit le nom et l’adresse de l’expéditeur', () => {
+    expect(parseSender('DSL Air Cargo <contact@exemple.com>', undefined)).toEqual({ name: 'DSL Air Cargo', email: 'contact@exemple.com' });
+    expect(parseSender('contact@exemple.com', undefined)).toEqual({ name: 'DSL Air Cargo', email: 'contact@exemple.com' });
+    expect(parseSender(undefined, 'repli@exemple.com')).toEqual({ name: 'DSL Air Cargo', email: 'repli@exemple.com' });
+  });
+
+  it('envoie par l’API HTTPS de Brevo quand une clé est configurée', async () => {
+    const appels: { url: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      appels.push({ url, init });
+      return new Response('{"messageId":"x"}', { status: 201 });
+    });
+    Object.assign(env, { BREVO_API_KEY: 'cle-de-test', MAIL_FROM: 'DSL Air Cargo <contact@exemple.com>' });
+    try {
+      const ok = await sendEmail({ to: 'client@exemple.com', subject: 'Sujet', text: 'Texte', html: '<p>Texte</p>' });
+      expect(ok).toBe(true);
+      expect(appels[0].url).toBe('https://api.brevo.com/v3/smtp/email');
+      expect((appels[0].init.headers as Record<string, string>)['api-key']).toBe('cle-de-test');
+      const corps = JSON.parse(appels[0].init.body as string);
+      expect(corps.sender).toEqual({ name: 'DSL Air Cargo', email: 'contact@exemple.com' });
+      expect(corps.to).toEqual([{ email: 'client@exemple.com' }]);
+    } finally {
+      Object.assign(env, { BREVO_API_KEY: undefined, MAIL_FROM: undefined });
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('renvoie false sans lever d’erreur quand Brevo refuse', async () => {
+    vi.stubGlobal('fetch', async () => new Response('non autorisé', { status: 401 }));
+    Object.assign(env, { BREVO_API_KEY: 'mauvaise-cle', MAIL_FROM: 'contact@exemple.com' });
+    try {
+      expect(await sendEmail({ to: 'a@b.co', subject: 's', text: 't', html: 'h' })).toBe(false);
+    } finally {
+      Object.assign(env, { BREVO_API_KEY: undefined, MAIL_FROM: undefined });
+      vi.unstubAllGlobals();
+    }
   });
 });

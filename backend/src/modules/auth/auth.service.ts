@@ -9,7 +9,7 @@ import {
 import { env } from '@/config/env';
 import { ROLE_DASHBOARD_ROUTE, RoleName } from '@/config/roles';
 import { getWhatsAppProvider } from '@/lib/whatsapp/provider';
-import { codeEmail, sendEmail } from '@/lib/email';
+import { codeEmail, isEmailConfigured, sendEmail } from '@/lib/email';
 import { AppError } from '@/lib/errors';
 
 export class AuthError extends AppError {
@@ -101,15 +101,17 @@ export async function requestOtp(identifier: string) {
     `(valable ${env.OTP_EXPIRES_IN_MINUTES} min). Ne le partagez avec personne.`;
   const hasRealProvider = !!(env.GREEN_API_INSTANCE_ID && env.GREEN_API_TOKEN);
   // Deux canaux, chacun s'il est disponible : WhatsApp au numéro du compte, e-mail à son adresse.
-  // Les échecs n'interrompent pas la demande (la réponse reste la même, voir plus haut).
-  await getWhatsAppProvider().send({ toPhoneNumber: user.phoneNumber, message });
-  const emailSent = user.email
-    ? await sendEmail({ to: user.email, ...codeEmail(otpCode, env.OTP_EXPIRES_IN_MINUTES) })
-    : false;
+  // Envoyés en arrière-plan : la réponse ne dépend pas d'eux (elle est la même que le compte existe
+  // ou non) et un fournisseur lent ou injoignable ne doit jamais bloquer la page. Les échecs sont
+  // journalisés par chaque fournisseur, sans le code.
+  void getWhatsAppProvider()
+    .send({ toPhoneNumber: user.phoneNumber, message })
+    .catch(() => undefined);
+  if (user.email) void sendEmail({ to: user.email, ...codeEmail(otpCode, env.OTP_EXPIRES_IN_MINUTES) });
 
   // Sans aucun canal réel, le code n'est délivré nulle part : on ne l'affiche qu'en
   // développement, jamais en production, pour ne pas le faire fuiter dans des journaux.
-  if (!hasRealProvider && !emailSent && env.NODE_ENV === 'development') {
+  if (!hasRealProvider && !isEmailConfigured() && env.NODE_ENV === 'development') {
     console.info(`[OTP][dev uniquement] Code pour ${identifier} : ${otpCode} (aucun provider WhatsApp configuré)`);
   }
 }

@@ -48,6 +48,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().optional(),
+  // Clé d'API Brevo : envoi par HTTPS, seul possible depuis un serveur gratuit Render (ports SMTP bloqués)
+  BREVO_API_KEY: z.string().optional(),
   // Optionnelles — tant qu'absentes, getWhatsAppProvider() retombe sur le stub (log console).
   GREEN_API_INSTANCE_ID: z.string().optional(),
   GREEN_API_TOKEN: z.string().optional(),
