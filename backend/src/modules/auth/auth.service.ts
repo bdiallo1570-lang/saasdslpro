@@ -9,6 +9,7 @@ import {
 import { env } from '@/config/env';
 import { ROLE_DASHBOARD_ROUTE, RoleName } from '@/config/roles';
 import { getWhatsAppProvider } from '@/lib/whatsapp/provider';
+import { codeEmail, sendEmail } from '@/lib/email';
 import { AppError } from '@/lib/errors';
 
 export class AuthError extends AppError {
@@ -99,13 +100,16 @@ export async function requestOtp(identifier: string) {
     `Votre code de connexion DSL Air Cargo : ${otpCode} ` +
     `(valable ${env.OTP_EXPIRES_IN_MINUTES} min). Ne le partagez avec personne.`;
   const hasRealProvider = !!(env.GREEN_API_INSTANCE_ID && env.GREEN_API_TOKEN);
+  // Deux canaux, chacun s'il est disponible : WhatsApp au numéro du compte, e-mail à son adresse.
+  // Les échecs n'interrompent pas la demande (la réponse reste la même, voir plus haut).
   await getWhatsAppProvider().send({ toPhoneNumber: user.phoneNumber, message });
+  const emailSent = user.email
+    ? await sendEmail({ to: user.email, ...codeEmail(otpCode, env.OTP_EXPIRES_IN_MINUTES) })
+    : false;
 
-  // Sans provider WhatsApp réel configuré, le message ci-dessus n'est jamais réellement
-  // délivré (le stub se contente de logguer un message générique, voir stubProvider.ts) — on
-  // n'affiche le code lui-même qu'en développement, jamais en production, pour ne pas le faire
-  // fuiter dans des logs potentiellement accessibles à plus de monde que prévu.
-  if (!hasRealProvider && env.NODE_ENV === 'development') {
+  // Sans aucun canal réel, le code n'est délivré nulle part : on ne l'affiche qu'en
+  // développement, jamais en production, pour ne pas le faire fuiter dans des journaux.
+  if (!hasRealProvider && !emailSent && env.NODE_ENV === 'development') {
     console.info(`[OTP][dev uniquement] Code pour ${identifier} : ${otpCode} (aucun provider WhatsApp configuré)`);
   }
 }

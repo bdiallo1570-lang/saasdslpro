@@ -41,6 +41,13 @@ const envSchema = z.object({
       return raw;
     }),
   OTP_EXPIRES_IN_MINUTES: z.coerce.number().default(5),
+  // Envoi d'e-mails (codes de connexion / réinitialisation), facultatif — voir lib/email.ts.
+  // Comme PUBLIC_SITE_URL, une valeur mal saisie ne bloque jamais le démarrage.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().catch(587).default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
   // Optionnelles — tant qu'absentes, getWhatsAppProvider() retombe sur le stub (log console).
   GREEN_API_INSTANCE_ID: z.string().optional(),
   GREEN_API_TOKEN: z.string().optional(),

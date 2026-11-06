@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
         </h1>
         <p className="text-sm text-slate-400 text-center mb-6">
           {step === 'demande'
-            ? 'Recevez un code de vérification par WhatsApp/SMS.'
+            ? "Recevez un code par WhatsApp au numéro du compte et par e-mail à l'adresse du compte."
             : 'Saisissez le code reçu et votre nouveau mot de passe.'}
         </p>
 
@@ -132,10 +132,10 @@ export default function ResetPasswordPage() {
                 label="Nouveau mot de passe"
                 type="password"
                 required
-                minLength={8}
+                minLength={10}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="8 caractères minimum"
+                placeholder="10 caractères, une lettre et un chiffre"
                 className="dark:bg-night-700 dark:border-night-600"
               />
               <Button type="submit" loading={loading} fullWidth size="lg">
