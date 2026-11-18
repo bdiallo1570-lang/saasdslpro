@@ -10,11 +10,13 @@ interface SendToClientButtonProps {
   id: string;
   // « link » : petit lien texte (listes compactes) ; par défaut un bouton
   appearance?: 'button' | 'link';
+  // Libellé du bouton (« Envoyer au client » par défaut)
+  label?: string;
 }
 
 // Envoie au client, sur WhatsApp, un lien personnel pour télécharger sa facture ou son reçu.
 // Sans numéro enregistré, le lien est copié pour être transmis autrement.
-export function SendToClientButton({ type, id, appearance = 'button' }: SendToClientButtonProps) {
+export function SendToClientButton({ type, id, appearance = 'button', label }: SendToClientButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
@@ -53,7 +55,7 @@ export function SendToClientButton({ type, id, appearance = 'button' }: SendToCl
         className="inline-flex items-center gap-1 text-emerald-600 hover:underline disabled:opacity-50 dark:text-emerald-400"
       >
         <MessageCircle size={12} />
-        Envoyer
+        {label ?? 'Envoyer'}
       </button>
     );
   }
@@ -61,7 +63,7 @@ export function SendToClientButton({ type, id, appearance = 'button' }: SendToCl
   return (
     <Button variant="secondary" size="sm" loading={loading} onClick={handleClick}>
       <MessageCircle size={14} className="mr-1.5 text-emerald-500" />
-      Envoyer au client
+      {label ?? 'Envoyer au client'}
     </Button>
   );
 }

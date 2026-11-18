@@ -31,7 +31,7 @@ export const INTENTS: Intent[] = [
   {
     id: 'maritime',
     keywords: ['bateau', 'maritime', 'conteneur', 'container', 'cbm', 'm3', 'm³', 'mètre cube', 'metre cube', 'gros volume', 'meuble'],
-    answer: `Oui, on fait aussi le fret maritime pour les gros volumes (meubles, machines, stock…). C'est facturé ${MARITIME.pricePerCbmUsd ? `${MARITIME.pricePerCbmUsd} USD le m³` : 'au mètre cube (CBM)'}, avec un délai d'environ ${MARITIME.transitLabel} jusqu'à Conakry. Contrairement à l'aérien où tout est compris dans le prix au kilo, le dédouanement est facturé à part, en GNF. Utilisez le calculateur de volume dans la section Maritime : il calcule vos m³ et prépare la demande de devis sur WhatsApp.`,
+    answer: `Oui, on fait aussi le fret maritime pour les gros volumes (meubles, machines, stock…). C'est facturé {{maritime}}, avec un délai d'environ ${MARITIME.transitLabel} jusqu'à Conakry. Contrairement à l'aérien où tout est compris dans le prix au kilo, le dédouanement est facturé à part, en GNF. Utilisez le calculateur de volume dans la section Maritime : il calcule vos m³ et prépare la demande de devis sur WhatsApp.`,
     suggestions: ['Combien ça coûte en avion ?', 'Où sont vos entrepôts ?'],
   },
   {

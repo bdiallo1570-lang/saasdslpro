@@ -30,6 +30,7 @@ const AlertesPage = lazy(() => import('@/modules/alertes/pages/AlertesPage'));
 const ClientsListPage = lazy(() => import('@/modules/clients/pages/ClientsListPage'));
 const FacturesPage = lazy(() => import('@/modules/factures/pages/FacturesPage'));
 const DocumentPage = lazy(() => import('@/modules/documents/pages/DocumentPage'));
+const DevisPage = lazy(() => import('@/modules/devis/pages/DevisPage'));
 
 export default function App() {
   return (
@@ -115,6 +116,14 @@ export default function App() {
               }
             >
               <Route path="/colis" element={<ColisGuineePage />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE, ROLE_NAMES.AGENT_CHINE]} />
+              }
+            >
+              <Route path="/devis" element={<DevisPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[ROLE_NAMES.CLIENT]} />}>

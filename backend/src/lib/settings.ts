@@ -80,3 +80,11 @@ export async function setSeuilsAlertes(seuils: Partial<SeuilsAlertes>): Promise<
   await Promise.all(updates);
   return getSeuilsAlertes();
 }
+
+// Prix du fret maritime au m³, en USD (réglage « prix_maritime_usd_m3 », inséré par la migration
+// des devis). null si absent : aucun prix n'est inventé.
+export async function getPrixMaritimeUsdM3(): Promise<number | null> {
+  const setting = await prisma.setting.findUnique({ where: { key: 'prix_maritime_usd_m3' } });
+  const value = setting?.value;
+  return typeof value === 'number' && value > 0 ? value : null;
+}

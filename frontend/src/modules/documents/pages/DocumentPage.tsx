@@ -79,7 +79,13 @@ export default function DocumentPage() {
 
 function DocumentCard({ doc, token }: { doc: DocumentSummary; token: string }) {
   const isFacture = doc.type === 'facture';
-  const Icon = isFacture ? FileText : Receipt;
+  const isDevis = doc.type === 'devis' || doc.type === 'proforma';
+  const Icon = doc.type === 'recu' ? Receipt : FileText;
+  const titre =
+    doc.type === 'facture' ? 'Votre facture' : doc.type === 'recu' ? 'Votre reçu de paiement' : doc.type === 'devis' ? 'Votre devis' : 'Votre facture proforma';
+  const validite = doc.validUntil
+    ? new Date(doc.validUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
   const prenom = doc.clientNom.split(' ')[0];
   const date = new Date(doc.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const solde = doc.reste <= 0;
@@ -99,28 +105,40 @@ function DocumentCard({ doc, token }: { doc: DocumentSummary; token: string }) {
           </span>
           <div>
             <h1 className="font-label text-[11px] uppercase tracking-[0.2em] text-ember-400">
-              {isFacture ? 'Votre facture' : 'Votre reçu de paiement'}
+              {titre}
             </h1>
             <p className="text-lg font-semibold">{doc.numero}</p>
           </div>
         </div>
 
         <div className="mt-6 rounded-2xl bg-white/[0.04] p-5">
-          <p className="text-xs text-slate-400">{isFacture ? 'Montant de la facture' : 'Montant reçu'}</p>
+          <p className="text-xs text-slate-400">{isFacture ? 'Montant de la facture' : isDevis ? 'Montant total' : 'Montant reçu'}</p>
           <p className="mt-1 text-3xl font-bold tabular-nums">
             {formatNumber(doc.montant)} <span className="text-lg font-semibold text-slate-300">{doc.devise}</span>
           </p>
-          <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-            <span className="text-slate-400">{isFacture ? `Émise le ${date}` : `Payé le ${date}`}</span>
-            <span
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                solde ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
-              }`}
-            >
-              {solde ? 'Facture soldée' : `Reste ${formatNumber(doc.reste)} GNF`}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
+            <span className="text-slate-400">
+              {isFacture || doc.type === 'proforma' ? `Émise le ${date}` : isDevis ? `Émis le ${date}` : `Payé le ${date}`}
             </span>
+            {isDevis ? (
+              <span
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                  doc.expire ? 'bg-red-500/15 text-red-300' : 'bg-sky-500/15 text-sky-300'
+                }`}
+              >
+                {doc.expire ? 'Expiré' : `Valable jusqu'au ${validite}`}
+              </span>
+            ) : (
+              <span
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                  solde ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+                }`}
+              >
+                {solde ? 'Facture soldée' : `Reste ${formatNumber(doc.reste)} GNF`}
+              </span>
+            )}
           </div>
-          {!isFacture && <p className="mt-2 text-xs text-slate-400">Facture {doc.factureNumero}</p>}
+          {doc.type === 'recu' && <p className="mt-2 text-xs text-slate-400">Facture {doc.factureNumero}</p>}
         </div>
 
         <a

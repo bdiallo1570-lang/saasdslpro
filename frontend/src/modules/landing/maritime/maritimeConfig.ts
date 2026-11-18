@@ -1,12 +1,9 @@
-// Réglages du fret maritime affichés sur la landing — SEUL endroit à modifier quand le délai
-// ou le prix change. Calcul 100 % local, comme le calculateur aérien (aucun appel réseau).
+// Réglages du fret maritime affichés sur la landing. Le prix au m³ n'est PAS ici : il est en base
+// (réglage « prix_maritime_usd_m3 »), lu par la landing via publicPricing.ts et par les devis.
 export const MARITIME = {
   // Délai porte-à-porte annoncé au client (Guangzhou → Conakry, dédouanement compris)
   transitLabel: '3 mois',
   transitDays: 90,
-  // Prix au m³ (CBM) en dollars US. `null` = « sur devis » : le calculateur affiche alors le
-  // volume et invite à demander un devis, sans afficher de montant.
-  pricePerCbmUsd: 370 as number | null,
   // Dédouanement à Conakry, en option, en francs guinéens par m³. `null` = « sur devis » :
   // l'option reste proposée dans le calculateur, sans montant affiché.
   customsPerCbmGnf: null as number | null,

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '@/lib/prisma';
 import { asyncHandler } from '@/lib/asyncHandler';
+import { getPrixMaritimeUsdM3 } from '@/lib/settings';
 
 export const pricingRouter = Router();
 
@@ -26,6 +27,9 @@ pricingRouter.get(
     const data = rules
       .filter((rule): rule is NonNullable<typeof rule> => rule !== null)
       .map((rule) => ({ ...rule, pricePerKg: Number(rule.pricePerKg) }));
-    return res.status(200).json({ success: true, data, error: null });
+    // Prix maritime au m³ (USD) à côté de la liste, pour ne pas changer la forme de `data`
+    // (tarifs au kilo) déjà lue par le site.
+    const maritime = await getPrixMaritimeUsdM3();
+    return res.status(200).json({ success: true, data, error: null, maritimeUsdM3: maritime });
   }),
 );

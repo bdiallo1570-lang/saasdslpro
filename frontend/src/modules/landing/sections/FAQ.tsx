@@ -23,7 +23,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Vous faites aussi le transport par bateau ?',
-    answer: `Oui, pour les gros volumes : meubles, machines, stock de boutique… Le fret maritime est facturé ${MARITIME.pricePerCbmUsd ? `${MARITIME.pricePerCbmUsd} USD le m³` : 'au mètre cube (CBM)'}, avec un délai d'environ ${MARITIME.transitLabel} de Guangzhou jusqu'à notre entrepôt de Madina. Contrairement à l'aérien (tout compris au kilo), le dédouanement est facturé à part, en francs guinéens. Le calculateur de volume, dans la section Maritime, vous donne le nombre de m³ et prépare votre demande de devis sur WhatsApp.`,
+    answer: `Oui, pour les gros volumes : meubles, machines, stock de boutique… Le fret maritime est facturé {{maritime}}, avec un délai d'environ ${MARITIME.transitLabel} de Guangzhou jusqu'à notre entrepôt de Madina. Contrairement à l'aérien (tout compris au kilo), le dédouanement est facturé à part, en francs guinéens. Le calculateur de volume, dans la section Maritime, vous donne le nombre de m³ et prépare votre demande de devis sur WhatsApp.`,
   },
   {
     question: 'Comment vous calculez le poids pour la facturation ?',

@@ -6,6 +6,7 @@ import { Magnetic } from '../sections/motionKit';
 import { Container3D } from './Container3D';
 import { CONTAINERS, MARITIME } from './maritimeConfig';
 import { formatNumber } from '@/lib/format';
+import { maritimeOf, usePublicPricing } from '../publicPricing';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
@@ -34,7 +35,8 @@ export function CbmCalculator({ isDark }: { isDark: boolean }) {
   const count = volume > big.capacity ? Math.ceil(volume / big.capacity) : 1;
   const fill = count > 1 ? 1 : volume / container.capacity;
   const percent = Math.round((volume / (container.capacity * count)) * 100);
-  const estimate = MARITIME.pricePerCbmUsd ? volume * MARITIME.pricePerCbmUsd : null;
+  const prixM3 = maritimeOf(usePublicPricing());
+  const estimate = prixM3 ? volume * prixM3 : null;
   const [withCustoms, setWithCustoms] = useState(false);
   const customsEstimate = MARITIME.customsPerCbmGnf ? volume * MARITIME.customsPerCbmGnf : null;
 
@@ -226,7 +228,7 @@ export function CbmCalculator({ isDark }: { isDark: boolean }) {
                 <span className={`font-semibold ${strong}`}>
                   <StatCounter value={estimate} duration={0.6} /> USD
                 </span>{' '}
-                <span className={muted}>({MARITIME.pricePerCbmUsd} USD/m³, indicatif)</span>
+                <span className={muted}>({prixM3} USD/m³, indicatif)</span>
               </p>
             )}
             <AnimatePresence initial={false}>

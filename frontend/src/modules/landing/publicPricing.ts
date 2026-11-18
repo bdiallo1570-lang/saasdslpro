@@ -15,7 +15,8 @@ interface PricingRow {
 
 export type PricingState =
   | { status: 'loading' }
-  | { status: 'ready'; prices: Partial<Record<PublicCategory, number>> }
+  // maritimeUsdM3 : prix du fret maritime au m³ (USD), null si non publié
+  | { status: 'ready'; prices: Partial<Record<PublicCategory, number>>; maritimeUsdM3: number | null }
   | { status: 'error' };
 
 let state: PricingState = { status: 'loading' };
@@ -27,11 +28,11 @@ function setState(next: PricingState) {
   listeners.forEach((l) => l());
 }
 
-async function fetchFromPricing(): Promise<Partial<Record<PublicCategory, number>>> {
-  const res = await apiClient.get<ApiResponse<PricingRow[]>>('/pricing');
+async function fetchFromPricing() {
+  const res = await apiClient.get<ApiResponse<PricingRow[]> & { maritimeUsdM3?: number | null }>('/pricing');
   const prices: Partial<Record<PublicCategory, number>> = {};
   for (const row of res.data.data ?? []) prices[row.categoryName] = row.pricePerKg;
-  return prices;
+  return { prices, maritimeUsdM3: res.data.maritimeUsdM3 ?? null };
 }
 
 // Secours : la simulation publique (POST /colis/simulate-price) applique le même tarif actif en
@@ -54,13 +55,12 @@ async function fetchFromSimulation(): Promise<Partial<Record<PublicCategory, num
 
 async function load(attempt = 0): Promise<void> {
   try {
-    let prices: Partial<Record<PublicCategory, number>>;
     try {
-      prices = await fetchFromPricing();
+      setState({ status: 'ready', ...(await fetchFromPricing()) });
     } catch {
-      prices = await fetchFromSimulation();
+      // La simulation ne connaît pas le maritime : il s'affiche alors « sur devis »
+      setState({ status: 'ready', prices: await fetchFromSimulation(), maritimeUsdM3: null });
     }
-    setState({ status: 'ready', prices });
   } catch {
     // Le serveur gratuit peut mettre quelques secondes à se réveiller : deux nouvelles tentatives
     if (attempt < 2) {
@@ -107,7 +107,15 @@ export function pricingSentence(s: PricingState): string {
   return `Pour du Cargo Standard (habits, chaussures, jouets, articles ménagers…), c'est ${formatPricePerKg(standard)}. Pour du Cargo Sensible (batteries, liquides, électronique, cosmétiques…), c'est ${formatPricePerKg(sensible)}.`;
 }
 
-// Remplace le repère {{tarifs}} d'un texte par la phrase tarifaire à jour
+export function maritimeOf(s: PricingState): number | null {
+  return s.status === 'ready' ? s.maritimeUsdM3 : null;
+}
+
+// Remplace les repères {{tarifs}} (prix au kilo) et {{maritime}} (prix au m³) d'un texte par les
+// tarifs à jour
 export function withPrices(text: string, s: PricingState = state): string {
-  return text.replace('{{tarifs}}', pricingSentence(s));
+  const maritime = maritimeOf(s);
+  return text
+    .replace('{{tarifs}}', pricingSentence(s))
+    .replace('{{maritime}}', maritime ? `${maritime} USD le m³` : 'au mètre cube (CBM)');
 }

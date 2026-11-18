@@ -10,6 +10,7 @@ import {
   Scale,
   Settings2,
   FileText,
+  FileSignature,
   LucideIcon,
 } from 'lucide-react';
 import { NavItem } from './navConfig';
@@ -26,6 +27,7 @@ const ICONS: Record<NavItem['icon'], LucideIcon> = {
   scale: Scale,
   settings: Settings2,
   factures: FileText,
+  devis: FileSignature,
 };
 
 export function NavIcon({ icon, className = 'w-5 h-5' }: { icon: NavItem['icon']; className?: string }) {

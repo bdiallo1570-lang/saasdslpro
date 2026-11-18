@@ -194,6 +194,7 @@ model Client {
 
   colis            Colis[]
   factures         Facture[]
+  devis            Devis[]
   whatsAppMessages WhatsAppMessageLog[]
   // Compte de l'espace client, s'il a été activé
   user             User?
@@ -608,4 +609,71 @@ model WhatsAppMessageLog {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("whatsapp_message_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Devis et factures proforma — propositions de prix remises au client. N'ont AUCUN effet
+// comptable : ni créance, ni caisse, ni solde client (les vraies factures restent créées à
+// partir des colis reçus). Un même devis s'imprime en « Devis » (DEV-…) ou en « Facture
+// proforma » (PF-…, même numéro). Montants en GNF ; le fret maritime, tarifé en USD, est
+// converti au taux du jour, figé sur le devis à sa création.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum DevisStatus {
+  BROUILLON
+  ENVOYE
+  ACCEPTE
+  REFUSE
+}
+
+enum DevisLigneType {
+  AERIEN_STANDARD
+  AERIEN_SENSIBLE
+  MARITIME
+  LIBRE
+}
+
+model Devis {
+  id          String      @id @default(uuid())
+  // Format DEV-YYYY-XXXXX ; la proforma reprend le même numéro avec le préfixe PF
+  devisNumber String      @unique @map("devis_number")
+  clientId    String      @map("client_id")
+  client      Client      @relation(fields: [clientId], references: [id])
+  status      DevisStatus @default(BROUILLON)
+  // Expiré = date dépassée sans acceptation ni refus (calculé, jamais stocké)
+  validUntil  DateTime    @map("valid_until")
+  // Taux USD → GNF figé à la création (null si aucune ligne maritime au moment de la création)
+  tauxUsdGnf  Decimal?    @map("taux_usd_gnf") @db.Decimal(18, 6)
+  sousTotal   Decimal     @map("sous_total") @db.Decimal(18, 2)
+  remise      Decimal     @default(0) @db.Decimal(18, 2)
+  total       Decimal     @db.Decimal(18, 2)
+  note        String?
+  createdById String?     @map("created_by_id")
+
+  lignes DevisLigne[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([clientId])
+  @@map("devis")
+}
+
+model DevisLigne {
+  id              String         @id @default(uuid())
+  devisId         String         @map("devis_id")
+  devis           Devis          @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  ordre           Int
+  type            DevisLigneType
+  libelle         String
+  // kg (aérien), m³ (maritime) ou unité libre
+  quantite        Decimal        @db.Decimal(18, 3)
+  unite           String
+  // Prix d'origine en USD pour le maritime (affiché sur le document), sinon null
+  prixUnitaireUsd Decimal?       @map("prix_unitaire_usd") @db.Decimal(18, 2)
+  prixUnitaire    Decimal        @map("prix_unitaire") @db.Decimal(18, 2)
+  montant         Decimal        @db.Decimal(18, 2)
+
+  @@map("devis_lignes")
 }

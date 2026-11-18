@@ -16,7 +16,8 @@ export interface NavItem {
     | 'alert'
     | 'scale'
     | 'settings'
-    | 'factures';
+    | 'factures'
+    | 'devis';
   roles: string[];
   group: NavGroup;
   // Mots-clés supplémentaires pour la palette de commandes (⌘K)
@@ -104,7 +105,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'factures',
     roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE, ROLE_NAMES.CAISSIER],
     group: 'Finance',
-    keywords: ['fac', 'pdf', 'devis'],
+    keywords: ['fac', 'pdf'],
+  },
+  {
+    label: 'Devis et proformas',
+    to: '/devis',
+    icon: 'devis',
+    roles: [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_GUINEE, ROLE_NAMES.AGENT_CHINE],
+    group: 'Finance',
+    keywords: ['devis', 'proforma', 'cotation', 'offre', 'prix'],
   },
   {
     label: 'Caisse (consultation)',

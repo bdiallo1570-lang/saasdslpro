@@ -4,6 +4,8 @@ import { generateFacturePdf, FactureCompletePourPdf } from '@/lib/pdf/facturePdf
 import { generatePaymentReceiptPdf, regleAvant } from '@/lib/pdf/paymentReceipt';
 import { getFactureById } from '@/modules/factures/factures.service';
 import { getPaiementForReceipt } from '@/modules/paiements/paiements.service';
+import { getDevis, serializeDevis } from '@/modules/devis/devis.service';
+import { generateDevisPdf } from '@/lib/pdf/devisPdf';
 
 export class DocumentError extends AppError {}
 
@@ -19,6 +21,9 @@ export interface DocumentSummary {
   devise: string;
   reste: number;
   factureNumero: string;
+  // Devis / proforma uniquement : fin de validité et expiration
+  validUntil?: string;
+  expire?: boolean;
 }
 
 export interface DocumentFile {
@@ -80,7 +85,29 @@ async function recuDocument(id: string, withPdf: boolean): Promise<DocumentFile>
   return { buffer, filename: `recu-${numero}.pdf`, summary };
 }
 
+// Devis ou proforma : même document, deux présentations (voir lib/pdf/devisPdf.ts)
+async function devisDocument(variante: 'devis' | 'proforma', id: string, withPdf: boolean): Promise<DocumentFile> {
+  const devis = serializeDevis(await getDevis(id));
+  const numero = variante === 'proforma' ? devis.numeroProforma : devis.numero;
+  const summary: DocumentSummary = {
+    type: variante,
+    numero,
+    clientNom: devis.client.nom,
+    clientTelephone: devis.client.telephone,
+    date: new Date(devis.createdAt).toISOString(),
+    montant: devis.total,
+    devise: 'GNF',
+    reste: devis.total,
+    factureNumero: devis.numero,
+    validUntil: new Date(devis.validUntil).toISOString(),
+    expire: devis.expire,
+  };
+  const buffer = withPdf ? await generateDevisPdf(devis, variante, { documentUrl: documentUrl(variante, id) }) : Buffer.alloc(0);
+  return { buffer, filename: `${variante === 'proforma' ? 'proforma' : 'devis'}-${numero}.pdf`, summary };
+}
+
 export function getDocument(type: DocumentType, id: string, withPdf = true): Promise<DocumentFile> {
+  if (type === 'devis' || type === 'proforma') return devisDocument(type, id, withPdf);
   return type === 'facture' ? factureDocument(id, withPdf) : recuDocument(id, withPdf);
 }
 

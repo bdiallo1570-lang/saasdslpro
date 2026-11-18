@@ -3,6 +3,7 @@ import { Plane, Ship, Clock, Scale, Boxes, Receipt, Stamp } from 'lucide-react';
 import { Spotlight, Tilt } from '@/ui';
 import { MARITIME } from './maritimeConfig';
 import { formatNumber } from '@/lib/format';
+import { maritimeOf, usePublicPricing } from '../publicPricing';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
@@ -14,7 +15,8 @@ const ROWS = [
     icon: Receipt,
     label: 'Tarif',
     air: 'Prix fixe au kilo, tout compris',
-    sea: MARITIME.pricePerCbmUsd ? `${formatNumber(MARITIME.pricePerCbmUsd)} USD / m³ (fret)` : 'Sur devis, réponse rapide',
+    // Remplacé à l'affichage par le prix au m³ lu en base (voir AirVsSea)
+    sea: '{{maritime}}',
   },
   { icon: Stamp, label: 'Dédouanement', air: 'Inclus dans le prix au kilo', sea: 'Facturé à part, en GNF' },
 ];
@@ -22,6 +24,8 @@ const ROWS = [
 // Deux cartes côte à côte. La carte « Bateau » porte une bordure lumineuse qui tourne en
 // continu (dégradé conique animé en CSS via @property, voir index.css).
 export function AirVsSea({ isDark }: { isDark: boolean }) {
+  const maritime = maritimeOf(usePublicPricing());
+  const prixMer = maritime ? `${formatNumber(maritime)} USD / m³ (fret)` : 'Sur devis, réponse rapide';
   const cards = [
     { key: 'air', title: 'Avion', icon: Plane, tagline: 'Quand chaque jour compte', featured: false, photo: '/images/freight/hold.jpg' },
     { key: 'sea', title: 'Bateau', icon: Ship, tagline: 'Quand le volume compte', featured: true, photo: '/images/freight/port.jpg' },
@@ -90,7 +94,7 @@ export function AirVsSea({ isDark }: { isDark: boolean }) {
                       {row.label}
                     </dt>
                     <dd className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-night-900'}`}>
-                      {card.key === 'air' ? row.air : row.sea}
+                      {card.key === 'air' ? row.air : row.sea === '{{maritime}}' ? prixMer : row.sea}
                     </dd>
                   </motion.div>
                 );

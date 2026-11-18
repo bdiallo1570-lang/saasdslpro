@@ -7,7 +7,8 @@ import { env } from '@/config/env';
 // révoque pas un par un — d'où une durée de validité limitée. Changer le secret invalide tous
 // les liens déjà envoyés.
 
-export type DocumentType = 'facture' | 'recu';
+export type DocumentType = 'facture' | 'recu' | 'devis' | 'proforma';
+const TYPES: DocumentType[] = ['facture', 'recu', 'devis', 'proforma'];
 
 const VALIDITE_JOURS = 180;
 
@@ -36,9 +37,9 @@ export function verifyDocumentToken(token: string, now = Date.now()): { type: Do
   if (attendue.length !== recue.length || !timingSafeEqual(attendue, recue)) return null;
 
   const [type, id, exp] = Buffer.from(payload, 'base64url').toString().split('.');
-  if ((type !== 'facture' && type !== 'recu') || !id || !exp) return null;
+  if (!TYPES.includes(type as DocumentType) || !id || !exp) return null;
   if (Number(exp) * 1000 < now) return null;
-  return { type, id };
+  return { type: type as DocumentType, id };
 }
 
 // Adresse publique du site (page /document/:token qui propose le téléchargement)
