@@ -53,6 +53,11 @@ const SECTIONS: LegalSection[] = [
               <strong>Traçabilité</strong> : chaque action de notre personnel sur un colis (enregistrement, correction,
               changement de statut, remise) est inscrite dans un journal, avec son auteur et sa date.
             </>,
+            <>
+              <strong>Statistiques de visite</strong> : pages consultées du site public, pays, type d’appareil et
+              navigateur, mesurés de façon anonyme, sans cookie ni identifiant personnel. Les écrans de l’espace de
+              gestion ne sont pas mesurés.
+            </>,
           ]}
         />
         <p className="mt-4">
@@ -94,7 +99,8 @@ const SECTIONS: LegalSection[] = [
             </>,
             <>
               <strong>Nos prestataires techniques</strong>, qui agissent pour notre compte : Vercel et Render
-              (hébergement du site et de la plateforme), Green API et WhatsApp (envoi des messages). Ils n’utilisent pas
+              (hébergement du site et de la plateforme, statistiques de visite anonymes avec Vercel Analytics), Green
+              API et WhatsApp (envoi des messages). Ils n’utilisent pas
               vos données pour leur propre compte.
             </>,
             <>
@@ -165,7 +171,9 @@ const SECTIONS: LegalSection[] = [
     titre: 'Cookies et stockage sur votre appareil',
     contenu: (
       <p>
-        Ce site n’utilise <strong>aucun cookie publicitaire et aucun outil de mesure d’audience</strong>. Lorsque vous
+        Ce site n’utilise <strong>aucun cookie publicitaire ni de suivi</strong>. La fréquentation est mesurée avec
+        Vercel Analytics, de façon anonyme : sans cookie, sans identifiant personnel et sans rien enregistrer sur votre
+        appareil. Lorsque vous
         vous connectez à votre espace, votre navigateur garde seulement de quoi rester connecté (effacé à la
         déconnexion), votre préférence d’affichage (mode clair ou sombre) et le fait que vous avez fermé le bandeau
         d’information sur les cookies. Ces informations restent sur votre appareil.
@@ -219,6 +227,7 @@ export default function PolitiqueConfidentialitePage() {
       surtitre="Vos données"
       Icone={ShieldCheck}
       titre="Politique de confidentialité"
+      description="Comment DSL Air Cargo collecte, utilise et protège vos données lors de vos envois Chine-Guinée, et comment exercer vos droits."
       intro="Ce que nous faisons des informations que vous nous confiez quand vous expédiez avec DSL Air Cargo, et comment garder la main dessus."
       miseAJour="19 novembre 2026"
       enBref={EN_BREF}

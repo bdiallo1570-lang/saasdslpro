@@ -15,9 +15,9 @@ interface StatCardProps {
 }
 
 const TONE_TEXT: Record<NonNullable<StatCardProps['tone']>, string> = {
-  sky: 'text-sky-500 dark:text-sky-400',
-  cargo: 'text-cargo-500 dark:text-cargo-400',
-  green: 'text-emerald-600 dark:text-emerald-400',
+  sky: 'text-sky-700 dark:text-sky-400',
+  cargo: 'text-cargo-700 dark:text-cargo-400',
+  green: 'text-emerald-700 dark:text-emerald-400',
   red: 'text-red-600 dark:text-red-400',
   neutral: 'text-night-900 dark:text-slate-100',
 };
@@ -64,7 +64,7 @@ export function StatCard({
         </div>
         <p className={`relative mt-3 text-2xl font-bold tabular-nums tracking-tight ${TONE_TEXT[tone]}`}>
           <StatCounter value={value} formatter={formatter} duration={1.4} />
-          {suffix && <span className="text-base font-medium ml-1 opacity-70">{suffix}</span>}
+          {suffix && <span className="text-base font-medium ml-1 dark:opacity-70">{suffix}</span>}
         </p>
       </Spotlight>
     </Card>

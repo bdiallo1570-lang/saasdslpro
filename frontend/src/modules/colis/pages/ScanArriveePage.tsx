@@ -16,6 +16,8 @@ import { useAuth } from '@/context/AuthContext';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { Button, Card, Input, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { numeroSuivi, useValidation } from '@/lib/validation';
 
 // Progression de statut côté Guinée : arrivée → dédouanement → disponible entrepôt (Conakry).
 // Chaque étape n'affiche que le passage suivant, jamais de retour en arrière ni de saut.
@@ -56,10 +58,13 @@ export default function ScanArriveePage() {
     }
   }
 
+  const vScan = useValidation(z.object({ trackingId: numeroSuivi }));
+
   async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!manualTrackingId.trim()) return;
-    await handleScan(manualTrackingId.trim());
+    const ok = vScan.valider({ trackingId: manualTrackingId });
+    if (!ok) return;
+    await handleScan(ok.trackingId);
     setManualTrackingId('');
   }
 
@@ -187,14 +192,18 @@ export default function ScanArriveePage() {
       )}
 
       {manualEntry && (
-        <form onSubmit={handleManualSubmit} className="space-y-3">
+        <form onSubmit={handleManualSubmit} noValidate className="space-y-3">
           <Input
             type="text"
             autoFocus
             label="Numéro de suivi du colis"
             placeholder="Ex : DSL-2026-00042"
             value={manualTrackingId}
-            onChange={(e) => setManualTrackingId(e.target.value)}
+            error={vScan.erreurs.trackingId}
+            onChange={(e) => {
+              setManualTrackingId(e.target.value);
+              vScan.effacer('trackingId');
+            }}
           />
           <div className="flex gap-2">
             <Button
@@ -202,7 +211,6 @@ export default function ScanArriveePage() {
               variant="cargo"
               fullWidth
               loading={loading}
-              disabled={!manualTrackingId.trim()}
             >
               Rechercher le colis
             </Button>

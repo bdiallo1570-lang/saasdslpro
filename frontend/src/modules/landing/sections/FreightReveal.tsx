@@ -5,8 +5,8 @@ import { MARITIME } from '../maritime/maritimeConfig';
 
 // Visuels générés pour DSL (Higgsfield) : boucles vidéo sans son + image d'attente identique à
 // la première image de la vidéo, pour qu'il n'y ait aucun saut au démarrage.
-const AIR = { video: '/video/freight-air.mp4', poster: '/images/freight/air.jpg' };
-const SEA = { video: '/video/freight-sea.mp4', poster: '/images/freight/sea.jpg' };
+const AIR = { video: '/video/freight-air.mp4', poster: '/images/freight/air.webp' };
+const SEA = { video: '/video/freight-sea.mp4', poster: '/images/freight/sea.webp' };
 
 // Transition épinglée entre l'aérien et le maritime, pilotée au défilement :
 //  1. la fenêtre « avion » s'ouvre d'une carte arrondie jusqu'au plein écran (zoom avant),

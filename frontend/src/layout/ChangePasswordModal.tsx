@@ -3,6 +3,21 @@ import { Check, X } from 'lucide-react';
 import { apiClient, ApiResponse, extractErrorMessage } from '@/lib/apiClient';
 import { Button, Input, Modal, notify } from '@/ui';
 import { onChangePasswordOpen } from './commandEvents';
+import { z } from 'zod';
+import { motDePasseSolide, useValidation } from '@/lib/validation';
+
+// Mêmes règles que le serveur (backend auth.schema.ts : changePasswordSchema), plus la confirmation
+const schema = z
+  .object({
+    current: z.string().min(1, 'Mot de passe actuel requis.'),
+    next: motDePasseSolide,
+    confirm: z.string(),
+  })
+  .refine((d) => d.next !== d.current, {
+    message: "Le nouveau mot de passe doit être différent de l'actuel.",
+    path: ['next'],
+  })
+  .refine((d) => d.confirm === d.next, { message: 'Les deux mots de passe ne correspondent pas.', path: ['confirm'] });
 
 const RULES = [
   { label: '10 caractères minimum', test: (v: string) => v.length >= 10 },
@@ -18,6 +33,7 @@ export function ChangePasswordModal() {
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
+  const { erreurs, valider, effacer, setErreurs } = useValidation(schema);
 
   useEffect(
     () =>
@@ -25,16 +41,16 @@ export function ChangePasswordModal() {
         setCurrent('');
         setNext('');
         setConfirm('');
+        setErreurs({});
         setOpen(true);
       }),
-    [],
+    [setErreurs],
   );
 
-  const valid = RULES.every((r) => r.test(next)) && next === confirm && current.length > 0;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!valid) return;
+    if (!valider({ current, next, confirm })) return;
     setSaving(true);
     try {
       const res = await apiClient.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
@@ -55,20 +71,28 @@ export function ChangePasswordModal() {
 
   return (
     <Modal open={open} onClose={() => setOpen(false)} title="Changer mon mot de passe" maxWidthClassName="max-w-sm">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <Input
           label="Mot de passe actuel"
           type="password"
           autoComplete="current-password"
           value={current}
-          onChange={(e) => setCurrent(e.target.value)}
+          error={erreurs.current}
+          onChange={(e) => {
+            setCurrent(e.target.value);
+            effacer('current');
+          }}
         />
         <Input
           label="Nouveau mot de passe"
           type="password"
           autoComplete="new-password"
           value={next}
-          onChange={(e) => setNext(e.target.value)}
+          error={erreurs.next}
+          onChange={(e) => {
+            setNext(e.target.value);
+            effacer('next');
+          }}
         />
         <ul className="space-y-1 text-xs">
           {RULES.map((r) => {
@@ -76,7 +100,7 @@ export function ChangePasswordModal() {
             return (
               <li
                 key={r.label}
-                className={`flex items-center gap-1.5 ${ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
+                className={`flex items-center gap-1.5 ${ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 {ok ? <Check size={13} /> : <X size={13} />}
                 {r.label}
@@ -89,10 +113,13 @@ export function ChangePasswordModal() {
           type="password"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          error={confirm && confirm !== next ? 'Les deux mots de passe ne correspondent pas.' : undefined}
+          onChange={(e) => {
+            setConfirm(e.target.value);
+            effacer('confirm');
+          }}
+          error={erreurs.confirm ?? (confirm && confirm !== next ? 'Les deux mots de passe ne correspondent pas.' : undefined)}
         />
-        <Button type="submit" fullWidth loading={saving} disabled={!valid}>
+        <Button type="submit" fullWidth loading={saving}>
           Enregistrer le nouveau mot de passe
         </Button>
       </form>

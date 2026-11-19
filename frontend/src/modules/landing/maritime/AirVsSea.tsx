@@ -27,8 +27,8 @@ export function AirVsSea({ isDark }: { isDark: boolean }) {
   const maritime = maritimeOf(usePublicPricing());
   const prixMer = maritime ? `${formatNumber(maritime)} USD / m³ (fret)` : 'Sur devis, réponse rapide';
   const cards = [
-    { key: 'air', title: 'Avion', icon: Plane, tagline: 'Quand chaque jour compte', featured: false, photo: '/images/freight/hold.jpg' },
-    { key: 'sea', title: 'Bateau', icon: Ship, tagline: 'Quand le volume compte', featured: true, photo: '/images/freight/port.jpg' },
+    { key: 'air', title: 'Avion', icon: Plane, tagline: 'Quand chaque jour compte', featured: false, photo: '/images/freight/hold.webp', alt: 'Soute d’un avion cargo chargée de palettes de marchandises' },
+    { key: 'sea', title: 'Bateau', icon: Ship, tagline: 'Quand le volume compte', featured: true, photo: '/images/freight/port.webp', alt: 'Porte-conteneurs à quai de nuit, sous les grues de chargement' },
   ] as const;
 
   return (
@@ -46,7 +46,7 @@ export function AirVsSea({ isDark }: { isDark: boolean }) {
             <div className="relative -mx-6 -mt-6 mb-6 h-40 overflow-hidden rounded-t-[1.4rem] sm:-mx-8 sm:-mt-8 sm:h-48">
               <img
                 src={card.photo}
-                alt=""
+                alt={card.alt}
                 loading="lazy"
                 className="h-full w-full scale-105 object-cover transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-3%] group-hover:scale-[1.16] [translate:calc(var(--tilt-x,0)*-12px)_calc(var(--tilt-y,0)*-8px)]"
               />
@@ -71,7 +71,7 @@ export function AirVsSea({ isDark }: { isDark: boolean }) {
                 </div>
               </div>
               {card.featured && (
-                <span className={`rounded-full px-2.5 py-1 font-label text-[10px] uppercase tracking-[0.2em] ${isDark ? 'bg-cyan-400/15 text-cyan-300' : 'bg-cyan-100 text-cyan-800'}`}>
+                <span className={`rounded-full px-2.5 py-1 font-label text-[11px] uppercase tracking-[0.15em] ${isDark ? 'bg-cyan-400/15 text-cyan-300' : 'bg-cyan-100 text-cyan-800'}`}>
                   Nouveau
                 </span>
               )}

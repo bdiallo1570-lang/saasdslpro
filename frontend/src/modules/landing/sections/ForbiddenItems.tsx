@@ -236,7 +236,7 @@ export function ForbiddenItems({ isDark }: ForbiddenItemsProps) {
                           key={item}
                           className={`text-xs flex items-start gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
                         >
-                          <span className="text-red-400 mt-0.5">×</span>
+                          <span className={`mt-0.5 ${isDark ? 'text-red-400' : 'text-red-700'}`}>×</span>
                           {item}
                         </li>
                       ))}

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MesureAudience } from '@/lib/MesureAudience';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -33,6 +34,7 @@ const DocumentPage = lazy(() => import('@/modules/documents/pages/DocumentPage')
 const DevisPage = lazy(() => import('@/modules/devis/pages/DevisPage'));
 const PolitiqueConfidentialitePage = lazy(() => import('@/modules/landing/pages/PolitiqueConfidentialitePage'));
 const ConditionsGeneralesPage = lazy(() => import('@/modules/landing/pages/ConditionsGeneralesPage'));
+const NotFoundPage = lazy(() => import('@/modules/landing/pages/NotFoundPage'));
 
 export default function App() {
   return (
@@ -41,6 +43,7 @@ export default function App() {
         <AuthProvider>
           <Toaster position="top-right" />
           <CursorAura />
+          <MesureAudience />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -134,7 +137,8 @@ export default function App() {
               <Route path="/portail-client" element={<PortailClientPage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Adresse inconnue : page 404 (et non plus un renvoi silencieux vers l'accueil) */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           </Suspense>
         </AuthProvider>

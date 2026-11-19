@@ -6,8 +6,44 @@ import { Colis, ModifierColisInput, modifierColis, simulatePrice, dateReceptionE
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Button, Input, Textarea, Select, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, nombrePositifFacultatif, texteRequis, useValidation } from '@/lib/validation';
 
 type Categorie = 'STANDARD' | 'RISQUE' | 'GROS_VOLUME' | 'PERSONNALISE';
+
+const DIMENSIONS = ['longueur', 'largeur', 'hauteur'] as const;
+
+// Mêmes règles que le serveur (backend colis.schema.ts : modifierColisSchema) et que
+// l'enregistrement d'un colis (trois dimensions ou aucune, prix négocié plafonné)
+const schema = z
+  .object({
+    description: texteRequis('La description est requise.', 2),
+    poids: nombrePositif('Le poids réel doit être supérieur à 0.'),
+    longueur: nombrePositifFacultatif('La longueur doit être supérieure à 0.'),
+    largeur: nombrePositifFacultatif('La largeur doit être supérieure à 0.'),
+    hauteur: nombrePositifFacultatif('La hauteur doit être supérieure à 0.'),
+    categorie: z.string(),
+    prixNegocie: z.string(),
+    tarifStandard: z.number().nullable(),
+    date: z.string(),
+    motif: z.string().trim().min(3, 'Indiquez le motif de la modification (3 caractères minimum).'),
+  })
+  .superRefine((d, ctx) => {
+    const manquantes = DIMENSIONS.filter((k) => d[k] === undefined);
+    if (manquantes.length > 0 && manquantes.length < 3) {
+      ctx.addIssue({ code: 'custom', path: [manquantes[0]], message: 'Renseignez les trois dimensions, ou aucune.' });
+    }
+    if (d.categorie === 'GROS_VOLUME') {
+      const prix = Number(d.prixNegocie.replace(',', '.'));
+      if (!(prix > 0)) ctx.addIssue({ code: 'custom', path: ['prixNegocie'], message: 'Indiquez le prix négocié au kilo.' });
+      else if (d.tarifStandard && prix > d.tarifStandard) {
+        ctx.addIssue({ code: 'custom', path: ['prixNegocie'], message: 'Le prix négocié ne peut pas dépasser le tarif Standard.' });
+      }
+    }
+    if (d.date && new Date(d.date).getTime() > Date.now() + 60_000) {
+      ctx.addIssue({ code: 'custom', path: ['date'], message: 'La date de réception ne peut pas être dans le futur.' });
+    }
+  });
 
 // ISO → valeur d'un champ datetime-local (heure locale), et inversement
 const versChampDate = (iso: string) => {
@@ -45,6 +81,8 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
   const [motif, setMotif] = useState('');
   const [tarifDuJour, setTarifDuJour] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const { erreurs, valider, effacer } = useValidation(schema);
+  const erreurDimensions = erreurs.longueur ?? erreurs.largeur ?? erreurs.hauteur;
 
   const paye =
     colis.statutPaiement === 'PARTIEL' || colis.statutPaiement === 'SOLDE' || colis.statutPaiement === 'TROP_PERCU';
@@ -108,7 +146,20 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
   const depassePlafond = categorie === 'GROS_VOLUME' && tarifDuJour !== null && Number(prixNegocie) > tarifDuJour;
 
   async function enregistrer() {
-    if (!aDesChangements || motif.trim().length < 3) return;
+    if (!aDesChangements) return;
+    const ok = valider({
+      description,
+      poids,
+      longueur,
+      largeur,
+      hauteur,
+      categorie,
+      prixNegocie,
+      tarifStandard: categorie === 'GROS_VOLUME' ? tarifDuJour : null,
+      date,
+      motif,
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const updated = await modifierColis(colis.trackingId, { ...changements, motif: motif.trim() });
@@ -151,7 +202,16 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
         )}
       </div>
 
-      <Textarea label="Description" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+      <Textarea
+        label="Description"
+        rows={2}
+        value={description}
+        error={erreurs.description}
+        onChange={(e) => {
+          setDescription(e.target.value);
+          effacer('description');
+        }}
+      />
 
       <fieldset disabled={paye} className="space-y-4 disabled:opacity-60">
         <div className="grid grid-cols-2 gap-3">
@@ -161,9 +221,20 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
             step="0.01"
             min="0.01"
             value={poids}
-            onChange={(e) => setPoids(e.target.value)}
+            error={erreurs.poids}
+            onChange={(e) => {
+              setPoids(e.target.value);
+              effacer('poids');
+            }}
           />
-          <Select label="Catégorie" value={categorie} onChange={(e) => setCategorie(e.target.value as Categorie)}>
+          <Select
+            label="Catégorie"
+            value={categorie}
+            onChange={(e) => {
+              setCategorie(e.target.value as Categorie);
+              effacer('prixNegocie');
+            }}
+          >
             <option value="STANDARD">Standard</option>
             <option value="RISQUE">Sensible / à risque</option>
             <option value="GROS_VOLUME">Gros volume</option>
@@ -177,10 +248,14 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
               type="number"
               min="1"
               value={prixNegocie}
-              onChange={(e) => setPrixNegocie(e.target.value)}
+              error={erreurs.prixNegocie}
+              onChange={(e) => {
+                setPrixNegocie(e.target.value);
+                effacer('prixNegocie');
+              }}
             />
             {tarifDuJour !== null && (
-              <p className={`mt-1 text-xs ${depassePlafond ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
+              <p className={`mt-1 text-xs ${depassePlafond ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'}`}>
                 Tarif Standard : {formatNumber(tarifDuJour)} GNF/kg
                 {depassePlafond ? ' · le prix négocié ne peut pas le dépasser' : ''}
               </p>
@@ -194,28 +269,60 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
               type="number"
               min="0"
               placeholder="Longueur"
+              aria-label="Longueur (cm)"
+              aria-invalid={erreurDimensions ? true : undefined}
+              className={erreurDimensions ? 'border-red-400' : ''}
               value={longueur}
-              onChange={(e) => setLongueur(e.target.value)}
+              onChange={(e) => {
+                setLongueur(e.target.value);
+                effacer(...DIMENSIONS);
+              }}
             />
             <Input
               type="number"
               min="0"
               placeholder="Largeur"
+              aria-label="Largeur (cm)"
+              aria-invalid={erreurDimensions ? true : undefined}
+              className={erreurDimensions ? 'border-red-400' : ''}
               value={largeur}
-              onChange={(e) => setLargeur(e.target.value)}
+              onChange={(e) => {
+                setLargeur(e.target.value);
+                effacer(...DIMENSIONS);
+              }}
             />
             <Input
               type="number"
               min="0"
               placeholder="Hauteur"
+              aria-label="Hauteur (cm)"
+              aria-invalid={erreurDimensions ? true : undefined}
+              className={erreurDimensions ? 'border-red-400' : ''}
               value={hauteur}
-              onChange={(e) => setHauteur(e.target.value)}
+              onChange={(e) => {
+                setHauteur(e.target.value);
+                effacer(...DIMENSIONS);
+              }}
             />
           </div>
+          {erreurDimensions && (
+            <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {erreurDimensions}
+            </p>
+          )}
         </div>
       </fieldset>
 
-      <Input label="Date de réception" type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} />
+      <Input
+        label="Date de réception"
+        type="datetime-local"
+        value={date}
+        error={erreurs.date}
+        onChange={(e) => {
+          setDate(e.target.value);
+          effacer('date');
+        }}
+      />
 
       {!paye && montantApercu !== montantInitial && (
         <p className="rounded-lg bg-cargo-500/10 px-3 py-2 text-sm text-night-800 dark:text-slate-200">
@@ -228,7 +335,11 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
       <Input
         label="Motif de la modification (obligatoire)"
         value={motif}
-        onChange={(e) => setMotif(e.target.value)}
+        error={erreurs.motif}
+        onChange={(e) => {
+          setMotif(e.target.value);
+          effacer('motif');
+        }}
         placeholder="Ex : erreur de pesée, mauvais client sélectionné"
       />
 
@@ -236,7 +347,7 @@ export function ModifierColisForm({ colis, onUpdated }: Props) {
         variant="cargo"
         fullWidth
         loading={saving}
-        disabled={!aDesChangements || motif.trim().length < 3 || depassePlafond}
+        disabled={!aDesChangements}
         onClick={enregistrer}
       >
         {aDesChangements ? 'Enregistrer la modification' : 'Aucune modification'}

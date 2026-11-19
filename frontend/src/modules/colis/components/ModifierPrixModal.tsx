@@ -3,6 +3,14 @@ import { Colis, updateColisPrice } from '../colis.api';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Modal, Button, Input, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, useValidation } from '@/lib/validation';
+
+// Mêmes règles que le serveur (backend colis.schema.ts : updateColisPriceSchema)
+const schema = z.object({
+  montant: nombrePositif('Le montant doit être supérieur à 0.'),
+  motif: z.string().trim().min(3, 'Un motif est requis pour justifier la modification du prix.'),
+});
 
 interface ModifierPrixModalProps {
   colis: Colis | null;
@@ -17,16 +25,19 @@ export function ModifierPrixModal({ colis, onClose, onUpdated }: ModifierPrixMod
   const [montant, setMontant] = useState('');
   const [motif, setMotif] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { erreurs, valider, effacer, setErreurs } = useValidation(schema);
 
   useEffect(() => {
     if (colis) {
       setMontant(colis.montantEstime ?? '');
       setMotif('');
+      setErreurs({});
     }
-  }, [colis]);
+  }, [colis, setErreurs]);
 
   async function handleSubmit() {
-    if (!colis || !montant || !motif.trim()) return;
+    if (!colis) return;
+    if (!valider({ montant, motif })) return;
     setSubmitting(true);
     try {
       const updated = await updateColisPrice(colis.trackingId, Number(montant), motif.trim());
@@ -56,20 +67,27 @@ export function ModifierPrixModal({ colis, onClose, onUpdated }: ModifierPrixMod
             type="number"
             min="1"
             value={montant}
-            onChange={(e) => setMontant(e.target.value)}
+            error={erreurs.montant}
+            onChange={(e) => {
+              setMontant(e.target.value);
+              effacer('montant');
+            }}
           />
           <Input
             label="Motif (obligatoire, tracé au journal d'audit)"
             type="text"
             value={motif}
-            onChange={(e) => setMotif(e.target.value)}
+            error={erreurs.motif}
+            onChange={(e) => {
+              setMotif(e.target.value);
+              effacer('motif');
+            }}
             placeholder="Ex : correction erreur de saisie, renégociation client"
           />
           <Button
             variant="cargo"
             fullWidth
             loading={submitting}
-            disabled={!montant || !motif.trim()}
             onClick={handleSubmit}
           >
             Confirmer la modification

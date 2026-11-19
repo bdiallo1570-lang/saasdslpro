@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Client, searchClients, createClient } from '../clients.api';
+import { extractErrorMessage } from '@/lib/apiClient';
+import { useValidation } from '@/lib/validation';
+import { schemaClient } from '../clientSchema';
 import { Button, notify } from '@/ui';
 
 interface ClientPickerProps {
   selectedClient: Client | null;
   onSelect: (client: Client) => void;
+  // Message d'erreur du formulaire parent (ex. « Sélectionnez ou créez un client. ») : marque le
+  // champ de recherche comme invalide pour que le curseur s'y place
+  erreur?: string;
 }
 
 const FIELD_BASE =
@@ -19,7 +25,7 @@ const FIELD_BASE_SM =
   'dark:border-night-600 dark:bg-night-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-400';
 
 // Recherche/création rapide de client — utilisé dans le formulaire de réception Chine.
-export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
+export function ClientPicker({ selectedClient, onSelect, erreur }: ClientPickerProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,6 +33,7 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newClient, setNewClient] = useState({ fullName: '', phoneGn: '', phoneWhatsapp: '' });
+  const { erreurs, valider, effacer } = useValidation(schemaClient);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -51,7 +58,7 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
   }, [query]);
 
   async function handleCreate() {
-    if (!newClient.fullName.trim()) return;
+    if (!valider({ ...newClient, phoneCn: '' })) return;
     setCreating(true);
     try {
       const client = await createClient(newClient);
@@ -61,6 +68,9 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
       setShowDropdown(false);
       setQuery('');
       setNewClient({ fullName: '', phoneGn: '', phoneWhatsapp: '' });
+    } catch (err) {
+      // Auparavant silencieux : un refus du serveur ne laissait aucun message
+      notify.error(extractErrorMessage(err));
     } finally {
       setCreating(false);
     }
@@ -95,7 +105,9 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
         }}
         onFocus={() => setShowDropdown(true)}
         placeholder="Rechercher un client (nom, code, téléphone)…"
-        className={FIELD_BASE}
+        aria-label="Rechercher un client"
+        aria-invalid={erreur ? true : undefined}
+        className={`${FIELD_BASE} ${erreur ? 'border-red-400' : ''}`}
       />
 
       <AnimatePresence>
@@ -143,33 +155,69 @@ export function ClientPicker({ selectedClient, onSelect }: ClientPickerProps) {
 
             {showCreateForm && (
               <div className="p-3 space-y-2 bg-slate-50 dark:bg-night-700">
-                <input
-                  type="text"
-                  placeholder="Nom complet *"
-                  value={newClient.fullName}
-                  onChange={(e) => setNewClient((c) => ({ ...c, fullName: e.target.value }))}
-                  className={FIELD_BASE_SM}
-                />
-                <input
-                  type="text"
-                  placeholder="Téléphone Guinée (+224…)"
-                  value={newClient.phoneGn}
-                  onChange={(e) => setNewClient((c) => ({ ...c, phoneGn: e.target.value }))}
-                  className={FIELD_BASE_SM}
-                />
-                <input
-                  type="text"
-                  placeholder="WhatsApp"
-                  value={newClient.phoneWhatsapp}
-                  onChange={(e) => setNewClient((c) => ({ ...c, phoneWhatsapp: e.target.value }))}
-                  className={FIELD_BASE_SM}
-                />
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Nom complet *"
+                    aria-label="Nom complet"
+                    aria-invalid={erreurs.fullName ? true : undefined}
+                    value={newClient.fullName}
+                    onChange={(e) => {
+                      setNewClient((c) => ({ ...c, fullName: e.target.value }));
+                      effacer('fullName');
+                    }}
+                    className={`${FIELD_BASE_SM} ${erreurs.fullName ? 'border-red-400' : ''}`}
+                  />
+                  {erreurs.fullName && (
+                    <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {erreurs.fullName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder="Téléphone Guinée (+224…)"
+                    aria-label="Téléphone Guinée (+224…)"
+                    aria-invalid={erreurs.phoneGn ? true : undefined}
+                    value={newClient.phoneGn}
+                    onChange={(e) => {
+                      setNewClient((c) => ({ ...c, phoneGn: e.target.value }));
+                      effacer('phoneGn');
+                    }}
+                    className={`${FIELD_BASE_SM} ${erreurs.phoneGn ? 'border-red-400' : ''}`}
+                  />
+                  {erreurs.phoneGn && (
+                    <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {erreurs.phoneGn}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder="WhatsApp"
+                    aria-label="WhatsApp"
+                    aria-invalid={erreurs.phoneWhatsapp ? true : undefined}
+                    value={newClient.phoneWhatsapp}
+                    onChange={(e) => {
+                      setNewClient((c) => ({ ...c, phoneWhatsapp: e.target.value }));
+                      effacer('phoneWhatsapp');
+                    }}
+                    className={`${FIELD_BASE_SM} ${erreurs.phoneWhatsapp ? 'border-red-400' : ''}`}
+                  />
+                  {erreurs.phoneWhatsapp && (
+                    <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {erreurs.phoneWhatsapp}
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="primary"
                     size="sm"
-                    disabled={creating || !newClient.fullName.trim()}
+                    disabled={creating}
                     loading={creating}
                     onClick={handleCreate}
                     className="flex-1"

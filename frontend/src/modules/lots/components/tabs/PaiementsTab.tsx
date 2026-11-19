@@ -18,6 +18,8 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Button, Input, Select, Badge, Modal, notify } from '@/ui';
 import { SendToClientButton } from '@/modules/documents/SendToClientButton';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, useValidation } from '@/lib/validation';
 
 const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -27,6 +29,15 @@ const STATUT_TONE: Record<StatutPaiementColis, 'red' | 'amber' | 'green' | 'sky'
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+// Mêmes règles que le serveur (backend paiements.schema.ts) ; date ni vide ni future
+const schemaPaiement = z.object({
+  montant: nombrePositif('Le montant doit être supérieur à 0.'),
+  datePaiement: z
+    .string()
+    .min(1, 'La date du paiement est requise.')
+    .refine((d) => d <= today(), 'La date du paiement ne peut pas être dans le futur.'),
+});
 
 interface PaiementsTabProps {
   lotId: string;
@@ -107,9 +118,12 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
     }
   }
 
+  const v = useValidation(schemaPaiement);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!selectedColis || !montant || Number(montant) <= 0) return;
+    if (!selectedColis) return;
+    if (!v.valider({ montant, datePaiement })) return;
     setSubmitting(true);
     try {
       const { avertissement } = await createPaiementColis(lotId, {
@@ -280,7 +294,7 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="rounded-lg bg-slate-50 dark:bg-night-700 p-3 text-sm">
               <p className="font-medium text-night-800 dark:text-slate-100">
                 {selectedColis.trackingId} — {selectedColis.client.fullName}
@@ -308,7 +322,11 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
                 step="0.01"
                 required
                 value={montant}
-                onChange={(e) => setMontant(e.target.value)}
+                error={v.erreurs.montant}
+              onChange={(e) => {
+                setMontant(e.target.value);
+                v.effacer('montant');
+              }}
               />
               <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 <option value="GNF">GNF</option>
@@ -347,7 +365,18 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
               value={reference}
               onChange={(e) => setReference(e.target.value)}
             />
-            <Input label="Date" type="date" required value={datePaiement} onChange={(e) => setDatePaiement(e.target.value)} />
+            <Input
+              label="Date"
+              type="date"
+              required
+              max={today()}
+              value={datePaiement}
+              error={v.erreurs.datePaiement}
+              onChange={(e) => {
+                setDatePaiement(e.target.value);
+                v.effacer('datePaiement');
+              }}
+            />
             <Input
               label="Commentaire (optionnel)"
               type="text"
@@ -355,7 +384,7 @@ export function PaiementsTab({ lotId, lotColis }: PaiementsTabProps) {
               onChange={(e) => setCommentaire(e.target.value)}
             />
 
-            <Button type="submit" variant="cargo" fullWidth size="lg" loading={submitting} disabled={!montant || Number(montant) <= 0}>
+            <Button type="submit" variant="cargo" fullWidth size="lg" loading={submitting}>
               Enregistrer le paiement
             </Button>
           </form>

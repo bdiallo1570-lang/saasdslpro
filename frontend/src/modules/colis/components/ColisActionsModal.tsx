@@ -32,6 +32,8 @@ import { formatNumber } from '@/lib/format';
 import { ROLE_NAMES } from '@/lib/roles';
 import { ModifierColisForm } from './ModifierColisForm';
 import { HistoriqueColis } from './HistoriqueColis';
+import { z } from 'zod';
+import { nombrePositif, useValidation } from '@/lib/validation';
 
 const STATUT_TONE: Record<string, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -61,6 +63,23 @@ function prochainStatut(status: string): string | undefined {
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+// Mêmes règles que le serveur (backend paiements.schema.ts, colis.schema.ts) ; la date d'un
+// paiement ne peut en plus pas être dans le futur (un paiement est enregistré une fois reçu)
+const schemaPaiement = z.object({
+  montant: nombrePositif('Le montant doit être supérieur à 0.'),
+  datePaiement: z
+    .string()
+    .min(1, 'La date du paiement est requise.')
+    .refine((d) => d <= today(), 'La date du paiement ne peut pas être dans le futur.'),
+});
+const schemaPrix = z.object({
+  nouveauPrix: nombrePositif('Le montant doit être supérieur à 0.'),
+  motifPrix: z.string().trim().min(3, 'Un motif est requis pour justifier la modification du prix.'),
+});
+const schemaEcart = z.object({
+  poidsGuinee: nombrePositif('Le poids constaté doit être supérieur à 0.'),
+});
 
 interface ColisActionsModalProps {
   colis: Colis | null;
@@ -111,6 +130,10 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
   const [downloadingDoc, setDownloadingDoc] = useState<'facture' | 'bonsortie' | null>(null);
 
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const vPaiement = useValidation(schemaPaiement);
+  const vPrix = useValidation(schemaPrix);
+  const vEcart = useValidation(schemaEcart);
+
   // Incrémenté après une modification : recharge l'historique et réinitialise le formulaire
   const [versionModif, setVersionModif] = useState(0);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -197,7 +220,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
 
   async function handlePaiementSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!colis || !colis.lotId || !montant || Number(montant) <= 0) return;
+    if (!colis || !colis.lotId) return;
+    if (!vPaiement.valider({ montant, datePaiement })) return;
     // Garde anti double-soumission : le bouton est désactivé pendant l'envoi, mais une
     // resoumission du <form> (ex. touche Entrée pressée deux fois très vite) contourne le
     // disabled du bouton — on bloque donc aussi ici, sur l'état lui-même.
@@ -226,7 +250,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
   }
 
   async function handlePrixSubmit() {
-    if (!colis || !nouveauPrix || !motifPrix.trim()) return;
+    if (!colis) return;
+    if (!vPrix.valider({ nouveauPrix, motifPrix })) return;
     setSubmittingPrix(true);
     try {
       await updateColisPrice(colis.trackingId, Number(nouveauPrix), motifPrix.trim());
@@ -241,7 +266,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
   }
 
   async function handleSignalerEcart() {
-    if (!colis || !poidsGuinee) return;
+    if (!colis) return;
+    if (!vEcart.valider({ poidsGuinee })) return;
     setSignalingWeight(true);
     try {
       const discrepancy = await reportWeightDiscrepancy(colis.trackingId, Number(poidsGuinee));
@@ -403,13 +429,21 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
                 type="number"
                 min="1"
                 value={nouveauPrix}
-                onChange={(e) => setNouveauPrix(e.target.value)}
+                error={vPrix.erreurs.nouveauPrix}
+                onChange={(e) => {
+                  setNouveauPrix(e.target.value);
+                  vPrix.effacer('nouveauPrix');
+                }}
               />
               <Input
                 label="Motif (obligatoire, tracé au journal d'audit)"
                 type="text"
                 value={motifPrix}
-                onChange={(e) => setMotifPrix(e.target.value)}
+                error={vPrix.erreurs.motifPrix}
+                onChange={(e) => {
+                  setMotifPrix(e.target.value);
+                  vPrix.effacer('motifPrix');
+                }}
                 placeholder="Ex : correction erreur de saisie, renégociation client"
               />
               <Button
@@ -417,7 +451,6 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
                 fullWidth
                 size="lg"
                 loading={submittingPrix}
-                disabled={!nouveauPrix || !motifPrix.trim()}
                 onClick={handlePrixSubmit}
               >
                 <DollarSign size={16} className="mr-2" />
@@ -445,7 +478,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
               Ce colis est déjà soldé — aucun nouveau paiement n'est nécessaire.
             </p>
           ) : (
-            <form onSubmit={handlePaiementSubmit} className="space-y-4">
+            <form onSubmit={handlePaiementSubmit} noValidate className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Montant"
@@ -455,7 +488,11 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
                   step="0.01"
                   required
                   value={montant}
-                  onChange={(e) => setMontant(e.target.value)}
+                  error={vPaiement.erreurs.montant}
+                  onChange={(e) => {
+                    setMontant(e.target.value);
+                    vPaiement.effacer('montant');
+                  }}
                 />
                 <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                   <option value="GNF">GNF</option>
@@ -486,7 +523,18 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
                 ))}
               </Select>
               <Input label="Référence (optionnel)" type="text" value={reference} onChange={(e) => setReference(e.target.value)} />
-              <Input label="Date" type="date" required value={datePaiement} onChange={(e) => setDatePaiement(e.target.value)} />
+              <Input
+                label="Date"
+                type="date"
+                required
+                max={today()}
+                value={datePaiement}
+                error={vPaiement.erreurs.datePaiement}
+                onChange={(e) => {
+                  setDatePaiement(e.target.value);
+                  vPaiement.effacer('datePaiement');
+                }}
+              />
               <Input
                 label="Commentaire (optionnel)"
                 type="text"
@@ -499,7 +547,6 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
                 fullWidth
                 size="lg"
                 loading={submittingPaiement}
-                disabled={!montant || Number(montant) <= 0}
               >
                 <CreditCard size={16} className="mr-2" />
                 Enregistrer le paiement
@@ -549,17 +596,22 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, onglet
             <p className="text-xs text-slate-500 dark:text-slate-400">Poids saisi en Chine (lecture seule)</p>
             <p className="font-medium text-night-900 dark:text-slate-100">{colis.poidsReelKg} kg</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-start gap-2">
             <Input
               type="number"
               step="0.01"
               min="0.01"
               placeholder="Poids constaté à Conakry (kg)"
+              aria-label="Poids constaté à Conakry (kg)"
               value={poidsGuinee}
-              onChange={(e) => setPoidsGuinee(e.target.value)}
+              error={vEcart.erreurs.poidsGuinee}
+              onChange={(e) => {
+                setPoidsGuinee(e.target.value);
+                vEcart.effacer('poidsGuinee');
+              }}
               className="flex-1"
             />
-            <Button variant="cargo" disabled={!poidsGuinee} loading={signalingWeight} onClick={handleSignalerEcart}>
+            <Button variant="cargo" loading={signalingWeight} onClick={handleSignalerEcart}>
               <Scale size={16} className="mr-1.5" />
               Signaler
             </Button>

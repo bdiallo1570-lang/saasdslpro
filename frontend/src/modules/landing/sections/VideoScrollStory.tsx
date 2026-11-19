@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, MotionValue, useMotionValue, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { TrackingPanel } from './TrackingPanel';
-import { Magnetic, SplitLetters } from './motionKit';
+import { SplitLetters } from './motionKit';
 import { formatPricePerKg, priceOf, usePublicPricing } from '../publicPricing';
+import { BoutonDevis } from '../devis/BoutonDevis';
 
 interface VideoScrollStoryProps {
   onSimulateClick: () => void;
@@ -20,13 +21,13 @@ interface VideoScrollStoryProps {
 // le cadrage horizontal suit le colis.
 //
 // Encodée sans son, avec une image clé toutes les 3 images et SANS images B (voir public/video,
-// ffmpeg -g 3 -bf 0 -crf 27) : reculer ne fait décoder au navigateur que 2 images au maximum, et
-// le fichier reste léger (2,5 Mo). Avec des images B ou des images clés espacées, chaque saut en
+// ffmpeg -g 3 -keyint_min 3 -sc_threshold 0 -bf 0 -crf 29 -movflags +faststart) : reculer ne fait
+// décoder au navigateur que 2 images au maximum, et le fichier reste léger (2 Mo). Avec des images B ou des images clés espacées, chaque saut en
 // arrière redécode plusieurs images — d'où la saccade. Ne pas la remplacer par une vidéo
 // « normale » : le scrub deviendrait saccadé, surtout en marche arrière.
 
 const VIDEO_SRC = '/video/scroll-story.mp4';
-const POSTER = '/video/scroll-story-poster.jpg';
+const POSTER = '/video/scroll-story-poster.webp';
 const FPS = 24;
 const VIDEO_W = 854;
 const VIDEO_H = 480;
@@ -281,15 +282,7 @@ export function VideoScrollStory({ onSimulateClick, ready }: VideoScrollStoryPro
                 title="Vous payez, vous récupérez."
                 body="En espèces, par Orange Money ou par virement — puis remise du colis avec son bon de sortie."
               >
-                <Magnetic className="mt-6 inline-block">
-                  <button
-                    type="button"
-                    onClick={onSimulateClick}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-night-950 shadow-glow-sky transition hover:bg-emerald-400"
-                  >
-                    Simuler mon tarif <ArrowRight size={16} />
-                  </button>
-                </Magnetic>
+                <BoutonDevis emplacement="fin du parcours" className="mt-6" />
               </Chapter>
           </div>
         </div>
@@ -303,7 +296,7 @@ export function VideoScrollStory({ onSimulateClick, ready }: VideoScrollStoryPro
 
         {/* Barre de progression par étape */}
         <div className="absolute inset-x-4 bottom-28 sm:bottom-14 z-10 mx-auto max-w-3xl pointer-events-none">
-          <div className="flex justify-between font-label text-[10px] uppercase tracking-[0.2em] text-cream/60">
+          <div className="flex justify-between font-label text-[11px] uppercase tracking-[0.12em] text-cream/80 sm:tracking-[0.2em]">
             {CHAPTERS.map((c) => (
               <span key={c.label}>{c.label}</span>
             ))}

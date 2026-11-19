@@ -122,7 +122,7 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
             animate={{ width: scrolled ? 36 : 44, height: scrolled ? 36 : 44 }}
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.25, ease: 'easeOut', rotate: { duration: 0.9, ease: EASE_OUT } }}
-            src="/images/backgrounds/dsl-logo-200.png"
+            src="/images/backgrounds/dsl-logo-96.webp"
             alt=""
             className="rounded-full object-cover shadow-glow-cargo shrink-0"
           />
@@ -205,7 +205,9 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
               transition={{ duration: 0.6, ease: EASE_OUT, delay: ready ? 0.95 : 0 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => navigate('/connexion')}
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-sky-500 pl-4 pr-3 py-2 font-display text-[13px] font-bold tracking-wide text-ink-950 shadow-glow-sky transition-colors hover:bg-sky-400"
+              className={`group relative inline-flex items-center gap-2 overflow-hidden rounded-full border pl-4 pr-3 py-2 font-display text-[13px] font-bold tracking-wide transition-colors ${
+                onDark ? 'border-white/30 text-white hover:bg-white/10' : 'border-slate-300 text-night-900 hover:bg-slate-100'
+              }`}
             >
               {/* Reflet qui traverse le bouton au survol */}
               <span
@@ -213,7 +215,7 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
                 className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 -skew-x-12 bg-white/30 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
               />
               <span className="relative">
-                <RollText>Espace SaaS</RollText>
+                <RollText>Connexion</RollText>
               </span>
               <ArrowUpRight
                 size={15}
@@ -294,9 +296,11 @@ export function Navbar({ isDark, onToggleTheme, ready = true }: NavbarProps) {
                 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => navigate('/connexion')}
-                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-5 py-3 font-display text-sm font-bold tracking-wide text-ink-950"
+                className={`mt-4 inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 font-display text-sm font-bold tracking-wide ${
+                  onDark ? 'border-white/30 text-white' : 'border-slate-300 text-night-900'
+                }`}
               >
-                Espace SaaS <ArrowUpRight size={16} />
+                Connexion <ArrowUpRight size={16} />
               </motion.button>
             </motion.div>
           </motion.div>

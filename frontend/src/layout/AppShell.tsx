@@ -5,6 +5,9 @@ import { MobileTopbar } from './MobileTopbar';
 import { CommandPalette } from './CommandPalette';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { GlobalFab } from '@/components/GlobalFab';
+import { useLocation } from 'react-router-dom';
+import { usePageMeta } from '@/lib/pageMeta';
+import { NAV_ITEMS } from './navConfig';
 
 interface AppShellProps {
   children: ReactNode;
@@ -14,6 +17,14 @@ interface AppShellProps {
 // topbar rétractable (mobile), palette de commandes (⌘K) et zone de contenu avec transition
 // d'entrée.
 export function AppShell({ children }: AppShellProps) {
+  // Titre de l'onglet = entrée du menu correspondant à l'adresse (la plus précise : « Colis
+  // enregistrés » pour /reception/consultation, « Lots / Manifeste » pour /lots/:id)
+  const { pathname } = useLocation();
+  const entree = NAV_ITEMS.filter((i) => pathname === i.to || pathname.startsWith(`${i.to}/`)).sort(
+    (a, b) => b.to.length - a.to.length,
+  )[0];
+  usePageMeta({ titre: entree?.label ?? 'Espace de gestion', indexable: false });
+
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-night-900 flex">
       {/* Lumière d'ambiance très douce derrière le contenu (fixe, ne défile pas) */}

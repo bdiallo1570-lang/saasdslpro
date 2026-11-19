@@ -19,7 +19,10 @@ export function Container3D({ fill, isDark }: Container3DProps) {
   const ratio = Math.max(0, Math.min(1, fill));
 
   return (
-    <div className="relative mx-auto flex h-[230px] w-full max-w-[420px] items-center justify-center [perspective:1100px]">
+    <div
+      aria-hidden="true"
+      className="relative mx-auto flex h-[230px] w-full max-w-[420px] items-center justify-center [perspective:1100px]"
+    >
       {/* Reflet / ombre au sol */}
       <motion.div
         aria-hidden="true"

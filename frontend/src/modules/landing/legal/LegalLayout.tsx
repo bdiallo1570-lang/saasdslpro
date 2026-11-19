@@ -5,6 +5,7 @@ import { ArrowLeft, LucideIcon, MessageCircle, Moon, Sun } from 'lucide-react';
 import { useLandingTheme } from '@/modules/landing/landingTheme';
 import { CookieNotice } from '@/modules/landing/sections/CookieNotice';
 import { LegalSection, WHATSAPP, WHATSAPP_LIEN } from './legalInfo';
+import { usePageMeta } from '@/lib/pageMeta';
 
 // Mise en page commune des pages légales (confidentialité, conditions générales) : en-tête,
 // points clés, sommaire qui suit la lecture, sections numérotées, contact WhatsApp.
@@ -28,6 +29,8 @@ interface LegalLayoutProps {
   Icone: LucideIcon;
   titre: string;
   intro: string;
+  // Description meta (moteurs de recherche), environ 150 caractères
+  description: string;
   miseAJour: string;
   enBref: string[];
   sections: LegalSection[];
@@ -42,6 +45,7 @@ export function LegalLayout({
   Icone,
   titre,
   intro,
+  description,
   miseAJour,
   enBref,
   sections,
@@ -51,13 +55,10 @@ export function LegalLayout({
   const { isDark, toggle } = useLandingTheme();
   const [active, setActive] = useState(sections[0].id);
 
+  usePageMeta({ titre, description });
+
   useEffect(() => {
-    const titrePrecedent = document.title;
-    document.title = `${titre} · DSL Air Cargo`;
     window.scrollTo(0, 0);
-    return () => {
-      document.title = titrePrecedent;
-    };
   }, [titre]);
 
   // Surligne dans le sommaire la section en cours de lecture
@@ -87,6 +88,8 @@ export function LegalLayout({
     bord: isDark ? 'border-white/10' : 'border-slate-200',
     carte: isDark ? 'bg-white/[0.03] border-white/10' : 'bg-slate-50 border-slate-200',
     survol: isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100',
+    // Accent : orange sur fond sombre, cuivre plus foncé sur fond clair (contraste ≥ 4,5:1)
+    accent: isDark ? 'text-ember-500' : 'text-cargo-700',
   };
 
   return (
@@ -96,7 +99,7 @@ export function LegalLayout({
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/images/backgrounds/dsl-logo-200.png" alt="" className="h-8 w-8 rounded-full object-cover" />
+            <img src="/images/backgrounds/dsl-logo-96.webp" alt="" className="h-8 w-8 rounded-full object-cover" />
             <span className={`font-semibold ${t.titre}`}>DSL Air Cargo</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -125,7 +128,7 @@ export function LegalLayout({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          <p className="inline-flex items-center gap-2 text-sm font-medium text-ember-500">
+          <p className={`inline-flex items-center gap-2 text-sm font-medium ${t.accent}`}>
             <Icone size={16} /> {surtitre}
           </p>
           <h1 className={`mt-3 font-editorial text-4xl leading-tight sm:text-6xl ${t.titre}`}>{titre}</h1>
@@ -145,7 +148,7 @@ export function LegalLayout({
               variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
               className={`rounded-2xl border p-4 text-sm leading-relaxed ${t.carte}`}
             >
-              <Icone size={16} className="mb-2 text-ember-500" />
+              <Icone size={16} className={`mb-2 ${t.accent}`} />
               <span className={isDark ? 'text-slate-200' : 'text-night-800'}>{point}</span>
             </motion.li>
           ))}
@@ -188,13 +191,13 @@ export function LegalLayout({
                 className="scroll-mt-24"
               >
                 <h2 className={`flex items-baseline gap-3 text-xl font-semibold sm:text-2xl ${t.titre}`}>
-                  <span className="text-sm font-medium tabular-nums text-ember-500">
+                  <span className={`text-sm font-medium tabular-nums ${t.accent}`}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   {s.titre}
                 </h2>
                 <div
-                  className={`mt-3 ${isDark ? '[&_strong]:text-slate-100' : '[&_strong]:text-night-900'} [&_strong]:font-semibold`}
+                  className={`mt-3 ${isDark ? '[&_strong]:text-slate-100' : '[&_strong]:text-night-900'} [&_strong]:font-semibold ${isDark ? '[&_a]:text-ember-400' : '[&_a]:text-cargo-700'}`}
                 >
                   {s.contenu}
                 </div>
@@ -223,11 +226,11 @@ export function LegalLayout({
 
       <footer className={`border-t py-6 text-center text-xs ${t.bord} ${t.doux}`}>
         © {new Date().getFullYear()} DSL Air Cargo, Conakry, Guinée ·{' '}
-        <Link to={autrePage.to} className="underline-offset-2 hover:underline">
+        <Link to={autrePage.to} className="inline-block py-1.5 underline-offset-2 hover:underline">
           {autrePage.label}
         </Link>{' '}
         ·{' '}
-        <Link to="/" className="underline-offset-2 hover:underline">
+        <Link to="/" className="inline-block py-1.5 underline-offset-2 hover:underline">
           Retour à l’accueil
         </Link>
       </footer>

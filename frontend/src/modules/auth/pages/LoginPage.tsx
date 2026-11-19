@@ -6,13 +6,25 @@ import { useAuth } from '@/context/AuthContext';
 import { apiClient, extractErrorMessage } from '@/lib/apiClient';
 import { Button, Input, notify } from '@/ui';
 import { LAND_PATHS, MAP_HEIGHT, MAP_WIDTH, project } from '@/modules/landing/maritime/seaMap';
+import { usePageMeta } from '@/lib/pageMeta';
+import { z } from 'zod';
+import { codeOtp, identifiant, useValidation } from '@/lib/validation';
+import { ChampPiege } from '@/components/ChampPiege';
 
 type LoginMode = 'password' | 'otp';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const OTP_LENGTH = 6;
 
+// Mêmes règles que le serveur (backend auth.schema.ts)
+const schemaMotDePasse = z.object({ identifier: identifiant, password: z.string().min(1, 'Mot de passe requis.') });
+const schemaCode = z.object({ identifier: identifiant, otpCode: codeOtp });
+
 export default function LoginPage() {
+  usePageMeta({
+    titre: 'Connexion',
+    description: 'Accédez à votre espace DSL Air Cargo : suivi de vos colis, factures et reçus, et solde restant à payer.',
+  });
   const navigate = useNavigate();
   const { loginWithPassword, loginWithOtp } = useAuth();
   const [scope, animate] = useAnimate();
@@ -24,6 +36,10 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const vMdp = useValidation(schemaMotDePasse);
+  // Champ piège anti-robots (invisible) ; rempli = robot, la demande est refusée par le serveur
+  const [piege, setPiege] = useState('');
+  const vCode = useValidation(schemaCode);
 
   // Petit tremblement du formulaire en cas d'échec, en plus du message
   function fail(err: unknown) {
@@ -34,9 +50,10 @@ export default function LoginPage() {
   async function handlePasswordSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!vMdp.valider({ identifier, password })) return;
     setLoading(true);
     try {
-      const { redirectTo } = await loginWithPassword(identifier, password);
+      const { redirectTo } = await loginWithPassword(identifier, password, piege);
       notify.success('Connexion réussie — bienvenue !');
       navigate(redirectTo);
     } catch (err) {
@@ -48,9 +65,10 @@ export default function LoginPage() {
 
   async function handleRequestOtp() {
     setError(null);
+    if (!vCode.valider({ identifier, otpCode: '000000' })) return;
     setLoading(true);
     try {
-      await apiClient.post('/auth/otp/request', { identifier });
+      await apiClient.post('/auth/otp/request', { identifier, site_web: piege });
       setOtpSent(true);
       notify.info('Code envoyé par WhatsApp/SMS si ce compte existe.');
     } catch (err) {
@@ -63,6 +81,7 @@ export default function LoginPage() {
   async function handleOtpSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!vCode.valider({ identifier, otpCode })) return;
     setLoading(true);
     try {
       const { redirectTo } = await loginWithOtp(identifier, otpCode);
@@ -78,6 +97,8 @@ export default function LoginPage() {
   function switchMode(next: LoginMode) {
     setMode(next);
     setError(null);
+    vMdp.setErreurs({});
+    vCode.setErreurs({});
   }
 
   return (
@@ -97,7 +118,7 @@ export default function LoginPage() {
         >
           <div ref={scope}>
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <img src="/images/backgrounds/dsl-logo-200.png" alt="" className="h-10 w-10 rounded-full" />
+              <img src="/images/backgrounds/dsl-logo-96.webp" alt="" className="h-10 w-10 rounded-full" />
               <span className="font-editorial text-2xl text-white">DSL Air Cargo</span>
             </div>
 
@@ -154,15 +175,21 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 12, filter: 'blur(4px)' }}
                   transition={{ duration: 0.25 }}
                   onSubmit={handlePasswordSubmit}
-                  className="space-y-4"
+                  noValidate
+                  className="relative space-y-4"
                 >
+                  <ChampPiege value={piege} onChange={setPiege} />
                   <Input
                     label="Téléphone ou email"
                     type="text"
                     required
                     autoComplete="username"
                     value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    error={vMdp.erreurs.identifier}
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      vMdp.effacer('identifier');
+                    }}
                     placeholder="+224 6XX XX XX XX ou email"
                     className="dark:bg-night-800 dark:border-night-600"
                   />
@@ -171,7 +198,7 @@ export default function LoginPage() {
                       <label htmlFor="login-password" className="block text-sm font-medium text-slate-300">
                         Mot de passe
                       </label>
-                      <Link to="/mot-de-passe-oublie" className="text-xs text-sky-400 hover:underline">
+                      <Link to="/mot-de-passe-oublie" className="inline-block py-1.5 text-xs text-sky-400 hover:underline">
                         Mot de passe oublié ?
                       </Link>
                     </div>
@@ -181,7 +208,11 @@ export default function LoginPage() {
                       required
                       autoComplete="current-password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      error={vMdp.erreurs.password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        vMdp.effacer('password');
+                      }}
                       placeholder="••••••••"
                       className="dark:bg-night-800 dark:border-night-600"
                     />
@@ -198,15 +229,21 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: -12, filter: 'blur(4px)' }}
                   transition={{ duration: 0.25 }}
                   onSubmit={handleOtpSubmit}
-                  className="space-y-4"
+                  noValidate
+                  className="relative space-y-4"
                 >
+                  <ChampPiege value={piege} onChange={setPiege} />
                   <Input
                     label="Téléphone ou email"
                     type="text"
                     required
                     autoComplete="username"
                     value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    error={vCode.erreurs.identifier}
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      vCode.effacer('identifier');
+                    }}
                     placeholder="+224 6XX XX XX XX ou email"
                     className="dark:bg-night-800 dark:border-night-600"
                   />
@@ -216,7 +253,6 @@ export default function LoginPage() {
                       type="button"
                       onClick={handleRequestOtp}
                       loading={loading}
-                      disabled={!identifier}
                       fullWidth
                       size="lg"
                     >
@@ -243,16 +279,16 @@ export default function LoginPage() {
             </AnimatePresence>
 
             <p className="mt-8 text-center text-xs text-slate-400">
-              <Link to="/" className="group inline-flex items-center gap-1.5 transition-colors hover:text-slate-300">
+              <Link to="/" className="group inline-flex items-center gap-1.5 py-1.5 transition-colors hover:text-slate-300">
                 <ArrowLeft size={13} className="transition-transform group-hover:-translate-x-0.5" />
                 Retour à l'accueil
               </Link>
               <span className="mx-2 text-slate-600">·</span>
-              <Link to="/conditions-generales" className="transition-colors hover:text-slate-300">
+              <Link to="/conditions-generales" className="inline-block py-1.5 transition-colors hover:text-slate-300">
                 Conditions
               </Link>
               <span className="mx-2 text-slate-600">·</span>
-              <Link to="/confidentialite" className="transition-colors hover:text-slate-300">
+              <Link to="/confidentialite" className="inline-block py-1.5 transition-colors hover:text-slate-300">
                 Confidentialité
               </Link>
             </p>
@@ -336,7 +372,7 @@ function BrandPanel() {
     <div className="relative hidden overflow-hidden border-r border-white/5 bg-[radial-gradient(ellipse_at_30%_20%,rgba(14,165,233,0.16),transparent_60%),radial-gradient(ellipse_at_80%_90%,rgba(245,158,11,0.12),transparent_55%)] lg:flex lg:flex-col lg:justify-between lg:p-12">
       {/* Photo d'ambiance (générée pour DSL) : lent dézoom façon Ken Burns sous la carte */}
       <motion.img
-        src="/images/freight/air.jpg"
+        src="/images/freight/air.webp"
         alt=""
         aria-hidden="true"
         initial={{ scale: 1.18, opacity: 0 }}
@@ -352,7 +388,7 @@ function BrandPanel() {
         transition={{ duration: 0.7, ease: EASE_OUT }}
         className="relative flex items-center gap-3"
       >
-        <img src="/images/backgrounds/dsl-logo-200.png" alt="" className="h-11 w-11 rounded-full" />
+        <img src="/images/backgrounds/dsl-logo-96.webp" alt="" className="h-11 w-11 rounded-full" />
         <span className="font-editorial text-2xl text-white">DSL Air Cargo</span>
       </motion.div>
 

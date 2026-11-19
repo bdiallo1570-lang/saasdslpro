@@ -11,6 +11,8 @@ import {
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Card, Button, Input, Select, Modal, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, useValidation } from '@/lib/validation';
 
 // Dédouanement et Transport aéroport→Madina en premier — postes prioritaires métier.
 const CATEGORIES_ORDONNEES: CategorieDepenseLot[] = [
@@ -23,6 +25,13 @@ const CATEGORIES_ORDONNEES: CategorieDepenseLot[] = [
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+// Mêmes règles que le serveur (backend depenseLot.schema.ts)
+const schemaDepense = z.object({
+  libelle: z.string().trim().min(2, 'Le libellé est requis.'),
+  montant: nombrePositif('Le montant doit être supérieur à 0.'),
+  dateDepense: z.string().min(1, 'La date de la dépense est requise.'),
+});
 
 interface DepensesTabProps {
   lotId: string;
@@ -81,9 +90,11 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
     setReferenceRecu('');
   }
 
+  const v = useValidation(schemaDepense);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!libelle.trim() || !montant) return;
+    if (!v.valider({ libelle, montant, dateDepense })) return;
     setSubmitting(true);
     try {
       await createDepense(lotId, {
@@ -208,7 +219,7 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouvelle dépense" maxWidthClassName="max-w-md">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <Select label="Catégorie" value={categorie} onChange={(e) => setCategorie(e.target.value as CategorieDepenseLot)}>
             {CATEGORIES_ORDONNEES.map((c) => (
               <option key={c} value={c}>
@@ -216,7 +227,17 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
               </option>
             ))}
           </Select>
-          <Input label="Libellé" type="text" required value={libelle} onChange={(e) => setLibelle(e.target.value)} />
+          <Input
+            label="Libellé"
+            type="text"
+            required
+            value={libelle}
+            error={v.erreurs.libelle}
+              onChange={(e) => {
+                setLibelle(e.target.value);
+                v.effacer('libelle');
+              }}
+          />
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Montant"
@@ -226,7 +247,11 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
               step="0.01"
               required
               value={montant}
-              onChange={(e) => setMontant(e.target.value)}
+              error={v.erreurs.montant}
+              onChange={(e) => {
+                setMontant(e.target.value);
+                v.effacer('montant');
+              }}
             />
             <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)}>
               <option value="GNF">GNF</option>
@@ -251,7 +276,17 @@ export function DepensesTab({ lotId, lotNumber }: DepensesTabProps) {
               )}
             </div>
           )}
-          <Input label="Date" type="date" required value={dateDepense} onChange={(e) => setDateDepense(e.target.value)} />
+          <Input
+            label="Date"
+            type="date"
+            required
+            value={dateDepense}
+            error={v.erreurs.dateDepense}
+              onChange={(e) => {
+                setDateDepense(e.target.value);
+                v.effacer('dateDepense');
+              }}
+          />
           <Input
             label="Bénéficiaire (optionnel)"
             type="text"

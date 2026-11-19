@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Phone, Copy, Check, MessageCircle, Plane, Ship } from 'lucide-react';
+import { Building2, Copy, Check, MessageCircle, Plane, Ship } from 'lucide-react';
 import { listWarehouses, WarehouseLocation } from '@/modules/warehouses/warehouses.api';
 import { MARITIME } from '../maritime/maritimeConfig';
 import { WAREHOUSES_FALLBACK } from '@/modules/warehouses/warehousesFallback';
@@ -20,6 +20,14 @@ function fullAddress(
   fallbackName: string,
 ): string {
   return [warehouse.name ?? fallbackName, warehouse.addressZh, warehouse.addressFr].filter(Boolean).join('\n');
+}
+
+// Contacts affichables : nom, numéro tel que saisi, et numéro au format wa.me (international,
+// sans « + », espaces ni tirets). Les contacts sans numéro sont écartés.
+function contactsJoignables(contacts?: Record<string, string> | null): [string, string, string][] {
+  return Object.entries(contacts ?? {})
+    .map(([nom, tel]): [string, string, string] => [nom, tel, (tel ?? '').replace(/\D/g, '')])
+    .filter(([, , wa]) => wa.length > 0);
 }
 
 export function WarehousesSection({ isDark }: WarehousesSectionProps) {
@@ -71,7 +79,8 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
       country: 'Chine',
       mode: { label: 'Fret aérien', icon: Plane },
       fallbackName: 'Entrepôt Guangzhou',
-      photo: '/images/backgrounds/chargement-cargo-1.jpg',
+      photo: '/images/backgrounds/chargement-cargo-1.webp',
+      alt: 'Agent au sol à côté de conteneurs de fret aérien, sur le tarmac d’un aéroport',
     },
     {
       key: 'sea-cn',
@@ -80,7 +89,8 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
       country: 'Chine',
       mode: { label: 'Fret maritime', icon: Ship },
       fallbackName: sea.name,
-      photo: '/images/freight/port.jpg',
+      photo: '/images/freight/port.webp',
+      alt: 'Porte-conteneurs à quai de nuit, sous les grues de chargement',
     },
     {
       key: 'gn',
@@ -89,7 +99,8 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
       country: 'Guinée',
       mode: null,
       fallbackName: 'Entrepôt Conakry',
-      photo: '/images/backgrounds/chargement-cargo-2.jpg',
+      photo: '/images/backgrounds/chargement-cargo-2.webp',
+      alt: 'Agents au sol préparant des conteneurs de fret au pied d’un avion de ligne',
     },
   ];
 
@@ -136,7 +147,7 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
               {/* Photo en fond plein cadre */}
               <motion.img
                 src={card.photo}
-                alt=""
+                alt={card.alt}
                 loading="lazy"
                 decoding="async"
                 variants={{
@@ -151,11 +162,11 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
 
               <div className="absolute top-4 left-4 flex items-center gap-2">
                 <span className="text-xl drop-shadow">{card.flag}</span>
-                <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/10 text-white">
+                <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-night-950/70 text-white ring-1 ring-white/15 backdrop-blur-sm">
                   {card.country}
                 </span>
                 {card.mode && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-ember-400/20 text-ember-300">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-night-950/70 text-ember-300 ring-1 ring-ember-400/30 backdrop-blur-sm">
                     <card.mode.icon size={12} />
                     {card.mode.label}
                   </span>
@@ -231,13 +242,12 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                     </motion.button>
                   )}
 
-                  {card.warehouse?.contactNumbersJson &&
-                    Object.keys(card.warehouse.contactNumbersJson).length > 0 && (
+                  {/* Seuls les contacts avec un numéro sont affichés : une pastille sans numéro
+                      ressemblait à un lien mais ne menait nulle part */}
+                  {contactsJoignables(card.warehouse?.contactNumbersJson).length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {Object.entries(card.warehouse.contactNumbersJson).map(([name, phone]) => {
-                          // wa.me exige le format international sans "+", espaces ni tirets.
-                          const waNumber = phone.replace(/\D/g, '');
-                          return waNumber ? (
+                        {contactsJoignables(card.warehouse?.contactNumbersJson).map(([name, phone, waNumber]) => {
+                          return (
                             <motion.a
                               key={name}
                               whileHover={{ scale: 1.05 }}
@@ -251,14 +261,6 @@ export function WarehousesSection({ isDark }: WarehousesSectionProps) {
                               <MessageCircle size={11} />
                               {name} — {phone}
                             </motion.a>
-                          ) : (
-                            <span
-                              key={name}
-                              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border bg-white/10 text-slate-100 border-white/20"
-                            >
-                              <Phone size={11} />
-                              {name}
-                            </span>
                           );
                         })}
                       </div>

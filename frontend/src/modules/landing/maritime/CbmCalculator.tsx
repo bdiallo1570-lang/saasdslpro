@@ -7,6 +7,7 @@ import { Container3D } from './Container3D';
 import { CONTAINERS, MARITIME } from './maritimeConfig';
 import { formatNumber } from '@/lib/format';
 import { maritimeOf, usePublicPricing } from '../publicPricing';
+import { noterDemandeDevis } from '../devis/devisWhatsApp';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
@@ -47,7 +48,7 @@ export function CbmCalculator({ isDark }: { isDark: boolean }) {
     (withCustoms ? `\n• Avec dédouanement à Conakry` : '');
   const whatsappUrl = `https://wa.me/${MARITIME.whatsappNumber}?text=${encodeURIComponent(message)}`;
 
-  const muted = isDark ? 'text-slate-400' : 'text-slate-500';
+  const muted = isDark ? 'text-slate-400' : 'text-slate-600';
   const strong = isDark ? 'text-white' : 'text-night-900';
 
   return (
@@ -259,6 +260,7 @@ export function CbmCalculator({ isDark }: { isDark: boolean }) {
             <Magnetic strength={0.18}>
               <motion.a
                 href={volume > 0 ? whatsappUrl : undefined}
+                onClick={() => noterDemandeDevis('calculateur maritime')}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.02 }}

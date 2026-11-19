@@ -3,8 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient, extractErrorMessage } from '@/lib/apiClient';
 import { Button, Input, notify } from '@/ui';
+import { usePageMeta } from '@/lib/pageMeta';
+import { z } from 'zod';
+import { codeOtp, identifiant, motDePasseSolide, useValidation } from '@/lib/validation';
+import { ChampPiege } from '@/components/ChampPiege';
+
+// Mêmes règles que le serveur (backend auth.schema.ts : resetPasswordRequest / resetPasswordConfirm)
+const schemaDemande = z.object({ identifier: identifiant });
+const schemaConfirmation = z.object({ otpCode: codeOtp, newPassword: motDePasseSolide });
 
 export default function ResetPasswordPage() {
+  usePageMeta({
+    titre: 'Mot de passe oublié',
+    description: 'Recevez un code pour choisir un nouveau mot de passe pour votre espace DSL Air Cargo.',
+    indexable: false,
+  });
   const navigate = useNavigate();
   const [step, setStep] = useState<'demande' | 'confirmation'>('demande');
   const [identifier, setIdentifier] = useState('');
@@ -13,13 +26,18 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const vDemande = useValidation(schemaDemande);
+  // Champ piège anti-robots (invisible)
+  const [piege, setPiege] = useState('');
+  const vConfirmation = useValidation(schemaConfirmation);
 
   async function handleRequest(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!vDemande.valider({ identifier })) return;
     setLoading(true);
     try {
-      const res = await apiClient.post('/auth/password/reset-request', { identifier });
+      const res = await apiClient.post('/auth/password/reset-request', { identifier, site_web: piege });
       setMessage(res.data.data.message);
       setStep('confirmation');
     } catch (err) {
@@ -32,6 +50,7 @@ export default function ResetPasswordPage() {
   async function handleConfirm(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!vConfirmation.valider({ otpCode, newPassword })) return;
     setLoading(true);
     try {
       await apiClient.post('/auth/password/reset-confirm', { identifier, otpCode, newPassword });
@@ -94,14 +113,20 @@ export default function ResetPasswordPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 8 }}
               onSubmit={handleRequest}
-              className="space-y-4"
+              noValidate
+              className="relative space-y-4"
             >
+              <ChampPiege value={piege} onChange={setPiege} />
               <Input
                 label="Téléphone ou email"
                 type="text"
                 required
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                error={vDemande.erreurs.identifier}
+                onChange={(e) => {
+                  setIdentifier(e.target.value);
+                  vDemande.effacer('identifier');
+                }}
                 placeholder="+224 6XX XX XX XX ou email"
                 className="dark:bg-night-700 dark:border-night-600"
               />
@@ -116,6 +141,7 @@ export default function ResetPasswordPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               onSubmit={handleConfirm}
+              noValidate
               className="space-y-4"
             >
               <Input
@@ -125,7 +151,12 @@ export default function ResetPasswordPage() {
                 maxLength={6}
                 required
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
+                error={vConfirmation.erreurs.otpCode}
+                onChange={(e) => {
+                  // Chiffres uniquement : un code collé avec des espaces reste valable
+                  setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  vConfirmation.effacer('otpCode');
+                }}
                 className="text-center tracking-widest dark:bg-night-700 dark:border-night-600"
               />
               <Input
@@ -134,7 +165,12 @@ export default function ResetPasswordPage() {
                 required
                 minLength={10}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                error={vConfirmation.erreurs.newPassword}
+                hint="Au moins 10 caractères, dont une lettre et un chiffre."
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  vConfirmation.effacer('newPassword');
+                }}
                 placeholder="10 caractères, une lettre et un chiffre"
                 className="dark:bg-night-700 dark:border-night-600"
               />

@@ -91,8 +91,9 @@ export function Sidebar() {
       {/* Marque */}
       <div className="flex items-center gap-3 px-4 h-16">
         <img
-          src="/images/backgrounds/dsl-logo-200.png"
-          alt=""
+          src="/images/backgrounds/dsl-logo-96.webp"
+          // Déplié, le nom est écrit à côté : le logo serait lu deux fois
+          alt={collapsed ? 'DSL Air Cargo' : ''}
           className="h-9 w-9 shrink-0 rounded-full object-cover shadow-glow-cargo"
         />
         <AnimatePresence initial={false}>

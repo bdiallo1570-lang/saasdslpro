@@ -10,6 +10,14 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { AppShell } from '@/layout/AppShell';
 import { PageHeader, Card, Button, Input, Select, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, useValidation } from '@/lib/validation';
+
+// Mêmes règles que le serveur (backend exchangeRates.schema.ts)
+const schemaTaux = z.object({
+  rate: nombrePositif('Le taux doit être supérieur à 0.'),
+  effectiveFrom: z.string().min(1, "La date d'effet est requise."),
+});
 
 const listContainer = {
   hidden: { opacity: 0 },
@@ -45,9 +53,11 @@ export default function ExchangeRatesPage() {
     refresh();
   }, [refresh]);
 
+  const v = useValidation(schemaTaux);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!rate) return;
+    if (!v.valider({ rate, effectiveFrom })) return;
     setSubmitting(true);
     try {
       await createExchangeRate({ fromCurrency, rate: Number(rate), effectiveFrom });
@@ -69,7 +79,7 @@ export default function ExchangeRatesPage() {
       />
 
       <Card className="p-5 mb-8">
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-start">
           <Select
             label="Devise"
             value={fromCurrency}
@@ -86,16 +96,24 @@ export default function ExchangeRatesPage() {
             min="0.000001"
             required
             value={rate}
-            onChange={(e) => setRate(e.target.value)}
+            error={v.erreurs.rate}
+              onChange={(e) => {
+                setRate(e.target.value);
+                v.effacer('rate');
+              }}
           />
           <Input
             label="Date d'effet"
             type="date"
             required
             value={effectiveFrom}
-            onChange={(e) => setEffectiveFrom(e.target.value)}
+            error={v.erreurs.effectiveFrom}
+              onChange={(e) => {
+                setEffectiveFrom(e.target.value);
+                v.effacer('effectiveFrom');
+              }}
           />
-          <Button type="submit" variant="cargo" loading={submitting} disabled={!rate}>
+          <Button type="submit" variant="cargo" loading={submitting} className="sm:mt-7">
             Enregistrer
           </Button>
         </form>

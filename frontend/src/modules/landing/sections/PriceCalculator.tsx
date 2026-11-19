@@ -8,6 +8,7 @@ import { SectionHeading } from './SectionHeading';
 import { Magnetic } from './motionKit';
 import { formatNumber } from '@/lib/format';
 import { formatPricePerKg, priceOf, usePublicPricing } from '../publicPricing';
+import { BoutonDevis } from '../devis/BoutonDevis';
 
 interface PriceCalculatorProps {
   isDark: boolean;
@@ -25,6 +26,8 @@ const CATEGORIES = [
     examples: 'Habits, chaussures, petits accessoires, jouets, vaisselle, articles ménagers…',
     // Couleur d'accent de la catégorie : curseur, colis de la soute, halo du résultat
     accent: '#10B981',
+    // Même teinte, plus foncée, pour les textes sur fond clair (contraste ≥ 4,5:1)
+    accentTexteClair: '#047857',
     accentSoft: 'rgba(16,185,129,0.14)',
   },
   {
@@ -33,6 +36,7 @@ const CATEGORIES = [
     icon: ShieldAlert,
     examples: 'Batteries, liquides, produits électroniques, cosmétiques, produits inflammables…',
     accent: '#F59E0B',
+    accentTexteClair: '#B45309',
     accentSoft: 'rgba(245,158,11,0.16)',
   },
 ];
@@ -60,7 +64,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
   const accent = selectedCategorie.accent;
   const sliderPct = (Math.min(Math.max(poidsKg, MIN_KG), MAX_KG) - MIN_KG) / (MAX_KG - MIN_KG);
   const filledSlots = poidsKg > 0 ? Math.min(SLOTS, Math.ceil(poidsKg / SLOT_KG)) : 0;
-  const muted = isDark ? 'text-slate-400' : 'text-slate-500';
+  const muted = isDark ? 'text-slate-400' : 'text-slate-600';
   const strong = isDark ? 'text-white' : 'text-night-900';
 
   return (
@@ -260,7 +264,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 />
 
                 <motion.p
-                  animate={{ color: accent }}
+                  animate={{ color: isDark ? accent : selectedCategorie.accentTexteClair }}
                   transition={{ duration: 0.5 }}
                   className="relative text-xs font-medium uppercase tracking-wide"
                 >
@@ -288,7 +292,7 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
                       transition={{ duration: 0.3, ease: EASE_OUT }}
-                      className={`relative text-xs mt-2 tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+                      className={`relative text-xs mt-2 tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
                     >
                       {formatNumber(poidsKg)} kg × {formatNumber(pricePerKg)} GNF/kg
                     </motion.p>
@@ -296,13 +300,27 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 </AnimatePresence>
               </div>
 
-              <Magnetic strength={0.18}>
+              <BoutonDevis
+                emplacement="calculateur"
+                taille="large"
+                pleineLargeur
+                details={
+                  pricePerKg !== null
+                    ? `${selectedCategorie.label}, ${formatNumber(poidsKg)} kg (estimation : ${formatNumber(Math.round(totalEstime))} GNF).`
+                    : undefined
+                }
+              />
+              <Magnetic strength={0.12}>
                 <motion.button
                   type="button"
                   whileHover="hover"
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setAddressModalOpen(true)}
-                  className="group relative w-full overflow-hidden inline-flex items-center justify-center gap-2 bg-cargo-500 hover:bg-cargo-400 text-ink-950 text-sm sm:text-base font-semibold px-4 sm:px-5 py-3.5 rounded-xl shadow-glow-cargo transition-colors"
+                  className={`group relative w-full overflow-hidden inline-flex items-center justify-center gap-2 border text-sm font-semibold px-4 sm:px-5 py-3 rounded-xl transition-colors ${
+                    isDark
+                      ? 'border-white/20 text-slate-100 hover:bg-white/10'
+                      : 'border-slate-300 text-night-800 hover:bg-slate-100'
+                  }`}
                 >
                   {/* Reflet au survol */}
                   <motion.span

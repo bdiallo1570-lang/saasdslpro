@@ -195,7 +195,7 @@ const SECTIONS: LegalSection[] = [
       <p>
         Les informations que vous nous confiez servent uniquement à traiter vos envois. Leur utilisation et vos droits
         sont détaillés dans notre{' '}
-        <Link to="/confidentialite" className="text-ember-500 underline-offset-2 hover:underline">
+        <Link to="/confidentialite" className="underline-offset-2 hover:underline">
           politique de confidentialité
         </Link>
         .
@@ -226,6 +226,7 @@ export default function ConditionsGeneralesPage() {
       surtitre="Nos engagements"
       Icone={FileText}
       titre="Conditions générales"
+      description="Conditions générales de DSL Air Cargo : prix, paiement, retrait à Madina, stockage, responsabilité et réclamations pour vos envois Chine-Guinée."
       intro="Les règles qui s’appliquent quand vous confiez un colis à DSL Air Cargo, de la Chine jusqu’à la remise à Conakry."
       miseAJour="19 novembre 2026"
       enBref={EN_BREF}

@@ -19,7 +19,7 @@ interface LoginResult {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  loginWithPassword: (identifier: string, password: string) => Promise<LoginResult>;
+  loginWithPassword: (identifier: string, password: string, piege?: string) => Promise<LoginResult>;
   loginWithOtp: (identifier: string, otpCode: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
 }
@@ -52,10 +52,12 @@ function loadStoredUser(): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadStoredUser());
 
-  const loginWithPassword = useCallback(async (identifier: string, password: string) => {
+  // `piege` : valeur du champ anti-robots du formulaire (vide pour un humain)
+  const loginWithPassword = useCallback(async (identifier: string, password: string, piege = '') => {
     const response = await apiClient.post<ApiResponse<TokenPairResponse>>('/auth/login', {
       identifier,
       password,
+      site_web: piege,
     });
     const data = response.data.data!;
     persistSession(data);

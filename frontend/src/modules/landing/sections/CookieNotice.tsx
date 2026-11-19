@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 
 // Bandeau d'information sur les cookies (et non de consentement) : le site n'utilise aucun
-// cookie publicitaire ni de mesure d'audience, il n'y a donc rien à accepter ou refuser. Seul
-// le fait de l'avoir fermé est retenu sur l'appareil. Si un outil de mesure est ajouté un jour,
-// il faudra le remplacer par un vrai choix Accepter / Refuser, AVANT de charger l'outil.
+// cookie publicitaire ni de suivi, et sa mesure d'audience (Vercel Analytics) fonctionne sans
+// cookie ni identifiant : il n'y a donc rien à accepter ou refuser. Seul le fait de l'avoir
+// fermé est retenu sur l'appareil. Si un outil qui dépose des cookies est ajouté un jour
+// (Google Analytics, pixel Facebook…), il faudra le remplacer par un vrai choix
+// Accepter / Refuser, AVANT de charger l'outil.
 
 const CLE = 'dsl_info_cookies_vu';
 
@@ -65,8 +67,8 @@ export function CookieNotice({ isDark, actif = true, boutonsFlottants = false }:
             Pas de cookies de suivi ici
           </p>
           <p className="mt-1.5 text-[13px] leading-relaxed">
-            Ce site n’utilise aucun cookie publicitaire ni de mesure d’audience : seulement ce qu’il faut pour vous
-            garder connecté et retenir le mode clair ou sombre.
+            Ce site n’utilise aucun cookie publicitaire ni de suivi : seulement ce qu’il faut pour vous garder
+            connecté et retenir le mode clair ou sombre. La fréquentation est mesurée de façon anonyme, sans cookie.
           </p>
           <div className="mt-3 flex items-center justify-between gap-3">
             <Link

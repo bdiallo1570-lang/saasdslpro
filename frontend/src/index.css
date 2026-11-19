@@ -223,3 +223,23 @@ html.lenis body {
     transform: translateX(300%);
   }
 }
+
+/* Écran tactile : poignée du curseur de poids agrandie à 24 px, la taille minimale
+   recommandée pour viser au doigt (WCAG 2.5.8) */
+@media (pointer: coarse) {
+  /* Piste toujours fine à l'œil (6 px) mais zone de toucher haute de 24 px : la marge est
+     transparente, le dégradé de remplissage (style en ligne) ne couvre que le contenu */
+  .calculator-slider {
+    height: 24px;
+    padding: 9px 0;
+    background-clip: content-box !important;
+  }
+  .calculator-slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .calculator-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}

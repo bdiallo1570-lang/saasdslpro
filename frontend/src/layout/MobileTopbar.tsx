@@ -22,7 +22,7 @@ export function MobileTopbar() {
     <div className="md:hidden sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-xl dark:border-night-700 dark:bg-night-900/85">
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2.5">
-          <img src="/images/backgrounds/dsl-logo-200.png" alt="" className="h-8 w-8 rounded-full object-cover" />
+          <img src="/images/backgrounds/dsl-logo-96.webp" alt="" className="h-8 w-8 rounded-full object-cover" />
           <span className="font-editorial text-xl leading-none text-night-900 dark:text-cream">DSL Air Cargo</span>
         </div>
         <div className="flex items-center gap-1">

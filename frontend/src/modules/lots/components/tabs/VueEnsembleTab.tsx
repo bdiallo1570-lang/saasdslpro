@@ -7,6 +7,8 @@ import { Colis, dateReceptionEffective } from '@/modules/colis/colis.api';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Button, Badge, Input, StatCard, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { useValidation } from '@/lib/validation';
 
 const STATUS_ORDER: LotStatus[] = [
   'EN_RECEPTION',
@@ -58,8 +60,15 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
     }
   }
 
+  const vVol = useValidation(
+    z.object({
+      flightNumber: z.string().trim().min(1, 'Le numéro de vol est requis.'),
+      departureDate: z.string().min(1, "La date d'embarquement est requise."),
+    }),
+  );
+
   async function handleSetFlightInfo() {
-    if (!flightNumber || !departureDate) return;
+    if (!vVol.valider({ flightNumber, departureDate })) return;
     setSaving(true);
     setError(null);
     try {
@@ -150,19 +159,27 @@ export function VueEnsembleTab({ lot, rentabilite, rentabiliteLoading, unassigne
             label="Numéro de vol"
             type="text"
             value={flightNumber}
-            onChange={(e) => setFlightNumber(e.target.value)}
+            error={vVol.erreurs.flightNumber}
+            onChange={(e) => {
+              setFlightNumber(e.target.value);
+              vVol.effacer('flightNumber');
+            }}
           />
           <Input
             label="Date d'embarquement"
             type="datetime-local"
             value={departureDate}
-            onChange={(e) => setDepartureDate(e.target.value)}
+            error={vVol.erreurs.departureDate}
+            onChange={(e) => {
+              setDepartureDate(e.target.value);
+              vVol.effacer('departureDate');
+            }}
           />
           <div className="flex items-end">
             <Button
               variant="primary"
               loading={saving}
-              disabled={saving || !flightNumber || !departureDate}
+              disabled={saving}
               onClick={handleSetFlightInfo}
               fullWidth
             >

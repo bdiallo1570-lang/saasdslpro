@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { usePageMeta } from '@/lib/pageMeta';
 
 export default function AccessDeniedPage() {
+  usePageMeta({ titre: 'Accès refusé', indexable: false });
   return (
     <div className="min-h-screen bg-night-900 flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-red-500/5 to-transparent" />

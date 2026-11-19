@@ -98,7 +98,7 @@ export function SeaRouteScene() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 font-label text-[10px] uppercase tracking-[0.3em] text-cyan-200"
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 font-label text-[11px] uppercase tracking-[0.25em] text-cyan-200"
             >
               <Anchor size={12} />
               Nouveau · Fret maritime
@@ -327,7 +327,7 @@ export function SeaRouteScene() {
 
         <motion.div
           style={{ opacity: hintOpacity }}
-          className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2 font-label text-[10px] uppercase tracking-[0.3em] text-slate-400"
+          className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap font-label text-[11px] uppercase tracking-[0.2em] text-slate-300"
         >
           Faites défiler pour lever l’ancre ↓
         </motion.div>
@@ -340,10 +340,10 @@ function PortLabel({ x, y, title, sub, align }: { x: number; y: number; title: s
   const dx = align === 'end' ? -14 : 14;
   return (
     <g>
-      <text x={x + dx} y={y - 4} textAnchor={align} fill="#EDE7DB" fontSize="15" fontFamily="JetBrains Mono Variable, monospace" letterSpacing="3">
+      <text x={x + dx} y={y - 4} textAnchor={align} fill="#EDE7DB" fontSize="15" fontFamily="JetBrains Mono Variable, monospace" letterSpacing="3" stroke="#050608" strokeWidth={6} strokeLinejoin="round" paintOrder="stroke">
         {title}
       </text>
-      <text x={x + dx} y={y + 14} textAnchor={align} fill="#94A3B8" fontSize="12" fontFamily="Plus Jakarta Sans Variable, sans-serif">
+      <text x={x + dx} y={y + 14} textAnchor={align} fill="#94A3B8" fontSize="12" fontFamily="Plus Jakarta Sans Variable, sans-serif" stroke="#050608" strokeWidth={3} paintOrder="stroke">
         {sub}
       </text>
     </g>

@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|_vercel/).*)",
       "destination": "/index.html"
     }
   ],
@@ -16,6 +16,15 @@
         {
           "key": "Content-Security-Policy",
           "value": "upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/document/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
         }
       ]
     }

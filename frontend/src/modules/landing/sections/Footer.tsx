@@ -49,8 +49,8 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
           <motion.div variants={columnVariants}>
             <div className="flex items-center gap-2.5 mb-3">
               <img
-                src="/images/backgrounds/dsl-logo-200.png"
-                alt="DSL Air Cargo"
+                src="/images/backgrounds/dsl-logo-96.webp"
+                alt=""
                 className="h-9 w-9 rounded-full object-cover"
               />
               <span className={`font-semibold ${isDark ? 'text-white' : 'text-night-900'}`}>
@@ -67,14 +67,14 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
             <p className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-night-900'}`}>
               Liens rapides
             </p>
-            <ul className="space-y-2">
+            <ul className="space-y-0.5">
               {FOOTER_LINKS.map((link) => (
                 <li key={link.label}>
                   <motion.button
                     whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => scrollTo(link.href)}
-                    className={`text-sm transition-colors ${
+                    className={`inline-block py-1 text-sm transition-colors ${
                       isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-night-900'
                     }`}
                   >
@@ -87,7 +87,7 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
                   <motion.span whileHover={{ x: 3 }} className="inline-block">
                     <Link
                       to={lien.to}
-                      className={`text-sm transition-colors ${
+                      className={`inline-block py-1 text-sm transition-colors ${
                         isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-night-900'
                       }`}
                     >

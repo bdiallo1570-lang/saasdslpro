@@ -7,8 +7,45 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { ColisLabel } from './ColisLabel';
 import { Card, Button, Input, Textarea, Select, StatCounter, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, nombrePositifFacultatif, texteRequis, useValidation } from '@/lib/validation';
 
 const DIVISEUR_VOLUMETRIQUE = 6000;
+
+const DIMENSIONS = ['longueurCm', 'largeurCm', 'hauteurCm'] as const;
+
+// Mêmes règles que le serveur (backend colis.schema.ts : createColisSchema et createColis), plus :
+// les trois dimensions ou aucune (une dimension isolée était ignorée sans prévenir).
+const schemaColis = z
+  .object({
+    clientId: z.string().min(1, 'Sélectionnez ou créez un client.'),
+    description: texteRequis('La description est requise.', 2),
+    poidsReelKg: nombrePositif('Le poids réel doit être supérieur à 0.'),
+    longueurCm: nombrePositifFacultatif('La longueur doit être supérieure à 0.'),
+    largeurCm: nombrePositifFacultatif('La largeur doit être supérieure à 0.'),
+    hauteurCm: nombrePositifFacultatif('La hauteur doit être supérieure à 0.'),
+    categorie: z.string(),
+    prixNegocie: z.string(),
+    prixStandard: z.number().nullable(),
+    dateReception: z.string(),
+  })
+  .superRefine((d, ctx) => {
+    const manquantes = DIMENSIONS.filter((k) => d[k] === undefined);
+    if (manquantes.length > 0 && manquantes.length < 3) {
+      ctx.addIssue({ code: 'custom', path: [manquantes[0]], message: 'Renseignez les trois dimensions, ou aucune.' });
+    }
+    if (d.categorie === 'GROS_VOLUME') {
+      const prix = Number(d.prixNegocie.replace(',', '.'));
+      if (!(prix > 0)) {
+        ctx.addIssue({ code: 'custom', path: ['prixNegocie'], message: 'Indiquez le prix négocié au kilo.' });
+      } else if (d.prixStandard && prix > d.prixStandard) {
+        ctx.addIssue({ code: 'custom', path: ['prixNegocie'], message: 'Le prix négocié ne peut pas dépasser le tarif Standard.' });
+      }
+    }
+    if (d.dateReception && new Date(d.dateReception).getTime() > Date.now() + 60_000) {
+      ctx.addIssue({ code: 'custom', path: ['dateReception'], message: 'La date de réception ne peut pas être dans le futur.' });
+    }
+  });
 
 interface NouveauColisFormProps {
   onCreated?: (colis: Colis) => void;
@@ -41,6 +78,8 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdColis, setCreatedColis] = useState<Colis | null>(null);
+  const { erreurs, valider, effacer, setErreurs } = useValidation(schemaColis);
+  const erreurDimensions = erreurs.longueurCm ?? erreurs.largeurCm ?? erreurs.hauteurCm;
 
   const poidsVolumetrique =
     longueurCm && largeurCm && hauteurCm
@@ -99,11 +138,20 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!client) {
-      setError('Veuillez sélectionner ou créer un client.');
-      return;
-    }
     setError(null);
+    const ok = valider({
+      clientId: client?.id ?? '',
+      description,
+      poidsReelKg,
+      longueurCm,
+      largeurCm,
+      hauteurCm,
+      categorie,
+      prixNegocie,
+      prixStandard,
+      dateReception: dateReceptionManuelle,
+    });
+    if (!ok || !client) return;
     setSubmitting(true);
     try {
       const colis = await createColis({
@@ -138,6 +186,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
     setCategorie('STANDARD');
     setPrixNegocie('');
     setDateReceptionManuelle('');
+    setErreurs({});
   }
 
   return (
@@ -151,19 +200,35 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
           transition={{ duration: 0.25, ease: 'easeOut' }}
         >
           <Card className="p-4 sm:p-5">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-night-700 dark:text-slate-300 mb-1.5">
                   Client
                 </label>
-                <ClientPicker selectedClient={client} onSelect={setClient} />
+                <ClientPicker
+                  selectedClient={client}
+                  erreur={erreurs.clientId}
+                  onSelect={(c) => {
+                    setClient(c);
+                    effacer('clientId');
+                  }}
+                />
+                {erreurs.clientId && (
+                  <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {erreurs.clientId}
+                  </p>
+                )}
               </div>
 
               <Textarea
                 label="Description des marchandises"
                 required
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                error={erreurs.description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  effacer('description');
+                }}
                 rows={2}
                 placeholder="Ex : 3 cartons vêtements"
               />
@@ -176,12 +241,19 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   min="0.01"
                   required
                   value={poidsReelKg}
-                  onChange={(e) => setPoidsReelKg(e.target.value)}
+                  error={erreurs.poidsReelKg}
+                  onChange={(e) => {
+                    setPoidsReelKg(e.target.value);
+                    effacer('poidsReelKg');
+                  }}
                 />
                 <Select
                   label="Catégorie"
                   value={categorie}
-                  onChange={(e) => setCategorie(e.target.value as PricingCategory)}
+                  onChange={(e) => {
+                    setCategorie(e.target.value as PricingCategory);
+                    effacer('prixNegocie');
+                  }}
                 >
                   <option value="STANDARD">Standard</option>
                   <option value="RISQUE">Sensible / à risque</option>
@@ -200,7 +272,11 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                     step="1"
                     required
                     value={prixNegocie}
-                    onChange={(e) => setPrixNegocie(e.target.value)}
+                    error={erreurs.prixNegocie}
+                    onChange={(e) => {
+                      setPrixNegocie(e.target.value);
+                      effacer('prixNegocie');
+                    }}
                     placeholder={prixStandard ? `Moins de ${formatNumber(prixStandard)}` : 'Prix au kilo'}
                   />
                   <p
@@ -232,26 +308,49 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                     type="number"
                     min="0"
                     placeholder="Longueur"
+                    aria-label="Longueur (cm)"
+                    aria-invalid={erreurDimensions ? true : undefined}
+                    className={erreurDimensions ? 'border-red-400' : ''}
                     value={longueurCm}
-                    onChange={(e) => setLongueurCm(e.target.value)}
+                    onChange={(e) => {
+                      setLongueurCm(e.target.value);
+                      effacer(...DIMENSIONS);
+                    }}
                   />
                   <Input
                     type="number"
                     min="0"
                     placeholder="Largeur"
+                    aria-label="Largeur (cm)"
+                    aria-invalid={erreurDimensions ? true : undefined}
+                    className={erreurDimensions ? 'border-red-400' : ''}
                     value={largeurCm}
-                    onChange={(e) => setLargeurCm(e.target.value)}
+                    onChange={(e) => {
+                      setLargeurCm(e.target.value);
+                      effacer(...DIMENSIONS);
+                    }}
                   />
                   <Input
                     type="number"
                     min="0"
                     placeholder="Hauteur"
+                    aria-label="Hauteur (cm)"
+                    aria-invalid={erreurDimensions ? true : undefined}
+                    className={erreurDimensions ? 'border-red-400' : ''}
                     value={hauteurCm}
-                    onChange={(e) => setHauteurCm(e.target.value)}
+                    onChange={(e) => {
+                      setHauteurCm(e.target.value);
+                      effacer(...DIMENSIONS);
+                    }}
                   />
                 </div>
+                {erreurDimensions && (
+                  <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {erreurDimensions}
+                  </p>
+                )}
                 {poidsVolumetrique > 0 && (
-                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
                     Poids volumétrique : {poidsVolumetrique.toFixed(2)} kg · Poids taxable :{' '}
                     {poidsTaxable.toFixed(2)} kg (facturation au poids réel)
                   </p>
@@ -264,7 +363,11 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                   type="datetime-local"
                   max={maxDateReception}
                   value={dateReceptionManuelle}
-                  onChange={(e) => setDateReceptionManuelle(e.target.value)}
+                  error={erreurs.dateReception}
+                  onChange={(e) => {
+                    setDateReceptionManuelle(e.target.value);
+                    effacer('dateReception');
+                  }}
                 />
                 <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Laisser vide pour utiliser la date et l'heure actuelles. À renseigner si le

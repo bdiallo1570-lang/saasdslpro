@@ -12,6 +12,8 @@ import {
 import { extractErrorMessage } from '@/lib/apiClient';
 import { Button, Card, Input, Select, StatCard, notify } from '@/ui';
 import { formatNumber } from '@/lib/format';
+import { z } from 'zod';
+import { nombrePositif, nombrePositifOuNul, useValidation } from '@/lib/validation';
 
 const DEPENSE_CATEGORIES = ['Douane', 'Manutention', 'Loyer', 'Carburant', 'Autre'];
 const CURRENCY = 'GNF';
@@ -46,11 +48,24 @@ export default function CaisseRegistrePage() {
     refresh();
   }, [refresh]);
 
+  // Mêmes règles que le serveur (backend caisse.schema.ts)
+  const vOuverture = useValidation(z.object({ fondOuverture: nombrePositifOuNul("Le fond d'ouverture ne peut pas être négatif.") }));
+  const vTransaction = useValidation(
+    z.object({
+      label: z.string().trim().min(2, 'Le libellé est requis.'),
+      montant: nombrePositif('Le montant doit être supérieur à 0.'),
+    }),
+  );
+  const vCloture = useValidation(
+    z.object({ comptagePhysique: nombrePositifOuNul('Indiquez le montant compté dans la caisse (0 ou plus).') }),
+  );
+
   async function handleOpen() {
+    if (!vOuverture.valider({ fondOuverture: fondOuverture || '0' })) return;
     setSaving(true);
     setError(null);
     try {
-      await openClosure(CURRENCY, Number(fondOuverture) || 0);
+      await openClosure(CURRENCY, Number(fondOuverture.replace(',', '.')) || 0);
       notify.success('Caisse ouverte pour la journée.');
       await refresh();
     } catch (err) {
@@ -63,7 +78,8 @@ export default function CaisseRegistrePage() {
   }
 
   async function handleAddTransaction() {
-    if (!closure || !label.trim() || !montant) return;
+    if (!closure) return;
+    if (!vTransaction.valider({ label, montant })) return;
     setSaving(true);
     setError(null);
     try {
@@ -90,7 +106,8 @@ export default function CaisseRegistrePage() {
   }
 
   async function handleClose() {
-    if (!closure || !comptagePhysique) return;
+    if (!closure) return;
+    if (!vCloture.valider({ comptagePhysique })) return;
     setSaving(true);
     setError(null);
     try {
@@ -132,7 +149,11 @@ export default function CaisseRegistrePage() {
           type="number"
           min="0"
           value={fondOuverture}
-          onChange={(e) => setFondOuverture(e.target.value)}
+          error={vOuverture.erreurs.fondOuverture}
+          onChange={(e) => {
+            setFondOuverture(e.target.value);
+            vOuverture.effacer('fondOuverture');
+          }}
         />
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <Button variant="cargo" fullWidth loading={saving} onClick={handleOpen}>
@@ -198,7 +219,11 @@ export default function CaisseRegistrePage() {
             label="Libellé"
             type="text"
             value={label}
-            onChange={(e) => setLabel(e.target.value)}
+            error={vTransaction.erreurs.label}
+            onChange={(e) => {
+              setLabel(e.target.value);
+              vTransaction.effacer('label');
+            }}
             placeholder="Libellé (ex : paiement colis DSL-2026-00042)"
           />
 
@@ -208,7 +233,11 @@ export default function CaisseRegistrePage() {
               type="number"
               min="1"
               value={montant}
-              onChange={(e) => setMontant(e.target.value)}
+              error={vTransaction.erreurs.montant}
+              onChange={(e) => {
+                setMontant(e.target.value);
+                vTransaction.effacer('montant');
+              }}
               placeholder="Montant (GNF)"
             />
             {type === 'ENTREE' ? (
@@ -236,7 +265,6 @@ export default function CaisseRegistrePage() {
             variant="primary"
             fullWidth
             loading={saving}
-            disabled={!label.trim() || !montant}
             onClick={handleAddTransaction}
           >
             Enregistrer
@@ -286,7 +314,11 @@ export default function CaisseRegistrePage() {
                 type="number"
                 min="0"
                 value={comptagePhysique}
-                onChange={(e) => setComptagePhysique(e.target.value)}
+                error={vCloture.erreurs.comptagePhysique}
+                onChange={(e) => {
+                  setComptagePhysique(e.target.value);
+                  vCloture.effacer('comptagePhysique');
+                }}
               />
               <AnimatePresence>
                 {comptagePhysique && (
@@ -315,7 +347,6 @@ export default function CaisseRegistrePage() {
                 variant="cargo"
                 fullWidth
                 loading={saving}
-                disabled={!comptagePhysique}
                 onClick={handleClose}
               >
                 Confirmer la clôture

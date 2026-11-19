@@ -6,6 +6,8 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { formatNumber } from '@/lib/format';
 import { listAllClients, ClientListItem } from '@/modules/clients/clients.api';
 import { Devis, DevisLigneType, getTarifs, LIGNE_LABELS, LigneSaisie, prixApercu, prixSaisi, saveDevis, Tarifs } from './devis.api';
+import { z } from 'zod';
+import { useValidation } from '@/lib/validation';
 
 const UNITES: Record<Exclude<DevisLigneType, 'LIBRE'>, string> = {
   AERIEN_STANDARD: 'kg',
@@ -31,6 +33,48 @@ interface LigneForm {
 
 const nombre = (v: string) => Number(v.replace(',', '.'));
 
+// Mêmes règles que le serveur (backend devis.schema.ts et devis.calcul.ts) : une erreur par
+// champ, ligne par ligne (« lignes.2.quantite »), au lieu d'un seul message après l'envoi
+const schemaDevis = z
+  .object({
+    clientId: z.string().min(1, 'Choisissez un client.'),
+    validUntil: z.string().min(1, 'Indiquez la date de fin de validité.'),
+    remise: z.string(),
+    sousTotal: z.number(),
+    standardGnfKg: z.number().nullable(),
+    lignes: z.array(z.object({ type: z.string(), quantite: z.string(), libelle: z.string(), prixUnitaire: z.string() })),
+  })
+  .superRefine((d, ctx) => {
+    const remise = d.remise.trim() === '' ? 0 : nombre(d.remise);
+    if (!(remise >= 0)) ctx.addIssue({ code: 'custom', path: ['remise'], message: 'La remise ne peut pas être négative.' });
+    else if (remise > d.sousTotal) {
+      ctx.addIssue({ code: 'custom', path: ['remise'], message: 'La remise ne peut pas dépasser le sous-total.' });
+    }
+    d.lignes.forEach((l, i) => {
+      if (!(nombre(l.quantite) > 0)) {
+        ctx.addIssue({ code: 'custom', path: ['lignes', i, 'quantite'], message: 'La quantité doit être supérieure à 0.' });
+      }
+      const prix = l.prixUnitaire.trim() === '' ? NaN : nombre(l.prixUnitaire);
+      if (l.type === 'LIBRE') {
+        if (!l.libelle.trim()) ctx.addIssue({ code: 'custom', path: ['lignes', i, 'libelle'], message: 'Indiquez la désignation.' });
+        if (!(prix >= 0)) {
+          ctx.addIssue({ code: 'custom', path: ['lignes', i, 'prixUnitaire'], message: 'Indiquez un prix unitaire (0 ou plus).' });
+        }
+      }
+      if (l.type === 'AERIEN_GROS_VOLUME') {
+        if (!(prix > 0)) {
+          ctx.addIssue({ code: 'custom', path: ['lignes', i, 'prixUnitaire'], message: 'Indiquez le prix négocié au kilo.' });
+        } else if (d.standardGnfKg && prix > d.standardGnfKg) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['lignes', i, 'prixUnitaire'],
+            message: 'Le prix Gros volume ne peut pas dépasser le tarif Standard.',
+          });
+        }
+      }
+    });
+  });
+
 interface DevisEditorProps {
   open: boolean;
   devis: Devis | null;
@@ -49,6 +93,10 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
   const [remise, setRemise] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const v = useValidation(schemaDevis);
+  // Erreur d'un champ de ligne (ex. lignes.0.quantite)
+  const errLigne = (i: number, champ: keyof LigneForm) => v.erreurs[`lignes.${i}.${champ}`];
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +121,8 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
           }))
         : [{ type: 'AERIEN_STANDARD', quantite: '', libelle: '', unite: 'kg', prixUnitaire: '' }],
     );
+    v.setErreurs({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- réinitialisation à l'ouverture uniquement
   }, [open, devis]);
 
   const saisies: LigneSaisie[] = lignes.map((l) => ({
@@ -99,11 +149,20 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
   }
 
   function modifier(i: number, patch: Partial<LigneForm>) {
+    v.effacer(...Object.keys(patch).map((k) => `lignes.${i}.${k}`), 'remise');
     setLignes((ls) => ls.map((l, k) => (k === i ? { ...l, ...patch } : l)));
   }
 
   async function enregistrer() {
-    if (!clientId) return notify.error('Choisissez un client.');
+    const ok = v.valider({
+      clientId,
+      validUntil,
+      remise,
+      sousTotal: apercu.sousTotal,
+      standardGnfKg: tarifs?.standardGnfKg ?? null,
+      lignes,
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const saved = await saveDevis(
@@ -129,7 +188,15 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
     <Modal open={open} onClose={onClose} title={devis ? `Modifier ${devis.numero}` : 'Nouveau devis'} maxWidthClassName="max-w-3xl">
       <div className="space-y-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px]">
-          <Select label="Client" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <Select
+            label="Client"
+            value={clientId}
+            error={v.erreurs.clientId}
+            onChange={(e) => {
+              setClientId(e.target.value);
+              v.effacer('clientId');
+            }}
+          >
             <option value="">Choisir un client…</option>
             {[...clients]
               .sort((a, b) => a.fullName.localeCompare(b.fullName, 'fr'))
@@ -139,7 +206,16 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
                 </option>
               ))}
           </Select>
-          <Input label="Valable jusqu'au" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+          <Input
+            label="Valable jusqu'au"
+            type="date"
+            value={validUntil}
+            error={v.erreurs.validUntil}
+            onChange={(e) => {
+              setValidUntil(e.target.value);
+              v.effacer('validUntil');
+            }}
+          />
         </div>
 
         <div>
@@ -162,7 +238,11 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
                       </span>
                       <button
                         type="button"
-                        onClick={() => setLignes((ls) => ls.filter((_, k) => k !== i))}
+                        onClick={() => {
+                          setLignes((ls) => ls.filter((_, k) => k !== i));
+                          // Les lignes suivantes changent de numéro : leurs erreurs ne correspondent plus
+                          v.setErreurs((e) => Object.fromEntries(Object.entries(e).filter(([k]) => !k.startsWith('lignes.'))));
+                        }}
                         disabled={lignes.length === 1}
                         aria-label="Retirer la ligne"
                         className="rounded-lg p-1.5 text-slate-400 hover:bg-red-500/10 hover:text-red-500 disabled:opacity-30"
@@ -174,14 +254,18 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
                       <div className="col-span-2 sm:col-span-1">
                         <Input
                           placeholder={l.type === 'LIBRE' ? 'Désignation (ex. dédouanement)' : 'Précision facultative (ex. chaussures)'}
+                          aria-label={l.type === 'LIBRE' ? 'Désignation' : 'Précision'}
                           value={l.libelle}
+                          error={errLigne(i, 'libelle')}
                           onChange={(e) => modifier(i, { libelle: e.target.value })}
                         />
                       </div>
                       <Input
                         inputMode="decimal"
                         placeholder={`Quantité (${l.unite})`}
+                        aria-label={`Quantité (${l.unite})`}
                         value={l.quantite}
+                        error={errLigne(i, 'quantite')}
                         onChange={(e) => modifier(i, { quantite: e.target.value })}
                       />
                       {l.type === 'LIBRE' ? (
@@ -193,7 +277,9 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
                         <Input
                           inputMode="numeric"
                           placeholder={l.type === 'LIBRE' ? 'Prix unitaire GNF' : 'Prix négocié GNF/kg'}
+                          aria-label={l.type === 'LIBRE' ? 'Prix unitaire (GNF)' : 'Prix négocié (GNF/kg)'}
                           value={l.prixUnitaire}
+                          error={errLigne(i, 'prixUnitaire')}
                           onChange={(e) => modifier(i, { prixUnitaire: e.target.value })}
                         />
                       ) : (
@@ -240,7 +326,17 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_200px]">
           <Textarea label="Note (imprimée sur le devis)" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-          <Input label="Remise (GNF)" inputMode="numeric" placeholder="0" value={remise} onChange={(e) => setRemise(e.target.value)} />
+          <Input
+            label="Remise (GNF)"
+            inputMode="numeric"
+            placeholder="0"
+            value={remise}
+            error={v.erreurs.remise}
+            onChange={(e) => {
+              setRemise(e.target.value);
+              v.effacer('remise');
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-night-700 sm:flex-row sm:items-center sm:justify-between">

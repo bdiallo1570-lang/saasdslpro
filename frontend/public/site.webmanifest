@@ -1,0 +1,14 @@
+{
+  "name": "DSL Air Cargo",
+  "short_name": "DSL Cargo",
+  "description": "Fret aérien et maritime de Guangzhou à Conakry",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#0a0b0e",
+  "theme_color": "#0a0b0e",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

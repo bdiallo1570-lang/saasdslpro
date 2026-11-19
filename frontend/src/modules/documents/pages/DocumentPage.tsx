@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Download, ExternalLink, FileText, MessageCircle, Receipt, ShieldCheck } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import { DocumentSummary, getPublicDocument, publicPdfUrl } from '../documents.api';
+import { usePageMeta } from '@/lib/pageMeta';
 
 // Numéro WhatsApp de l'entreprise (le même que sur les factures et la landing)
 const WHATSAPP_DSL = '224628674895';
@@ -12,12 +13,13 @@ const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 // Page publique ouverte par le client depuis le lien WhatsApp ou le QR code de son PDF : résumé du
 // document et téléchargement, sans compte. L'accès repose sur la signature du lien.
 export default function DocumentPage() {
+  // Document personnel (facture, reçu, devis) : jamais dans les moteurs de recherche
+  usePageMeta({ titre: 'Votre document', description: 'Votre document DSL Air Cargo à télécharger.', indexable: false });
   const { token = '' } = useParams();
   const [doc, setDoc] = useState<DocumentSummary | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    document.title = 'Votre document — DSL Air Cargo';
     getPublicDocument(token)
       .then(setDoc)
       .catch(() => setFailed(true));
@@ -28,7 +30,7 @@ export default function DocumentPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.18),transparent_70%)]" />
 
       <Link to="/" className="relative flex items-center gap-3">
-        <img src="/images/backgrounds/dsl-logo-200.png" alt="" className="h-11 w-11 rounded-full bg-white object-cover" />
+        <img src="/images/backgrounds/dsl-logo-96.webp" alt="" className="h-11 w-11 rounded-full bg-white object-cover" />
         <span className="font-editorial text-2xl">DSL Air Cargo</span>
       </Link>
 
