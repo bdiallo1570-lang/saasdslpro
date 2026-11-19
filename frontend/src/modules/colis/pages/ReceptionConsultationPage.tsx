@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
 import { listColis, Colis, dateReceptionEffective } from '../colis.api';
 import { ModifierPrixModal } from '../components/ModifierPrixModal';
+import { ColisActionsModal } from '../components/ColisActionsModal';
 import { grouperParMois, cleMois } from '../colisParMois';
 import { MoisSelect, EnteteMois } from '../components/MoisSections';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
@@ -44,6 +45,8 @@ export default function ReceptionConsultationPage() {
   // Mois affiché (« AAAA-MM »), vide = tous les mois
   const [mois, setMois] = useState('');
   const [editingColis, setEditingColis] = useState<Colis | null>(null);
+  // Colis ouvert dans le panneau d'actions (onglet « Modifier », historique)
+  const [colisOuvert, setColisOuvert] = useState<Colis | null>(null);
 
   const canEditPrice = !!user && CAN_EDIT_PRICE_ROLES.includes(user.role);
 
@@ -155,6 +158,11 @@ export default function ReceptionConsultationPage() {
                           {formatNumber(Number(c.montantEstime))} {c.currency}
                         </p>
                       )}
+                      {canEditPrice && (
+                        <Button variant="secondary" size="sm" onClick={() => setColisOuvert(c)}>
+                          Modifier
+                        </Button>
+                      )}
                       {canEditPrice && c.statutPaiement !== 'PARTIEL' && c.statutPaiement !== 'SOLDE' && (
                         <Button variant="secondary" size="sm" onClick={() => setEditingColis(c)}>
                           Modifier le prix
@@ -168,6 +176,15 @@ export default function ReceptionConsultationPage() {
           </motion.div>
         )}
       </Card>
+
+      <ColisActionsModal
+        colis={colisOuvert}
+        ongletInitial="modifier"
+        onClose={() => setColisOuvert(null)}
+        onUpdated={(updated) => {
+          setColis((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+        }}
+      />
 
       <ModifierPrixModal
         colis={editingColis}

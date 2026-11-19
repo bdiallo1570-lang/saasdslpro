@@ -20,6 +20,9 @@ export interface Colis {
   poidsReelKg: string;
   poidsVolumetriqueKg: string;
   poidsTaxableKg: string;
+  longueurCm?: string | null;
+  largeurCm?: string | null;
+  hauteurCm?: string | null;
   categorieTarif: PricingCategory;
   montantEstime?: string;
   currency?: string;
@@ -225,4 +228,43 @@ export async function trackColisPublic(trackingId: string): Promise<PublicTracki
     `/colis/track/${encodeURIComponent(trackingId)}`,
   );
   return res.data.data!;
+}
+
+// ── Correction des informations saisies + historique (voir backend colis.modification.ts) ──
+
+export interface ModifierColisInput {
+  clientId?: string;
+  description?: string;
+  poidsReelKg?: number;
+  longueurCm?: number | null;
+  largeurCm?: number | null;
+  hauteurCm?: number | null;
+  categorieTarif?: 'STANDARD' | 'RISQUE' | 'GROS_VOLUME';
+  tarifManuelParKg?: number;
+  dateReception?: string | null;
+  // Obligatoire : conservé dans l'historique du colis
+  motif: string;
+}
+
+export async function modifierColis(trackingId: string, input: ModifierColisInput): Promise<Colis> {
+  const res = await apiClient.patch<ApiResponse<Colis>>(`/colis/${trackingId}`, input);
+  return res.data.data!;
+}
+
+export type ValeurHistorique = string | number | null;
+
+export interface EntreeHistorique {
+  id: string;
+  action: string;
+  libelle: string;
+  date: string;
+  auteur: string;
+  role: string | null;
+  motif: string | null;
+  changements: { champ: string; libelle: string; avant: ValeurHistorique; apres: ValeurHistorique }[];
+}
+
+export async function getHistoriqueColis(trackingId: string): Promise<EntreeHistorique[]> {
+  const res = await apiClient.get<ApiResponse<EntreeHistorique[]>>(`/colis/${trackingId}/historique`);
+  return res.data.data ?? [];
 }

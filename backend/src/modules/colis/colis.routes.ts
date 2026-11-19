@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { requireAuth, requirePermission } from '@/middleware/auth';
+import { requireAuth, requirePermission, requireRole } from '@/middleware/auth';
+import { ROLE_NAMES } from '@/config/roles';
 import { asyncHandler } from '@/lib/asyncHandler';
 import { publicTrackingRateLimiter } from '@/middleware/rateLimit';
 import * as colisController from './colis.controller';
@@ -64,6 +65,18 @@ colisRouter.patch(
   '/:trackingId/prix',
   requirePermission('colis:write_pricing'),
   asyncHandler(colisController.updateColisPriceHandler),
+);
+// Correction des informations saisies : par rôle (et non par permission en base, qui ne se met
+// pas à jour au déploiement) — Admin et Agent Chine, ceux qui enregistrent les colis.
+colisRouter.patch(
+  '/:trackingId',
+  requireRole(ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE),
+  asyncHandler(colisController.modifierColisHandler),
+);
+colisRouter.get(
+  '/:trackingId/historique',
+  requirePermission('colis:read'),
+  asyncHandler(colisController.historiqueColisHandler),
 );
 colisRouter.get(
   '/:colisId/paiements',

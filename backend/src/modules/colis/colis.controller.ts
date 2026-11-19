@@ -6,7 +6,9 @@ import {
   priceSimulationSchema,
   updateColisStatusSchema,
   updateColisPriceSchema,
+  modifierColisSchema,
 } from './colis.schema';
+import { modifierColis, listHistoriqueColis } from './colis.modification';
 import { getActivePricingRule } from './pricing';
 import { presentColis } from './colis.presenter';
 import { listPaiementsByFacture } from '@/modules/paiements/paiements.service';
@@ -87,6 +89,31 @@ export async function updateColisPriceHandler(req: Request, res: Response) {
       req.user!.sub,
     );
     return res.status(200).json({ success: true, data: presentColis(colis, req.user!.roleName), error: null });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+// Correction des informations saisies (motif obligatoire, tracé avant → après)
+export async function modifierColisHandler(req: Request, res: Response) {
+  const parsed = modifierColisSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, data: null, error: parsed.error.issues[0].message });
+  }
+
+  try {
+    const colis = await modifierColis(req.params.trackingId, parsed.data, req.user!.sub);
+    return res.status(200).json({ success: true, data: presentColis(colis, req.user!.roleName), error: null });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+// Historique d'un colis : enregistrement, modifications (qui, quand, motif, avant → après), statuts
+export async function historiqueColisHandler(req: Request, res: Response) {
+  try {
+    const historique = await listHistoriqueColis(req.params.trackingId);
+    return res.status(200).json({ success: true, data: historique, error: null });
   } catch (error) {
     return handleError(res, error);
   }

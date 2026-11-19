@@ -29,6 +29,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Modal, Tabs, Button, Input, Select, Badge, notify } from '@/ui';
 import { SendToClientButton } from '@/modules/documents/SendToClientButton';
 import { formatNumber } from '@/lib/format';
+import { ROLE_NAMES } from '@/lib/roles';
+import { ModifierColisForm } from './ModifierColisForm';
+import { HistoriqueColis } from './HistoriqueColis';
 
 const STATUT_TONE: Record<string, 'red' | 'amber' | 'green' | 'sky'> = {
   IMPAYE: 'red',
@@ -63,14 +66,19 @@ interface ColisActionsModalProps {
   colis: Colis | null;
   onClose: () => void;
   onUpdated?: (colis: Colis) => void;
+  // Onglet affiché à l'ouverture (ex. 'modifier' depuis la liste « Colis enregistrés »)
+  ongletInitial?: string;
 }
+
+// Correction des informations saisies : mêmes rôles que la route PATCH /colis/:trackingId
+const ROLES_MODIFICATION: string[] = [ROLE_NAMES.ADMIN, ROLE_NAMES.AGENT_CHINE];
 
 // Panneau d'actions centralisé pour un colis — point unique de vérité pour toute action liée à
 // un colis (page Colis, onglet Colis d'un lot, Lots à régler, panneau Client). Regroupe : infos,
 // prix, paiement, reçu, écart de poids, statut/livraison, message client. Chaque onglet n'est
 // construit que si le rôle connecté a la permission correspondante (frontend/src/lib/permissions.ts,
 // miroir du backend — la vérification faisant autorité reste toujours côté serveur).
-export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: ColisActionsModalProps) {
+export function ColisActionsModal({ colis: colisProp, onClose, onUpdated, ongletInitial }: ColisActionsModalProps) {
   const { user } = useAuth();
   const role = user?.role;
   const [tab, setTab] = useState('infos');
@@ -103,6 +111,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
   const [downloadingDoc, setDownloadingDoc] = useState<'facture' | 'bonsortie' | null>(null);
 
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  // Incrémenté après une modification : recharge l'historique et réinitialise le formulaire
+  const [versionModif, setVersionModif] = useState(0);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [loadingScan, setLoadingScan] = useState(false);
   const [motifDeblocage, setMotifDeblocage] = useState('');
@@ -143,7 +153,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
       return;
     }
     setColisActuel(colisProp);
-    setTab('infos');
+    setTab(ongletInitial ?? 'infos');
     setMontant(colisProp.resteAPayerGnf !== undefined ? String(Math.round(colisProp.resteAPayerGnf)) : '');
     setCurrency('GNF');
     setTauxVersGnf('');
@@ -157,6 +167,7 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
     setMotifDeblocage('');
     setShowDeblocageForm(false);
     setScanResult(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- l'onglet initial ne s'applique qu'à l'ouverture
   }, [colisProp]);
 
   useEffect(() => {
@@ -318,6 +329,8 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
     ...(peutChangerStatut ? [{ key: 'statut', label: 'Statut' }] : []),
     ...(peutVoirDocuments ? [{ key: 'documents', label: 'Documents' }] : []),
     ...(peutMessager ? [{ key: 'message', label: 'Message client' }] : []),
+    ...(role && ROLES_MODIFICATION.includes(role) ? [{ key: 'modifier', label: 'Modifier' }] : []),
+    { key: 'historique', label: 'Historique' },
   ];
 
   const suivant = prochainStatut(colis.status);
@@ -739,6 +752,22 @@ export function ColisActionsModal({ colis: colisProp, onClose, onUpdated }: Coli
           <RelancerWhatsAppButton mode="serveur" clientId={colis.client.id} fullWidth size="lg" />
         </div>
       )}
+
+      {tab === 'modifier' && (
+        <ModifierColisForm
+          key={`${colis.id}-${versionModif}`}
+          colis={colis}
+          onUpdated={(updated) => {
+            setColisActuel(updated);
+            onUpdated?.(updated);
+            setVersionModif((v) => v + 1);
+            // L'empreinte de la modification est montrée tout de suite
+            setTab('historique');
+          }}
+        />
+      )}
+
+      {tab === 'historique' && <HistoriqueColis trackingId={colis.trackingId} version={versionModif} />}
     </Modal>
   );
 }
