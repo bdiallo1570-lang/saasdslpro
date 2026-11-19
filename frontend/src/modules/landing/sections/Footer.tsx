@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, MotionValue, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { MessageCircle, Sun, Moon } from 'lucide-react';
 import { AuroraBackground } from './AuroraBackground';
@@ -11,6 +12,12 @@ interface FooterProps {
 const FOOTER_LINKS = [
   { label: 'Calculateur', href: '#calculateur' },
   { label: 'Espaces Entrepôts', href: '#entrepots' },
+];
+
+// Pages légales : ce sont des routes (et non des ancres de la page d'accueil)
+const LIENS_LEGAUX = [
+  { label: 'Conditions générales', to: '/conditions-generales' },
+  { label: 'Politique de confidentialité', to: '/confidentialite' },
 ];
 
 const columnVariants = {
@@ -73,6 +80,20 @@ export function Footer({ isDark, onToggleTheme }: FooterProps) {
                   >
                     {link.label}
                   </motion.button>
+                </li>
+              ))}
+              {LIENS_LEGAUX.map((lien) => (
+                <li key={lien.to}>
+                  <motion.span whileHover={{ x: 3 }} className="inline-block">
+                    <Link
+                      to={lien.to}
+                      className={`text-sm transition-colors ${
+                        isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-night-900'
+                      }`}
+                    >
+                      {lien.label}
+                    </Link>
+                  </motion.span>
                 </li>
               ))}
             </ul>

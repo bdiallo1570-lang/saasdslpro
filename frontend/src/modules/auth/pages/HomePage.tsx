@@ -17,6 +17,7 @@ import { FAQ } from '@/modules/landing/sections/FAQ';
 import { Footer } from '@/modules/landing/sections/Footer';
 import { ChatAssistant } from '@/modules/landing/assistant/ChatAssistant';
 import { WhatsAppFab } from '@/modules/landing/assistant/WhatsAppFab';
+import { CookieNotice } from '@/modules/landing/sections/CookieNotice';
 
 export default function HomePage() {
   const { isDark, toggle } = useLandingTheme();
@@ -74,6 +75,7 @@ export default function HomePage() {
 
         <ChatAssistant isDark={isDark} />
         <WhatsAppFab />
+        <CookieNotice isDark={isDark} actif={!introPlaying} boutonsFlottants />
       </div>
     </MotionConfig>
   );

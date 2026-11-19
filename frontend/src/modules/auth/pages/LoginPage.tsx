@@ -247,6 +247,14 @@ export default function LoginPage() {
                 <ArrowLeft size={13} className="transition-transform group-hover:-translate-x-0.5" />
                 Retour à l'accueil
               </Link>
+              <span className="mx-2 text-slate-600">·</span>
+              <Link to="/conditions-generales" className="transition-colors hover:text-slate-300">
+                Conditions
+              </Link>
+              <span className="mx-2 text-slate-600">·</span>
+              <Link to="/confidentialite" className="transition-colors hover:text-slate-300">
+                Confidentialité
+              </Link>
             </p>
           </div>
         </motion.div>

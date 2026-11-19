@@ -31,6 +31,8 @@ const ClientsListPage = lazy(() => import('@/modules/clients/pages/ClientsListPa
 const FacturesPage = lazy(() => import('@/modules/factures/pages/FacturesPage'));
 const DocumentPage = lazy(() => import('@/modules/documents/pages/DocumentPage'));
 const DevisPage = lazy(() => import('@/modules/devis/pages/DevisPage'));
+const PolitiqueConfidentialitePage = lazy(() => import('@/modules/landing/pages/PolitiqueConfidentialitePage'));
+const ConditionsGeneralesPage = lazy(() => import('@/modules/landing/pages/ConditionsGeneralesPage'));
 
 export default function App() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/connexion" element={<LoginPage />} />
+            <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />
+            <Route path="/conditions-generales" element={<ConditionsGeneralesPage />} />
             <Route path="/mot-de-passe-oublie" element={<ResetPasswordPage />} />
             <Route path="/acces-refuse" element={<AccessDeniedPage />} />
             {/* Public : facture ou reçu partagé au client par un lien signé */}
