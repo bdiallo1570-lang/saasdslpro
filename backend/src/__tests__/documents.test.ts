@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { nombreEnLettres, montantEnLettres } from '../lib/montantEnLettres';
-import { signDocumentToken, verifyDocumentToken } from '../lib/documentLinks';
+import { signDocumentToken, verifyDocumentToken, versHttps } from '../lib/documentLinks';
 import { regleAvant } from '../lib/pdf/paymentReceipt';
 import { normalizePhone } from '../modules/auth/auth.service';
 import { changePasswordSchema } from '../modules/auth/auth.schema';
@@ -157,5 +157,13 @@ describe('E-mail : expéditeur et envoi par Brevo', () => {
       Object.assign(env, { BREVO_API_KEY: undefined, MAIL_FROM: undefined });
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe('Liens envoyés aux clients : toujours en https', () => {
+  it('passe une adresse http en https et laisse une adresse https intacte', () => {
+    expect(versHttps('http://www.dslcargo.com')).toBe('https://www.dslcargo.com');
+    expect(versHttps('HTTP://dslcargo.com/document/x')).toBe('https://dslcargo.com/document/x');
+    expect(versHttps('https://saasdslpro.vercel.app')).toBe('https://saasdslpro.vercel.app');
   });
 });

@@ -11,6 +11,12 @@ function resolveApiBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api/v1';
   try {
     const url = new URL(configured);
+    // Page servie en https : l'API doit l'être aussi (sinon le navigateur bloque les appels).
+    // Corrige une adresse saisie en http par erreur, hors serveur local.
+    if (window.location.protocol === 'https:' && url.protocol === 'http:' && !LOCAL_HOST.test(url.hostname)) {
+      url.protocol = 'https:';
+      return url.toString().replace(/\/$/, '');
+    }
     if (LOCAL_HOST.test(url.hostname) && LAN_HOST.test(window.location.hostname)) {
       url.hostname = window.location.hostname;
       return url.toString().replace(/\/$/, '');

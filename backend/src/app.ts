@@ -32,7 +32,22 @@ export const app = express();
 // uniquement (le proxy immédiat), pas à une chaîne X-Forwarded-For arbitraire côté client.
 app.set('trust proxy', 1);
 
-app.use(helmet());
+// HTTPS obligatoire en production. L'hébergeur redirige déjà http → https, mais le serveur ne
+// doit pas en dépendre : une requête que le proxy a reçue en http (X-Forwarded-Proto: http) est
+// renvoyée vers la même adresse en https. Les sondes internes de l'hébergeur, sans cet en-tête,
+// ne sont pas concernées.
+if (env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] && !req.secure) {
+      return res.redirect(308, `https://${req.headers.host}${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
+// HSTS : le navigateur n'utilise plus que https pour ce domaine pendant 2 ans (même durée que
+// le site sur Vercel), sous-domaines compris
+app.use(helmet({ strictTransportSecurity: { maxAge: 63072000, includeSubDomains: true, preload: true } }));
 // Autorise à la fois localhost (accès depuis le PC) et l'IP réseau (accès depuis un téléphone
 // sur le même Wi-Fi) — FRONTEND_URL peut contenir plusieurs origines séparées par une virgule.
 const allowedOrigins = env.FRONTEND_URL.split(',').map((origin) => origin.trim());

@@ -42,10 +42,16 @@ export function verifyDocumentToken(token: string, now = Date.now()): { type: Do
   return { type: type as DocumentType, id };
 }
 
+// Liens envoyés aux clients (WhatsApp, QR codes des PDF) : toujours en https en production,
+// même si l'adresse configurée a été saisie en http
+export function versHttps(url: string): string {
+  return url.replace(/^http:\/\//i, 'https://');
+}
+
 // Adresse publique du site (page /document/:token qui propose le téléchargement)
 export function publicSiteUrl(): string {
   const url = env.PUBLIC_SITE_URL ?? env.FRONTEND_URL.split(',')[0].trim();
-  return url.replace(/\/$/, '');
+  return (env.NODE_ENV === 'production' ? versHttps(url) : url).replace(/\/$/, '');
 }
 
 export function documentUrl(type: DocumentType, id: string): string {
