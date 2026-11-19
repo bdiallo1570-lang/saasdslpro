@@ -5,9 +5,14 @@ import { Button, Input, Modal, Select, Textarea, notify } from '@/ui';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { formatNumber } from '@/lib/format';
 import { listAllClients, ClientListItem } from '@/modules/clients/clients.api';
-import { Devis, DevisLigneType, getTarifs, LIGNE_LABELS, LigneSaisie, prixApercu, saveDevis, Tarifs } from './devis.api';
+import { Devis, DevisLigneType, getTarifs, LIGNE_LABELS, LigneSaisie, prixApercu, prixSaisi, saveDevis, Tarifs } from './devis.api';
 
-const UNITES: Record<Exclude<DevisLigneType, 'LIBRE'>, string> = { AERIEN_STANDARD: 'kg', AERIEN_SENSIBLE: 'kg', MARITIME: 'm³' };
+const UNITES: Record<Exclude<DevisLigneType, 'LIBRE'>, string> = {
+  AERIEN_STANDARD: 'kg',
+  AERIEN_SENSIBLE: 'kg',
+  AERIEN_GROS_VOLUME: 'kg',
+  MARITIME: 'm³',
+};
 
 function dansJours(n: number): string {
   const d = new Date();
@@ -64,7 +69,7 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
             // Pour une ligne catalogue, on ne garde que la précision entre parenthèses
             libelle: l.type === 'LIBRE' ? l.libelle : (l.libelle.match(/\(([^)]*)\)$/)?.[1] ?? ''),
             unite: l.unite,
-            prixUnitaire: l.type === 'LIBRE' ? String(l.prixUnitaire) : '',
+            prixUnitaire: prixSaisi(l.type) ? String(l.prixUnitaire) : '',
           }))
         : [{ type: 'AERIEN_STANDARD', quantite: '', libelle: '', unite: 'kg', prixUnitaire: '' }],
     );
@@ -75,7 +80,7 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
     quantite: nombre(l.quantite),
     libelle: l.libelle.trim() || undefined,
     unite: l.type === 'LIBRE' ? l.unite.trim() || 'forfait' : undefined,
-    prixUnitaire: l.type === 'LIBRE' && l.prixUnitaire !== '' ? nombre(l.prixUnitaire) : undefined,
+    prixUnitaire: prixSaisi(l.type) && l.prixUnitaire !== '' ? nombre(l.prixUnitaire) : undefined,
   }));
 
   const apercu = useMemo(() => {
@@ -184,10 +189,10 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
                       ) : (
                         <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">{l.unite}</div>
                       )}
-                      {l.type === 'LIBRE' ? (
+                      {prixSaisi(l.type) ? (
                         <Input
                           inputMode="numeric"
-                          placeholder="Prix unitaire GNF"
+                          placeholder={l.type === 'LIBRE' ? 'Prix unitaire GNF' : 'Prix négocié GNF/kg'}
                           value={l.prixUnitaire}
                           onChange={(e) => modifier(i, { prixUnitaire: e.target.value })}
                         />
@@ -214,6 +219,9 @@ export function DevisEditor({ open, devis, onClose, onSaved }: DevisEditorProps)
             </Button>
             <Button variant="secondary" size="sm" onClick={() => ajouter('AERIEN_SENSIBLE')}>
               <Plane size={14} className="mr-1.5" /> Avion Sensible
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => ajouter('AERIEN_GROS_VOLUME')}>
+              <Plane size={14} className="mr-1.5" /> Avion Gros volume
             </Button>
             <Button variant="secondary" size="sm" onClick={() => ajouter('MARITIME')}>
               <Ship size={14} className="mr-1.5" /> Bateau

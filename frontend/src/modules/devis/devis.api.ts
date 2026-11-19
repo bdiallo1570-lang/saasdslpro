@@ -5,7 +5,7 @@ import { apiClient, ApiResponse } from '@/lib/apiClient';
 // tout à l'enregistrement à partir des tarifs en base.
 
 export type DevisStatus = 'BROUILLON' | 'ENVOYE' | 'ACCEPTE' | 'REFUSE';
-export type DevisLigneType = 'AERIEN_STANDARD' | 'AERIEN_SENSIBLE' | 'MARITIME' | 'LIBRE';
+export type DevisLigneType = 'AERIEN_STANDARD' | 'AERIEN_SENSIBLE' | 'AERIEN_GROS_VOLUME' | 'MARITIME' | 'LIBRE';
 export type DevisVariante = 'devis' | 'proforma';
 
 export interface DevisLigne {
@@ -68,6 +68,7 @@ export const STATUS_LABELS: Record<DevisStatus, string> = {
 export const LIGNE_LABELS: Record<DevisLigneType, string> = {
   AERIEN_STANDARD: 'Avion, Cargo Standard',
   AERIEN_SENSIBLE: 'Avion, Cargo Sensible',
+  AERIEN_GROS_VOLUME: 'Avion, Gros volume (prix négocié)',
   MARITIME: 'Bateau',
   LIBRE: 'Ligne libre',
 };
@@ -108,9 +109,14 @@ export async function downloadDevisPdf(devis: Devis, variante: DevisVariante): P
   setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 }
 
+// Lignes dont le prix unitaire est saisi par l'agent (et non lu dans les tarifs en base)
+export function prixSaisi(type: DevisLigneType): boolean {
+  return type === 'LIBRE' || type === 'AERIEN_GROS_VOLUME';
+}
+
 // Aperçu du prix unitaire d'une ligne (mêmes règles que le serveur, voir devis.calcul.ts)
 export function prixApercu(ligne: LigneSaisie, tarifs: Tarifs | null): number | null {
-  if (ligne.type === 'LIBRE') return ligne.prixUnitaire ?? null;
+  if (prixSaisi(ligne.type)) return ligne.prixUnitaire ?? null;
   if (!tarifs) return null;
   if (ligne.type === 'AERIEN_STANDARD') return tarifs.standardGnfKg;
   if (ligne.type === 'AERIEN_SENSIBLE') return tarifs.sensibleGnfKg;

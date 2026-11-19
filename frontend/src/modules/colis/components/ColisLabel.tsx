@@ -48,7 +48,9 @@ export function ColisLabel({ colis }: ColisLabelProps) {
               ? 'Standard'
               : colis.categorieTarif === 'RISQUE'
                 ? 'À risque'
-                : 'Personnalisé'}
+                : colis.categorieTarif === 'GROS_VOLUME'
+                  ? 'Gros volume'
+                  : 'Personnalisé'}
           </p>
           <p className="truncate">
             <span className="font-semibold">Description :</span> {colis.description}

@@ -18,7 +18,9 @@ interface NouveauColisFormProps {
 // (poids × tarif en vigueur) et affiché en direct pendant la saisie. Il peut être corrigé après
 // coup tant qu'aucun paiement n'est enregistré (voir ModifierPrixModal), toute modification
 // étant tracée dans le journal d'audit. La catégorie "Personnalisé" (tarif négocié manuellement)
-// reste réservée à l'Admin, contrôlée aussi côté backend (createColisHandler).
+// reste réservée à l'Admin, contrôlée aussi côté backend (createColisHandler). La catégorie
+// "Gros volume" permet à l'agent de saisir le prix au kilo négocié avec un gros client ; il ne
+// peut pas dépasser le tarif Standard (contrôlé aussi côté backend, createColis).
 // Extrait de ReceptionPage pour être réutilisable dans le modal du FAB global.
 export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [client, setClient] = useState<Client | null>(null);
@@ -28,6 +30,8 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
   const [largeurCm, setLargeurCm] = useState('');
   const [hauteurCm, setHauteurCm] = useState('');
   const [categorie, setCategorie] = useState<PricingCategory>('STANDARD');
+  // Prix au kilo négocié (catégorie Gros volume uniquement)
+  const [prixNegocie, setPrixNegocie] = useState('');
   const [dateReceptionManuelle, setDateReceptionManuelle] = useState('');
 
   const [montantEstime, setMontantEstime] = useState<number | null>(null);
@@ -51,17 +55,25 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
 
   // Tarif/kg en vigueur, affiché dès le choix de catégorie (indépendant du poids saisi) —
   // jamais codé en dur (règle 3.5 GEMINI.md), toujours dérivé du tarif actif réel.
+  // En Gros volume, on affiche le tarif Standard comme référence de la réduction accordée
   useEffect(() => {
     if (categorie === 'PERSONNALISE') {
       setPricePerKg(null);
       return;
     }
-    simulatePrice(categorie, 1)
+    simulatePrice(categorie === 'GROS_VOLUME' ? 'STANDARD' : categorie, 1)
       .then((result) => setPricePerKg(result.pricePerKg))
       .catch(() => setPricePerKg(null));
   }, [categorie]);
 
   useEffect(() => {
+    if (categorie === 'GROS_VOLUME') {
+      // Prix saisi : le montant se calcule directement (même formule que le serveur)
+      const poids = Number(poidsReelKg);
+      const prix = Number(prixNegocie);
+      setMontantEstime(poids > 0 && prix > 0 ? poids * prix : null);
+      return;
+    }
     if (!poidsReelKg || Number(poidsReelKg) <= 0 || categorie === 'PERSONNALISE') {
       setMontantEstime(null);
       return;
@@ -78,7 +90,12 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [poidsReelKg, categorie]);
+  }, [poidsReelKg, categorie, prixNegocie]);
+
+  const prixStandard = pricePerKg ? Number(pricePerKg) : null;
+  const prixNegocieNum = Number(prixNegocie);
+  const reduction =
+    categorie === 'GROS_VOLUME' && prixStandard && prixNegocieNum > 0 ? prixStandard - prixNegocieNum : null;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -97,6 +114,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
         largeurCm: largeurCm ? Number(largeurCm) : undefined,
         hauteurCm: hauteurCm ? Number(hauteurCm) : undefined,
         categorieTarif: categorie,
+        tarifManuelParKg: categorie === 'GROS_VOLUME' ? prixNegocieNum : undefined,
         dateReception: dateReceptionManuelle || undefined,
       });
       setCreatedColis(colis);
@@ -118,6 +136,7 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
     setLargeurCm('');
     setHauteurCm('');
     setCategorie('STANDARD');
+    setPrixNegocie('');
     setDateReceptionManuelle('');
   }
 
@@ -166,14 +185,42 @@ export function NouveauColisForm({ onCreated }: NouveauColisFormProps) {
                 >
                   <option value="STANDARD">Standard</option>
                   <option value="RISQUE">Sensible / à risque</option>
+                  <option value="GROS_VOLUME">Gros volume</option>
                 </Select>
               </div>
               {/* Tarif/kg toujours celui en vigueur (jamais codé en dur, règle 3.5 GEMINI.md) —
                   dérivé de la même simulation que le montant estimé affiché plus bas. */}
-              {pricePerKg && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
-                  Tarif en vigueur : {formatNumber(Number(pricePerKg))} GNF/kg
-                </p>
+              {categorie === 'GROS_VOLUME' ? (
+                <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="-mt-2">
+                  <Input
+                    label="Prix négocié (GNF/kg)"
+                    type="number"
+                    min="1"
+                    max={prixStandard ?? undefined}
+                    step="1"
+                    required
+                    value={prixNegocie}
+                    onChange={(e) => setPrixNegocie(e.target.value)}
+                    placeholder={prixStandard ? `Moins de ${formatNumber(prixStandard)}` : 'Prix au kilo'}
+                  />
+                  <p
+                    className={`mt-1.5 text-xs ${
+                      reduction !== null && reduction < 0 ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {prixStandard ? `Tarif Standard : ${formatNumber(prixStandard)} GNF/kg` : 'Tarif Standard indisponible'}
+                    {reduction !== null &&
+                      (reduction < 0
+                        ? ' · le prix négocié ne peut pas dépasser le tarif Standard'
+                        : ` · réduction de ${formatNumber(reduction)} GNF/kg (−${Math.round((reduction / prixStandard!) * 100)} %)`)}
+                  </p>
+                </motion.div>
+              ) : (
+                pricePerKg && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
+                    Tarif en vigueur : {formatNumber(Number(pricePerKg))} GNF/kg
+                  </p>
+                )
               )}
 
               <div>

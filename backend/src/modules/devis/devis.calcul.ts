@@ -1,8 +1,9 @@
 // Calcul des lignes et totaux d'un devis — pur (aucun accès à la base), donc testable. Les prix
 // des lignes catalogue viennent TOUJOURS des tarifs en base (passés dans `tarifs`), jamais de la
-// saisie : seul le prix d'une ligne libre est saisi. Une négociation passe par la remise.
+// saisie. Seuls sont saisis : le prix d'une ligne libre, et le prix au kilo négocié d'une ligne
+// Gros volume (plafonné au tarif Standard). Toute autre négociation passe par la remise.
 
-export type DevisLigneType = 'AERIEN_STANDARD' | 'AERIEN_SENSIBLE' | 'MARITIME' | 'LIBRE';
+export type DevisLigneType = 'AERIEN_STANDARD' | 'AERIEN_SENSIBLE' | 'AERIEN_GROS_VOLUME' | 'MARITIME' | 'LIBRE';
 
 export interface LigneSaisie {
   type: DevisLigneType;
@@ -12,6 +13,7 @@ export interface LigneSaisie {
   libelle?: string;
   // Ligne libre uniquement
   unite?: string;
+  // Ligne libre, ou prix au kilo négocié d'une ligne Gros volume
   prixUnitaire?: number;
 }
 
@@ -39,6 +41,7 @@ export class DevisCalculError extends Error {}
 const LIBELLES: Record<Exclude<DevisLigneType, 'LIBRE'>, string> = {
   AERIEN_STANDARD: 'Fret aérien Chine - Guinée, Cargo Standard',
   AERIEN_SENSIBLE: 'Fret aérien Chine - Guinée, Cargo Sensible',
+  AERIEN_GROS_VOLUME: 'Fret aérien Chine - Guinée, tarif Gros volume',
   MARITIME: 'Fret maritime Chine - Guinée',
 };
 
@@ -61,6 +64,28 @@ export function calculerLignes(saisies: LigneSaisie[], tarifs: Tarifs): LigneCal
         ordre: n,
         type: l.type,
         libelle: precision ? `${LIBELLES[l.type]} (${precision})` : LIBELLES[l.type],
+        quantite: l.quantite,
+        unite: 'kg',
+        prixUnitaireUsd: null,
+        prixUnitaire: prix,
+        montant: arrondi(l.quantite * prix),
+      };
+    }
+
+    if (l.type === 'AERIEN_GROS_VOLUME') {
+      if (l.prixUnitaire === undefined || !(l.prixUnitaire > 0)) {
+        throw new DevisCalculError(`Ligne ${n} : indiquez le prix négocié au kilo.`);
+      }
+      if (tarifs.standardGnfKg && l.prixUnitaire > tarifs.standardGnfKg) {
+        throw new DevisCalculError(
+          `Ligne ${n} : le prix Gros volume ne peut pas dépasser le tarif Standard (${tarifs.standardGnfKg} GNF/kg).`,
+        );
+      }
+      const prix = arrondi(l.prixUnitaire);
+      return {
+        ordre: n,
+        type: l.type,
+        libelle: precision ? `${LIBELLES.AERIEN_GROS_VOLUME} (${precision})` : LIBELLES.AERIEN_GROS_VOLUME,
         quantite: l.quantite,
         unite: 'kg',
         prixUnitaireUsd: null,

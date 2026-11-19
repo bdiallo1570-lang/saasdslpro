@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
 import { listColis, Colis, dateReceptionEffective, StatutPaiementColis } from '../colis.api';
 import { ColisActionsModal } from '../components/ColisActionsModal';
+import { grouperParMois, cleMois } from '../colisParMois';
+import { MoisSelect, EnteteMois } from '../components/MoisSections';
 import { COLIS_STATUS_LABELS } from '@/modules/landing/trackingLabels';
 import { STATUT_PAIEMENT_LABELS } from '@/modules/lots/paiementsLot.api';
 import { AppShell } from '@/layout/AppShell';
@@ -42,6 +44,8 @@ export default function ColisGuineePage() {
   const [colis, setColis] = useState<Colis[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  // Mois affiché (« AAAA-MM »), vide = tous les mois
+  const [mois, setMois] = useState('');
   const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
 
   const refresh = useCallback(async () => {
@@ -69,10 +73,14 @@ export default function ColisGuineePage() {
 
   const filteredColis = useMemo(() => {
     const base = query.trim() ? fuse.search(query.trim()).map((r) => r.item) : colis;
-    return [...base].sort(
-      (a, b) => new Date(dateReceptionEffective(b)).getTime() - new Date(dateReceptionEffective(a)).getTime(),
-    );
-  }, [query, fuse, colis]);
+    return base
+      .filter((c) => !mois || cleMois(dateReceptionEffective(c)) === mois)
+      .sort((a, b) => new Date(dateReceptionEffective(b)).getTime() - new Date(dateReceptionEffective(a)).getTime());
+  }, [query, fuse, colis, mois]);
+
+  // Options du sélecteur : tous les mois où au moins un colis a été reçu
+  const tousLesMois = useMemo(() => grouperParMois(colis), [colis]);
+  const groupes = useMemo(() => grouperParMois(filteredColis), [filteredColis]);
 
   return (
     <AppShell>
@@ -83,66 +91,75 @@ export default function ColisGuineePage() {
 
       <Card className="overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-night-700 space-y-3">
-          <h2 className="font-medium text-night-800 dark:text-slate-100">
-            Colis ({filteredColis.length})
-          </h2>
-          <Input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher par N° de suivi, Nom client, ou Téléphone..."
-          />
+          <h2 className="font-medium text-night-800 dark:text-slate-100">Colis ({filteredColis.length})</h2>
+          <div className="grid gap-3 sm:grid-cols-[1fr_15rem]">
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher par N° de suivi, Nom client, ou Téléphone..."
+            />
+            <MoisSelect mois={tousLesMois} value={mois} onChange={setMois} />
+          </div>
         </div>
 
         {loading ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">Chargement…</p>
         ) : filteredColis.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 px-5 py-6">
-            {query.trim() ? 'Aucun colis ne correspond à cette recherche.' : 'Aucun colis enregistré pour le moment.'}
+            {query.trim() || mois
+              ? 'Aucun colis ne correspond à cette recherche.'
+              : 'Aucun colis enregistré pour le moment.'}
           </p>
         ) : (
           <motion.div
+            key={mois}
             variants={listContainer}
             initial="hidden"
             animate="show"
-            className="divide-y divide-slate-100 dark:divide-night-700 max-h-[32rem] overflow-y-auto"
+            className="max-h-[32rem] overflow-y-auto"
           >
-            {filteredColis.map((c) => (
-              <motion.button
-                key={c.id}
-                variants={listItem}
-                onClick={() => setSelectedColis(c)}
-                className="w-full px-5 py-3 flex items-center justify-between gap-4 text-left hover:bg-slate-50 dark:hover:bg-night-700/50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-night-800 dark:text-slate-100 truncate">
-                    {c.trackingId} · {c.client.fullName}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {c.description} · {c.poidsReelKg} kg · Reçu le{' '}
-                    {new Date(dateReceptionEffective(c)).toLocaleDateString('fr-FR')}
-                  </p>
+            {groupes.map((g) => (
+              <section key={g.cle}>
+                <EnteteMois groupe={g} />
+                <div className="divide-y divide-slate-100 dark:divide-night-700">
+                  {g.colis.map((c) => (
+                    <motion.button
+                      key={c.id}
+                      variants={listItem}
+                      onClick={() => setSelectedColis(c)}
+                      className="w-full px-5 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-4 gap-y-2 text-left hover:bg-slate-50 dark:hover:bg-night-700/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0 basis-full sm:basis-auto">
+                        <p className="font-medium text-night-800 dark:text-slate-100 truncate">
+                          {c.trackingId} · {c.client.fullName}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {c.description} · {c.poidsReelKg} kg · Reçu le{' '}
+                          {new Date(dateReceptionEffective(c)).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <Badge tone={STATUS_TONE[c.status] ?? 'slate'}>{COLIS_STATUS_LABELS[c.status] ?? c.status}</Badge>
+                      {c.statutPaiement && (
+                        <Badge tone={STATUT_PAIEMENT_TONE[c.statutPaiement]}>
+                          {STATUT_PAIEMENT_LABELS[c.statutPaiement]}
+                        </Badge>
+                      )}
+                      {c.montantEstime !== undefined && (
+                        <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
+                          {formatNumber(Number(c.montantEstime))} {c.currency}
+                        </p>
+                      )}
+                    </motion.button>
+                  ))}
                 </div>
-                <Badge tone={STATUS_TONE[c.status] ?? 'slate'}>{COLIS_STATUS_LABELS[c.status] ?? c.status}</Badge>
-                {c.statutPaiement && (
-                  <Badge tone={STATUT_PAIEMENT_TONE[c.statutPaiement]}>{STATUT_PAIEMENT_LABELS[c.statutPaiement]}</Badge>
-                )}
-                {c.montantEstime !== undefined && (
-                  <p className="font-semibold text-night-900 dark:text-slate-100 whitespace-nowrap">
-                    {formatNumber(Number(c.montantEstime))} {c.currency}
-                  </p>
-                )}
-              </motion.button>
+              </section>
             ))}
           </motion.div>
         )}
       </Card>
 
-      <ColisActionsModal
-        colis={selectedColis}
-        onClose={() => setSelectedColis(null)}
-        onUpdated={() => refresh()}
-      />
+      <ColisActionsModal colis={selectedColis} onClose={() => setSelectedColis(null)} onUpdated={() => refresh()} />
     </AppShell>
   );
 }

@@ -30,6 +30,8 @@ enum PricingCategory {
   STANDARD
   RISQUE
   PERSONNALISE
+  // Gros client : prix au kilo négocié, saisi par l'agent à chaque colis (Admin, Agent Chine)
+  GROS_VOLUME
 }
 
 enum BillingMode {
@@ -629,6 +631,7 @@ enum DevisStatus {
 enum DevisLigneType {
   AERIEN_STANDARD
   AERIEN_SENSIBLE
+  AERIEN_GROS_VOLUME
   MARITIME
   LIBRE
 }

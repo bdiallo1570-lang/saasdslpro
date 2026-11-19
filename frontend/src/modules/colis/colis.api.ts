@@ -1,7 +1,8 @@
 import { apiClient, ApiResponse } from '@/lib/apiClient';
 import { Client } from '@/modules/clients/clients.api';
 
-export type PricingCategory = 'STANDARD' | 'RISQUE' | 'PERSONNALISE';
+// GROS_VOLUME : prix au kilo négocié pour un gros client, saisi par l'agent à chaque colis
+export type PricingCategory = 'STANDARD' | 'RISQUE' | 'PERSONNALISE' | 'GROS_VOLUME';
 export type StatutPaiementColis = 'IMPAYE' | 'PARTIEL' | 'SOLDE' | 'TROP_PERCU';
 
 // montantEstime/currency/pricingRuleId sont optionnels ici pour refléter fidèlement le typage

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const ligneSchema = z.object({
-  type: z.enum(['AERIEN_STANDARD', 'AERIEN_SENSIBLE', 'MARITIME', 'LIBRE']),
+  type: z.enum(['AERIEN_STANDARD', 'AERIEN_SENSIBLE', 'AERIEN_GROS_VOLUME', 'MARITIME', 'LIBRE']),
   quantite: z.coerce.number().positive('La quantité doit être supérieure à 0.'),
   libelle: z.string().trim().max(200).optional(),
   unite: z.string().trim().max(20).optional(),

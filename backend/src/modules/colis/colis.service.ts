@@ -55,6 +55,21 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
           metadata: { tarifManuelParKg: input.tarifManuelParKg },
         },
       });
+    } else if (input.categorieTarif === 'GROS_VOLUME') {
+      // Gros client : l'agent saisit le prix au kilo négocié. C'est une réduction, il ne peut
+      // donc pas dépasser le tarif Standard en vigueur (auquel la ligne reste rattachée).
+      if (!input.tarifManuelParKg) {
+        throw new PricingError('Indiquez le prix négocié au kilo pour le tarif Gros volume.');
+      }
+      const standardRule = await getActivePricingRule('STANDARD', tx);
+      if (input.tarifManuelParKg > Number(standardRule.pricePerKg)) {
+        throw new PricingError(
+          `Le prix Gros volume ne peut pas dépasser le tarif Standard (${Number(standardRule.pricePerKg)} ${standardRule.currency}/kg).`,
+        );
+      }
+      pricingRuleId = standardRule.id;
+      pricePerKg = input.tarifManuelParKg;
+      currency = standardRule.currency;
     } else {
       const rule = await getActivePricingRule(input.categorieTarif, tx);
       pricingRuleId = rule.id;
@@ -100,6 +115,8 @@ export async function createColis(input: CreateColisInput, createdByUserId: stri
         metadata: {
           trackingId: created.trackingId,
           ...(input.dateReception ? { dateReceptionManuelle: input.dateReception } : {}),
+          // Prix négocié tracé au journal (qui l'a accordé, à quel prix)
+          ...(input.categorieTarif === 'GROS_VOLUME' ? { tarifGrosVolumeParKg: pricePerKg } : {}),
         },
       },
     });

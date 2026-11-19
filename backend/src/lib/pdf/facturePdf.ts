@@ -165,7 +165,11 @@ export function generateFacturePdf(
     facture.colis.forEach((c, idx) => {
       const poids = Number(c.poidsReelKg);
       const montant = Number(c.montantEstime);
-      const pu = c.pricingRule ? Number(c.pricingRule.pricePerKg) : Math.round(montant / (poids || 1));
+      // Prix saisi (Personnalisé, Gros volume) : la règle rattachée est le Standard, le prix
+      // unitaire réel se déduit donc du montant
+      const prixSaisi = c.categorieTarif === 'PERSONNALISE' || c.categorieTarif === 'GROS_VOLUME';
+      const pu =
+        c.pricingRule && !prixSaisi ? Number(c.pricingRule.pricePerKg) : Math.round(montant / (poids || 1));
       doc.font('Helvetica').fontSize(8.5);
       const descH = doc.heightOfString(c.description || '-', { width: cols[1].width - 8 });
       const rowH = Math.max(26, descH + 14);

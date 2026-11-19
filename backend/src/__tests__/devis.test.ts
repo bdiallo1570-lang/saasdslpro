@@ -34,6 +34,16 @@ describe('Devis : calcul des lignes', () => {
     expect(() => calculerLignes([{ type: 'AERIEN_STANDARD', quantite: 0 }], tarifs)).toThrow('quantité');
   });
 
+  it('applique le prix négocié d’une ligne Gros volume, plafonné au tarif Standard', () => {
+    const [l] = calculerLignes([{ type: 'AERIEN_GROS_VOLUME', quantite: 250, prixUnitaire: 145000, libelle: 'client X' }], tarifs);
+    expect(l).toMatchObject({ unite: 'kg', prixUnitaire: 145000, montant: 36250000 });
+    expect(l.libelle).toBe('Fret aérien Chine - Guinée, tarif Gros volume (client X)');
+    expect(() => calculerLignes([{ type: 'AERIEN_GROS_VOLUME', quantite: 10 }], tarifs)).toThrow('prix négocié');
+    expect(() => calculerLignes([{ type: 'AERIEN_GROS_VOLUME', quantite: 10, prixUnitaire: 170000 }], tarifs)).toThrow(
+      'dépasser le tarif Standard',
+    );
+  });
+
   it('bloque le maritime sans taux USD → GNF au lieu d’inventer un prix', () => {
     expect(() => calculerLignes([{ type: 'MARITIME', quantite: 1 }], { ...tarifs, tauxUsdGnf: null })).toThrow('Taux de change');
   });

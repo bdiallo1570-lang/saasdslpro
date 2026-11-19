@@ -7,8 +7,8 @@ export const createColisSchema = z.object({
   longueurCm: z.coerce.number().positive().optional(),
   largeurCm: z.coerce.number().positive().optional(),
   hauteurCm: z.coerce.number().positive().optional(),
-  categorieTarif: z.enum(['STANDARD', 'RISQUE', 'PERSONNALISE']),
-  // Requis uniquement pour la catégorie PERSONNALISE (tarif manuel, tracé à l'audit)
+  categorieTarif: z.enum(['STANDARD', 'RISQUE', 'PERSONNALISE', 'GROS_VOLUME']),
+  // Prix au kilo saisi : requis pour PERSONNALISE (avec motif, Admin) et GROS_VOLUME (prix négocié)
   tarifManuelParKg: z.coerce.number().positive().optional(),
   motifTarifManuel: z.string().trim().optional(),
   photos: z.array(z.string()).optional(),
