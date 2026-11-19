@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { asyncHandler } from '@/lib/asyncHandler';
 import { getPrixMaritimeUsdM3 } from '@/lib/settings';
 
+import { consultationPubliqueLimiter } from '@/middleware/antiSpam';
+
 export const pricingRouter = Router();
 
 // Catégories publiées sur la landing (le tarif PERSONNALISE, négocié au cas par cas, ne l'est pas)
@@ -14,6 +16,7 @@ const PUBLIC_CATEGORIES = ['STANDARD', 'RISQUE'] as const;
 // sur un changement de prix.
 pricingRouter.get(
   '/',
+  consultationPubliqueLimiter,
   asyncHandler(async (_req, res) => {
     const rules = await Promise.all(
       PUBLIC_CATEGORIES.map((categoryName) =>

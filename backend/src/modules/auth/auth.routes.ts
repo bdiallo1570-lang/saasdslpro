@@ -10,16 +10,29 @@ import {
   refreshRateLimiter,
 } from '@/middleware/rateLimit';
 
+import { envoiCodeParCompteLimiter, piegeARobots } from '@/middleware/antiSpam';
+
 export const authRouter = Router();
 
-authRouter.post('/login', loginRateLimiter, asyncHandler(authController.loginHandler));
-authRouter.post('/otp/request', otpRequestRateLimiter, asyncHandler(authController.requestOtpHandler));
+// Anti-spam : piège à robots sur les formulaires publics ; les demandes de code sont en plus
+// limitées par compte (3 par heure), pour qu'un numéro ne puisse pas être bombardé de codes.
+
+authRouter.post('/login', loginRateLimiter, piegeARobots(), asyncHandler(authController.loginHandler));
+authRouter.post(
+  '/otp/request',
+  otpRequestRateLimiter,
+  piegeARobots('Si ce compte existe, un code a été envoyé par WhatsApp/SMS.'),
+  envoiCodeParCompteLimiter,
+  asyncHandler(authController.requestOtpHandler),
+);
 authRouter.post('/otp/verify', otpVerifyRateLimiter, asyncHandler(authController.verifyOtpHandler));
 authRouter.post('/refresh', refreshRateLimiter, asyncHandler(authController.refreshHandler));
 authRouter.post('/logout', asyncHandler(authController.logoutHandler));
 authRouter.post(
   '/password/reset-request',
   otpRequestRateLimiter,
+  piegeARobots('Si ce compte existe, un code de réinitialisation a été envoyé.'),
+  envoiCodeParCompteLimiter,
   asyncHandler(authController.requestPasswordResetHandler),
 );
 authRouter.post(

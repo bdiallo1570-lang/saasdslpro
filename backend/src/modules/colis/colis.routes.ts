@@ -8,11 +8,12 @@ import { scanColisHandler } from './scan.controller';
 import { marquerLivreHandler, bonDeSortiePdfHandler } from './livraison.controller';
 import { publicTrackColisHandler } from './publicTracking.controller';
 import * as weightDiscrepancyController from './weightDiscrepancy.controller';
+import { consultationPubliqueLimiter } from '@/middleware/antiSpam';
 
 export const colisRouter = Router();
 
 // Routes publiques (landing page, aucune authentification) — placées avant requireAuth.
-colisRouter.post('/simulate-price', asyncHandler(colisController.simulatePriceHandler));
+colisRouter.post('/simulate-price', consultationPubliqueLimiter, asyncHandler(colisController.simulatePriceHandler));
 colisRouter.get('/track/:trackingId', publicTrackingRateLimiter, asyncHandler(publicTrackColisHandler));
 
 colisRouter.use(requireAuth);

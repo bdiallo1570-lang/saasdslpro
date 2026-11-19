@@ -23,6 +23,7 @@ import { auditRouter } from '@/modules/audit/audit.routes';
 import { depenseLotRouter } from '@/modules/lots/depenses/depenseLot.routes';
 import { alertesRouter } from '@/modules/alertes/alertes.routes';
 import { parametresAlertesRouter } from '@/modules/parametres/parametresAlertes.routes';
+import { apiGlobaleLimiter } from '@/middleware/antiSpam';
 
 export const app = express();
 
@@ -79,6 +80,9 @@ app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({ success: true, data: { status: 'ok' }, error: null });
 });
+
+// Plafond global par IP sur toute l'API (anti-spam ; voir middleware/antiSpam.ts)
+app.use('/api/v1', apiGlobaleLimiter);
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
