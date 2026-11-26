@@ -8,7 +8,6 @@ import { SectionHeading } from './SectionHeading';
 import { Magnetic } from './motionKit';
 import { formatNumber } from '@/lib/format';
 import { formatPricePerKg, priceOf, usePublicPricing } from '../publicPricing';
-import { BoutonDevis } from '../devis/BoutonDevis';
 
 interface PriceCalculatorProps {
   isDark: boolean;
@@ -300,27 +299,13 @@ export const PriceCalculator = forwardRef<HTMLDivElement, PriceCalculatorProps>(
                 </AnimatePresence>
               </div>
 
-              <BoutonDevis
-                emplacement="calculateur"
-                taille="large"
-                pleineLargeur
-                details={
-                  pricePerKg !== null
-                    ? `${selectedCategorie.label}, ${formatNumber(poidsKg)} kg (estimation : ${formatNumber(Math.round(totalEstime))} GNF).`
-                    : undefined
-                }
-              />
-              <Magnetic strength={0.12}>
+              <Magnetic strength={0.18}>
                 <motion.button
                   type="button"
                   whileHover="hover"
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setAddressModalOpen(true)}
-                  className={`group relative w-full overflow-hidden inline-flex items-center justify-center gap-2 border text-sm font-semibold px-4 sm:px-5 py-3 rounded-xl transition-colors ${
-                    isDark
-                      ? 'border-white/20 text-slate-100 hover:bg-white/10'
-                      : 'border-slate-300 text-night-800 hover:bg-slate-100'
-                  }`}
+                  className="group relative w-full overflow-hidden inline-flex items-center justify-center gap-2 bg-cargo-500 hover:bg-cargo-400 text-ink-950 text-sm sm:text-base font-semibold px-4 sm:px-5 py-3.5 rounded-xl shadow-glow-cargo transition-colors"
                 >
                   {/* Reflet au survol */}
                   <motion.span

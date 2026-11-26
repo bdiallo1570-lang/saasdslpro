@@ -1,10 +1,9 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, MotionValue, useMotionValue, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
-import { MessageCircle } from 'lucide-react';
+import { ArrowRight, MessageCircle } from 'lucide-react';
 import { TrackingPanel } from './TrackingPanel';
-import { SplitLetters } from './motionKit';
+import { Magnetic, SplitLetters } from './motionKit';
 import { formatPricePerKg, priceOf, usePublicPricing } from '../publicPricing';
-import { BoutonDevis } from '../devis/BoutonDevis';
 
 interface VideoScrollStoryProps {
   onSimulateClick: () => void;
@@ -282,7 +281,15 @@ export function VideoScrollStory({ onSimulateClick, ready }: VideoScrollStoryPro
                 title="Vous payez, vous récupérez."
                 body="En espèces, par Orange Money ou par virement — puis remise du colis avec son bon de sortie."
               >
-                <BoutonDevis emplacement="fin du parcours" className="mt-6" />
+                <Magnetic className="mt-6 inline-block">
+                  <button
+                    type="button"
+                    onClick={onSimulateClick}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-night-950 shadow-glow-sky transition hover:bg-emerald-400"
+                  >
+                    Simuler mon tarif <ArrowRight size={16} />
+                  </button>
+                </Magnetic>
               </Chapter>
           </div>
         </div>

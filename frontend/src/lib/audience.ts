@@ -1,4 +1,4 @@
-import { BeforeSendEvent, track } from '@vercel/analytics/react';
+import { BeforeSendEvent } from '@vercel/analytics/react';
 import { estZonePrivee } from './zonesPrivees';
 
 // Mesure d'audience Vercel Analytics : sans cookie et sans identifiant personnel (rien à
@@ -15,10 +15,4 @@ export function filtrerEvenement(evenement: BeforeSendEvent): BeforeSendEvent | 
   if (url.pathname.startsWith('/document/')) url.pathname = '/document/[jeton]';
   url.search = '';
   return { ...evenement, url: url.toString() };
-}
-
-// Événement personnalisé (ex. clic sur l'appel à l'action). Comptabilisé par Vercel sur les
-// formules qui incluent les événements personnalisés ; sans effet sinon.
-export function suivreEvenement(nom: string, details?: Record<string, string>) {
-  track(nom, details);
 }

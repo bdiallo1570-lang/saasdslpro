@@ -7,10 +7,8 @@ import { extractErrorMessage } from '@/lib/apiClient';
 import { COLIS_STATUS_LABELS } from '../trackingLabels';
 import { z } from 'zod';
 import { numeroSuivi, useValidation } from '@/lib/validation';
-import { BoutonDevis } from '../devis/BoutonDevis';
 
-// Actions de l'accueil : l'appel à l'action unique « Demander mon devis gratuit » (lien secondaire
-// vers le calculateur) et, quand il sera disponible, le suivi
+// Actions principales de l'accueil : « Simuler mon tarif » et, quand il sera disponible, le suivi
 // public d'un colis. Le suivi est désactivé tant que TRACKING_ENABLED est à false (le formulaire,
 // le menu, la FAQ et l'assistant n'en parlent plus) ; le remettre à true suffit à le réactiver,
 // après avoir rétabli le lien « Suivi de colis » du menu et du pied de page. Affiché sur la
@@ -41,20 +39,18 @@ export function TrackingPanel({ onSimulateClick }: { onSimulateClick: () => void
     }
   }
 
-  // Action unique : la demande de devis ; le calculateur reste accessible par un simple lien
   if (!TRACKING_ENABLED) {
     return (
-      <div className="mt-7 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-5 lg:justify-start">
-        <BoutonDevis emplacement="accueil" taille="large" />
+      <Magnetic strength={0.14} className="mt-7 inline-block">
         <button
           type="button"
           onClick={onSimulateClick}
-          className="inline-flex items-center gap-1.5 py-2 text-sm font-medium text-cream/85 underline-offset-4 transition-colors hover:text-white hover:underline"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-cargo-500 px-7 py-3.5 text-sm font-semibold text-ink-950 shadow-glow-cargo transition-colors hover:bg-cargo-400"
         >
-          <Calculator size={15} aria-hidden="true" />
-          ou calculer mon prix
+          <Calculator size={16} />
+          Simuler mon Tarif
         </button>
-      </div>
+      </Magnetic>
     );
   }
 
@@ -97,10 +93,10 @@ export function TrackingPanel({ onSimulateClick }: { onSimulateClick: () => void
           <button
             type="button"
             onClick={onSimulateClick}
-            className="w-full border border-white/25 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors inline-flex items-center justify-center gap-2"
+            className="w-full bg-cargo-500 hover:bg-cargo-400 text-ink-950 text-sm font-semibold px-5 py-3 rounded-xl shadow-glow-cargo transition-colors inline-flex items-center justify-center gap-2"
           >
             <Calculator size={16} />
-            Calculer mon prix
+            Simuler mon Tarif
           </button>
         </Magnetic>
       </div>
