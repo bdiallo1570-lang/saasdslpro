@@ -18,11 +18,14 @@ import { Footer } from '@/modules/landing/sections/Footer';
 import { ChatAssistant } from '@/modules/landing/assistant/ChatAssistant';
 import { WhatsAppFab } from '@/modules/landing/assistant/WhatsAppFab';
 import { CookieNotice } from '@/modules/landing/sections/CookieNotice';
+import { useLocation } from 'react-router-dom';
 import { usePageMeta } from '@/lib/pageMeta';
 
 export default function HomePage() {
-  // Titre et description d'index.html (aussi utilisés par les aperçus WhatsApp/Facebook)
-  usePageMeta({});
+  // Titre et description d'index.html (aussi utilisés par les aperçus WhatsApp/Facebook). Les liens
+  // courts par réseau (/tiktok…, voir liensReseaux.ts) ne sont pas indexés : doublons de l'accueil.
+  const { pathname } = useLocation();
+  usePageMeta({ indexable: pathname === '/' });
   const { isDark, toggle } = useLandingTheme();
   const calculatorRef = useRef<HTMLDivElement>(null);
   // L'ouverture animée ne se joue qu'une fois par session (voir CinematicIntro) ; sinon, la page

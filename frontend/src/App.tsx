@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { ROLE_NAMES } from '@/lib/roles';
 import { CursorAura } from '@/ui/CursorAura';
 import HomePage from '@/modules/auth/pages/HomePage';
+import { LIENS_RESEAUX } from '@/modules/landing/liensReseaux';
 
 // La landing est chargée tout de suite (c'est la page la plus visitée) ; chaque page de
 // l'application n'est téléchargée qu'à sa première ouverture. Le visiteur de la landing ne paie
@@ -47,6 +48,10 @@ export default function App() {
           <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            {/* Liens courts par réseau social (mesure d'audience) : même page d'accueil */}
+            {LIENS_RESEAUX.map((reseau) => (
+              <Route key={reseau} path={`/${reseau}`} element={<HomePage />} />
+            ))}
             <Route path="/connexion" element={<LoginPage />} />
             <Route path="/confidentialite" element={<PolitiqueConfidentialitePage />} />
             <Route path="/conditions-generales" element={<ConditionsGeneralesPage />} />
